@@ -83,6 +83,12 @@ function LiquidityContent() {
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [selectedPositionForRemoval, setSelectedPositionForRemoval] = useState<Position | null>(null);
   const [removalPercentage, setRemovalPercentage] = useState(25);
+  
+  // Add liquidity modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedPositionForAddition, setSelectedPositionForAddition] = useState<Position | null>(null);
+  const [addAmount0, setAddAmount0] = useState("");
+  const [addAmount1, setAddAmount1] = useState("");
 
   // Handle URL parameters to switch to tokens tab when returning from token detail
   useEffect(() => {
@@ -816,6 +822,11 @@ function LiquidityContent() {
                                   size="sm" 
                                   variant="outline" 
                                   className="border-crypto-blue/30 text-crypto-blue hover:bg-crypto-blue/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPositionForAddition(position);
+                                    setShowAddModal(true);
+                                  }}
                                 >
                                   Add Liquidity
                                 </Button>
@@ -1650,6 +1661,208 @@ function LiquidityContent() {
                     </div>
                   ) : (
                     "Remove Liquidity"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Liquidity Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="sm:max-w-lg crypto-card border-crypto-border">
+          <DialogHeader>
+            <DialogTitle className="text-white">Add Liquidity</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedPositionForAddition && (
+                <>Add more liquidity to your {selectedPositionForAddition.token0.symbol}/{selectedPositionForAddition.token1.symbol} position</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPositionForAddition && (
+            <div className="space-y-6">
+              {/* Position Summary */}
+              <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="flex items-center -space-x-2">
+                    <img 
+                      src={selectedPositionForAddition.token0.logo} 
+                      alt={selectedPositionForAddition.token0.symbol}
+                      className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
+                    />
+                    <img 
+                      src={selectedPositionForAddition.token1.logo} 
+                      alt={selectedPositionForAddition.token1.symbol}
+                      className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">
+                      {selectedPositionForAddition.token0.symbol}/{selectedPositionForAddition.token1.symbol}
+                    </h3>
+                    <p className="text-sm text-gray-400">{selectedPositionForAddition.fee}% Fee Tier</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Current Position Value</span>
+                    <span className="text-white">{formatPrice(selectedPositionForAddition.value)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Price Range</span>
+                    <span className="text-white">
+                      {formatNumber(selectedPositionForAddition.minPrice, 6)} - {formatNumber(selectedPositionForAddition.maxPrice, 6)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Current Price</span>
+                    <span className="text-white">{formatNumber(selectedPositionForAddition.currentPrice, 6)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deposit Amounts */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">Deposit Amounts</h3>
+                
+                <div className="space-y-3">
+                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-gray-400 text-sm">{selectedPositionForAddition.token0.symbol}</span>
+                      <span className="text-gray-400 text-sm">
+                        Balance: {formatNumber(selectedPositionForAddition.token0.balance || 0, 2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Input
+                        type="number"
+                        value={addAmount0}
+                        onChange={(e) => {
+                          setAddAmount0(e.target.value);
+                          // Auto-calculate the proportional amount for token1 based on current price ratio
+                          if (e.target.value && selectedPositionForAddition) {
+                            const ratio = selectedPositionForAddition.currentPrice;
+                            const calculatedAmount1 = (parseFloat(e.target.value) * ratio).toString();
+                            setAddAmount1(calculatedAmount1);
+                          }
+                        }}
+                        placeholder="0.0"
+                        className="flex-1 bg-transparent border-none text-white text-xl font-semibold"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <img src={selectedPositionForAddition.token0.logo} alt={selectedPositionForAddition.token0.symbol} className="w-6 h-6 rounded-full" />
+                        <span className="text-white font-medium">{selectedPositionForAddition.token0.symbol}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-gray-400 text-sm">{selectedPositionForAddition.token1.symbol}</span>
+                      <span className="text-gray-400 text-sm">
+                        Balance: {formatNumber(selectedPositionForAddition.token1.balance || 0, 2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Input
+                        type="number"
+                        value={addAmount1}
+                        onChange={(e) => {
+                          setAddAmount1(e.target.value);
+                          // Auto-calculate the proportional amount for token0 based on current price ratio
+                          if (e.target.value && selectedPositionForAddition) {
+                            const ratio = selectedPositionForAddition.currentPrice;
+                            const calculatedAmount0 = (parseFloat(e.target.value) / ratio).toString();
+                            setAddAmount0(calculatedAmount0);
+                          }
+                        }}
+                        placeholder="0.0"
+                        className="flex-1 bg-transparent border-none text-white text-xl font-semibold"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <img src={selectedPositionForAddition.token1.logo} alt={selectedPositionForAddition.token1.symbol} className="w-6 h-6 rounded-full" />
+                        <span className="text-white font-medium">{selectedPositionForAddition.token1.symbol}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transaction Summary */}
+              {addAmount0 && addAmount1 && (
+                <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <h4 className="font-medium text-white mb-3">Transaction Summary</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Total Value to Add</span>
+                      <span className="text-white">
+                        {formatPrice((parseFloat(addAmount0) * selectedPositionForAddition.token0.price) + (parseFloat(addAmount1) * selectedPositionForAddition.token1.price))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Network Fee</span>
+                      <span className="text-white">~$2.50</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">New Position Value</span>
+                      <span className="text-crypto-green font-medium">
+                        {formatPrice(selectedPositionForAddition.value + (parseFloat(addAmount0) * selectedPositionForAddition.token0.price) + (parseFloat(addAmount1) * selectedPositionForAddition.token1.price))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Price Impact Warning */}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-400">
+                    <p className="font-medium mb-1">Adding to Existing Position</p>
+                    <p>Your liquidity will be added to the same price range as your existing position ({formatNumber(selectedPositionForAddition.minPrice, 6)} - {formatNumber(selectedPositionForAddition.maxPrice, 6)}).</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setAddAmount0("");
+                    setAddAmount1("");
+                  }}
+                  className="flex-1 border-crypto-border text-gray-400 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsLoading(true);
+                    // Simulate transaction
+                    setTimeout(() => {
+                      setIsLoading(false);
+                      setShowAddModal(false);
+                      setSelectedPositionForAddition(null);
+                      setAddAmount0("");
+                      setAddAmount1("");
+                      // Here you would typically update the positions list
+                    }, 2000);
+                  }}
+                  disabled={isLoading || !addAmount0 || !addAmount1}
+                  className="flex-1 bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Adding...</span>
+                    </div>
+                  ) : (
+                    "Add Liquidity"
                   )}
                 </Button>
               </div>
