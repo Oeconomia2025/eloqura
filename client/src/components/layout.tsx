@@ -385,86 +385,17 @@ export function Layout({
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-0 relative">
-        {/* Sticky Header Navigation */}
-        <header className="sticky top-0 z-30 bg-gray-950 border-b border-gray-700 px-6 h-20 flex items-center shadow-xl shadow-black/70">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-
-              <div className="flex items-center space-x-3">
-                {(tokenLogo || pageLogo) && (
-                  <img 
-                    src={tokenLogo || pageLogo} 
-                    alt="Token logo" 
-                    className="w-12 h-12 rounded-full"
-                    style={{ border: '0.5px solid rgba(255, 255, 255, 0.3)' }}
-                    onError={(e) => {
-                      e.currentTarget.src = '/oec-logo.png';
-                    }}
-                  />
-                )}
-                <div className="flex flex-col">
-                  {tokenTicker && tokenName ? (
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h1 className="text-xl font-semibold text-white">{tokenTicker}</h1>
-                        {(tokenWebsite || pageWebsite) && (
-                          <a 
-                            href={tokenWebsite || pageWebsite} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-crypto-blue hover:text-crypto-blue/80 transition-colors"
-                            title="Visit official website"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{tokenName}</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h1 className="text-xl font-semibold text-white">{currentPageInfo.title}</h1>
-                        {(tokenWebsite || pageWebsite) && (
-                          <a 
-                            href={tokenWebsite || pageWebsite} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-crypto-blue hover:text-crypto-blue/80 transition-colors"
-                            title="Visit official website"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground hidden md:block">{currentPageInfo.description}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSupportOpen(true)}
-                className="w-10 h-10 p-0 rounded-full bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group"
-                title="Support Development"
-              >
-                <Heart className="w-5 h-5 text-cyan-400 group-hover:text-white transition-colors fill-current" />
-              </Button>
-            </div>
-          </div>
-        </header>
+        {/* Mobile menu button for when there's no header */}
+        <div className="lg:hidden fixed top-4 left-4 z-50">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen(true)}
+            className="bg-gray-900/80 backdrop-blur-sm border border-gray-700"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        </div>
 
         {/* Page Content */}
         <main className="flex-1">
