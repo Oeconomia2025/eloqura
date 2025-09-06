@@ -349,7 +349,12 @@ export function Layout({
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align={sidebarCollapsed ? "center" : "start"} className="w-36">
+              <DropdownMenuContent 
+                align={sidebarCollapsed ? "center" : "start"} 
+                side={sidebarCollapsed ? "right" : "top"}
+                sideOffset={sidebarCollapsed ? 8 : 4}
+                className="w-36"
+              >
                 <DropdownMenuItem 
                   onClick={() => window.open('https://oeconomia.tech/', '_blank')}
                   className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
