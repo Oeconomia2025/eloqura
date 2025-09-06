@@ -10,8 +10,7 @@ import { DisclaimerModal } from "@/components/disclaimer-modal";
 import { liveCoinWatchSyncService } from "@/services/live-coin-watch-sync";
 import Swap from "@/pages/swap";
 import Liquidity from "@/pages/liquidity";
-import Examine from "@/pages/examine";
-import Bridge from "@/pages/bridge"; // Assuming Bridge component is in pages/bridge.tsx
+import Bridge from "@/pages/bridge";
 import BuySell from "@/pages/buy-sell";
 import NotFound from "@/pages/not-found";
 
@@ -21,7 +20,6 @@ function Router() {
       <Route path="/" component={Swap} />
       <Route path="/swap" component={Swap} />
       <Route path="/liquidity" component={Liquidity} />
-      <Route path="/examine" component={Examine} />
       <Route path="/bridge" component={Bridge} />
       <Route path="/buy-sell" component={BuySell} />
       <Route path="*" component={NotFound} />
