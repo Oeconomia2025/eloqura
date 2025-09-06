@@ -30,7 +30,8 @@ import {
   AlertTriangle,
   Heart,
   Image, // Added Image icon import
-  ArrowLeftRight
+  ArrowLeftRight,
+  Search // Added Search icon import
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 import { WalletConnect } from "@/components/wallet-connect";

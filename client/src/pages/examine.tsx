@@ -367,10 +367,10 @@ function LiquidityContent() {
             {/* Header */}
             <div className="text-center lg:text-left">
               <h1 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-crypto-blue to-crypto-purple bg-clip-text text-transparent">
-                Liquidity Pools
+                Examine Liquidity
               </h1>
               <p className="text-xl text-gray-400 mb-8">
-                Provide liquidity, earn fees, and manage your positions
+                Examine pools, tokens, and manage your liquidity positions
               </p>
             </div>
 
@@ -927,7 +927,7 @@ function LiquidityContent() {
                             key={token.id}
                             className="border-b border-crypto-border hover:bg-gray-800/40 hover:border-crypto-blue/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
                             onClick={() => {
-                              setLocation(`/liquidity?tab=tokens&create=true&token=${token.id}`);
+                              setLocation(`/examine?tab=tokens&create=true&token=${token.id}`);
                             }}
                           >
                             <td className="py-4 px-6">

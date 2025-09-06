@@ -8,21 +8,23 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { DisclaimerModal } from "@/components/disclaimer-modal";
 import { liveCoinWatchSyncService } from "@/services/live-coin-watch-sync";
-import Swap from "@/pages/swap";
-import Liquidity from "@/pages/liquidity";
-import Bridge from "@/pages/bridge"; // Assuming Bridge component is in pages/bridge.tsx
-import BuySell from "@/pages/buy-sell";
-import NotFound from "@/pages/not-found";
+import SwapPage from './pages/swap';
+import LiquidityPage from './pages/liquidity';
+import BridgePage from './pages/bridge'; // Assuming Bridge component is in pages/bridge.tsx
+import BuySellPage from './pages/buy-sell';
+import ExaminePage from './pages/examine'; // Imported the new Examine page
+import NotFoundPage from './pages/not-found';
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Swap} />
-      <Route path="/swap" component={Swap} />
-      <Route path="/liquidity" component={Liquidity} />
-      <Route path="/bridge" component={Bridge} />
-      <Route path="/buy-sell" component={BuySell} />
-      <Route path="*" component={NotFound} />
+      <Route path="/" component={SwapPage} />
+      <Route path="/swap" component={SwapPage} />
+      <Route path="/liquidity" component={LiquidityPage} />
+      <Route path="/bridge" component={BridgePage} />
+      <Route path="/examine" component={ExaminePage} /> {/* Added the route for the Examine page */}
+      <Route path="/buy-sell" component={BuySellPage} />
+      <Route path="*" component={NotFoundPage} />
     </Switch>
   );
 }
