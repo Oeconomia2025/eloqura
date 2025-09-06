@@ -184,6 +184,7 @@ export function Layout({
     { icon: ArrowUpDown, label: 'Trade', path: '/swap', active: location === '/swap' },
     { icon: DollarSign, label: 'Buy/Sell', path: '/buy-sell', active: location === '/buy-sell' },
     { icon: ArrowLeftRight, label: 'Bridge', path: '/bridge', active: location === '/bridge' },
+    { icon: Search, label: 'Examine', path: '/examine', active: location === '/examine' },
     { icon: Droplets, label: 'Pools', path: '/liquidity', active: location === '/liquidity' },
   ];
 
