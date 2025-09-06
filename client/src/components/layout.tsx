@@ -245,8 +245,8 @@ export function Layout({
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       {/* Sidebar Navigation */}
-      <aside className={`fixed inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} bg-gray-950 border-r border-gray-700 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}>
-        <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4">
+      <aside className={`fixed inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} bg-background border-r border-border transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}>
+        <div className="sticky top-0 z-10 bg-background flex items-center justify-between h-20 px-4">
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center w-full' : 'space-x-3'}`}>
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
               <img 
@@ -281,7 +281,7 @@ export function Layout({
           </div>
         </div>
 
-        <div className="sticky top-20 bg-gray-950 z-10">
+        <div className="sticky top-20 bg-background z-10">
           <nav className="p-4">
             <ul className="space-y-2">
               {sidebarItems.map((item, index) => (
@@ -315,7 +315,7 @@ export function Layout({
         </div>
 
         {/* Bottom section with wallet and social links */}
-        <div className="sticky bottom-0 bg-gray-950 p-4 space-y-3">
+        <div className="sticky bottom-0 bg-background p-4 space-y-3">
           {/* Connect Wallet */}
           <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
             <WalletConnect 
@@ -391,7 +391,7 @@ export function Layout({
             variant="ghost"
             size="sm"
             onClick={() => setSidebarOpen(true)}
-            className="bg-gray-900/80 backdrop-blur-sm border border-gray-700"
+            className="bg-background/80 backdrop-blur-sm border border-border"
           >
             <Menu className="w-5 h-5" />
           </Button>
