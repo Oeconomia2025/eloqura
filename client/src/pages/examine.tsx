@@ -57,7 +57,7 @@ interface Position {
 
 function LiquidityContent() {
   const [, setLocation] = useLocation();
-  const [activeView, setActiveView] = useState<'positions' | 'create' | 'pools'>('positions');
+  const [activeView, setActiveView] = useState<'positions' | 'create' | 'pools'>('pools');
   const [selectedToken0, setSelectedToken0] = useState<Token | null>(null);
   const [selectedToken1, setSelectedToken1] = useState<Token | null>(null);
   const [amount0, setAmount0] = useState("");
@@ -591,47 +591,7 @@ function LiquidityContent() {
       <div className="p-8">
         <div className="max-w-7xl mx-auto">
 
-          {/* Navigation Tabs */}
-          <div className="mb-6">
-            <div className="grid w-auto grid-cols-3 bg-gray-800 border border-gray-700 rounded-lg p-1">
-              <Button
-                variant={activeView === 'positions' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveView('positions')}
-                className={
-                  activeView === 'positions'
-                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-3 rounded-md"
-                    : "text-gray-400 hover:text-white px-6 py-3 rounded-md hover:bg-gray-700/50"
-                }
-              >
-                My Positions
-              </Button>
-              <Button
-                variant={activeView === 'create' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveView('create')}
-                className={
-                  activeView === 'create'
-                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-3 rounded-md"
-                    : "text-gray-400 hover:text-white px-6 py-3 rounded-md hover:bg-gray-700/50"
-                }
-              >
-                Create Position
-              </Button>
-              <Button
-                variant={activeView === 'pools' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveView('pools')}
-                className={
-                  activeView === 'pools'
-                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-3 rounded-md"
-                    : "text-gray-400 hover:text-white px-6 py-3 rounded-md hover:bg-gray-700/50"
-                }
-              >
-                Pools
-              </Button>
-            </div>
-          </div>
+          
 
           {/* Positions View */}
           {activeView === 'positions' && (
