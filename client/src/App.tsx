@@ -17,6 +17,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Swap} />
       <Route path="/swap" component={Swap} />
+      <Route path="/swap/:subpage" component={Swap} />
       <Route path="/liquidity" component={Liquidity} />
       <Route component={NotFound} />
     </Switch>
