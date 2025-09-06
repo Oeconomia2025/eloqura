@@ -206,7 +206,7 @@ function SwapContent() {
   const tokens: Token[] = [
     {
       symbol: "OEC",
-      name: "Oeconomia",
+      name: "Eloqura",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
       logo: "/oec-logo.png",

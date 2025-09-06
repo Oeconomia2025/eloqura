@@ -251,13 +251,13 @@ export function Layout({
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
               <img 
                 src="/oec-logo.png" 
-                alt="Oeconomia Logo" 
+                alt="Eloqura Logo" 
                 className="w-full h-full object-cover"
               />
             </div>
             {!sidebarCollapsed && (
               <div>
-                <h2 className="text-lg font-bold">Oeconomia</h2>
+                <h2 className="text-lg font-bold">Eloqura</h2>
                 <p className="text-xs text-gray-400">OEC Dashboard</p>
               </div>
             )}
