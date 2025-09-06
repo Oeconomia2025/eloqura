@@ -354,7 +354,8 @@ export function Layout({
                 align={sidebarCollapsed ? "center" : "start"} 
                 side={sidebarCollapsed ? "right" : "top"}
                 sideOffset={sidebarCollapsed ? 8 : 4}
-                className="w-36"
+                className={sidebarCollapsed ? "w-36" : "w-full"}
+                style={!sidebarCollapsed ? { width: 'var(--radix-dropdown-menu-trigger-width)' } : undefined}
               >
                 <DropdownMenuItem 
                   onClick={() => window.open('https://oeconomia.tech/', '_blank')}
