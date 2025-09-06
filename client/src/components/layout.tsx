@@ -67,11 +67,11 @@ interface LayoutProps {
 // Page information for each route
 const pageInfo = {
   '/': {
-    title: 'Token Swap',
+    title: 'Trade',
     description: 'Trade tokens instantly on the Oeconomia ecosystem'
   },
   '/swap': {
-    title: 'Token Swap',
+    title: 'Trade',
     description: 'Trade tokens instantly on the Oeconomia ecosystem'
   },
   '/liquidity': {
@@ -179,7 +179,7 @@ export function Layout({
   };
 
   const sidebarItems = [
-    { icon: ArrowUpDown, label: 'Swap', path: '/swap', active: location === '/swap' },
+    { icon: ArrowUpDown, label: 'Trade', path: '/swap', active: location === '/swap' },
     { icon: Droplets, label: 'Pools', path: '/liquidity', active: location === '/liquidity' },
   ];
 

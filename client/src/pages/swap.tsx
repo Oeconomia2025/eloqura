@@ -65,7 +65,7 @@ function SwapContent() {
   const [showChart, setShowChart] = useState(false);
   const [chartTimeframe, setChartTimeframe] = useState("1D");
   const [hideSidebar, setHideSidebar] = useState(false);
-  const [activeTab, setActiveTab] = useState("Swap");
+  const [activeTab, setActiveTab] = useState("Trade");
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [tokenSelectionFor, setTokenSelectionFor] = useState<'from' | 'to' | 'priceCondition'>('from');
   const [tokenSearchQuery, setTokenSearchQuery] = useState("");
@@ -706,7 +706,7 @@ function SwapContent() {
               {/* Tab Navigation */}
               <div className="flex items-center justify-between mb-0">
                 <div className="flex space-x-1 bg-[var(--crypto-dark)] rounded-lg p-1">
-                  {["Swap", "Limit", "Buy", "Sell", "Bridge"].map((tab) => (
+                  {["Trade", "Limit", "Buy", "Sell", "Bridge"].map((tab) => (
                     <Button
                       key={tab}
                       variant={activeTab === tab ? "default" : "ghost"}
@@ -1161,8 +1161,8 @@ function SwapContent() {
                 </div>
               )}
 
-              {/* Standard Swap Interface (Swap tab only) */}
-              {activeTab === "Swap" && (
+              {/* Standard Trade Interface (Trade tab only) */}
+              {activeTab === "Trade" && (
                 <>
                   <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
@@ -1231,8 +1231,8 @@ function SwapContent() {
                 </>
               )}
 
-              {/* Swap Arrow - Only for Swap tab */}
-              {activeTab === "Swap" && (
+              {/* Swap Arrow - Only for Trade tab */}
+              {activeTab === "Trade" && (
                 <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-6 z-30">
                   <Button
                     variant="ghost"
@@ -1245,8 +1245,8 @@ function SwapContent() {
                 </div>
               )}
 
-              {/* To Token - Only for Swap tab */}
-              {activeTab === "Swap" && (
+              {/* To Token - Only for Trade tab */}
+              {activeTab === "Trade" && (
                 <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-gray-400 text-sm">To</span>
@@ -1308,7 +1308,7 @@ function SwapContent() {
                   onClick={handleSwapExecution}
                   disabled={
                     isLoading || 
-                    (activeTab === "Swap" && (!fromToken || !toToken || (!fromAmount && !toAmount))) ||
+                    (activeTab === "Trade" && (!fromToken || !toToken || (!fromAmount && !toAmount))) ||
                     (activeTab === "Limit" && (!fromToken || !toToken || !fromAmount || !limitOrder.triggerPrice)) ||
                     (activeTab === "Buy" && (!toToken || !fiatAmount)) ||
                     (activeTab === "Sell" && (!fromToken || !fromAmount))
@@ -1320,10 +1320,10 @@ function SwapContent() {
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Processing...</span>
                     </div>
-                  ) : activeTab === "Swap" ? (
+                  ) : activeTab === "Trade" ? (
                     !fromToken || !toToken ? "Select Tokens" : 
                     (!fromAmount && !toAmount) ? "Enter Amount" : 
-                    `Swap ${fromToken.symbol}`
+                    `Trade ${fromToken.symbol}`
                   ) : activeTab === "Limit" ? (
                     !fromToken || !toToken ? "Select Tokens" : 
                     !fromAmount ? "Enter Amount" : 
@@ -1342,7 +1342,7 @@ function SwapContent() {
               )}
 
               {/* Quote and Trade Information */}
-              {activeTab === "Swap" && fromToken && toToken && (fromAmount || toAmount) && (
+              {activeTab === "Trade" && fromToken && toToken && (fromAmount || toAmount) && (
                 <div className="bg-[var(--crypto-card)] rounded-lg p-4 border border-[var(--crypto-border)] space-y-2">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-400">Exchange Rate</span>
