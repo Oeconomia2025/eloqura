@@ -311,7 +311,66 @@ export function Layout({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Content area - social media moved to header dropdown */}
+          {/* Content area */}
+        </div>
+
+        {/* Bottom section with wallet and social links */}
+        <div className="sticky bottom-0 bg-gray-950 p-4 space-y-3 border-t border-gray-700">
+          {/* Connect Wallet */}
+          <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
+            {sidebarCollapsed ? (
+              <div className="w-10 h-10 relative group">
+                <WalletConnect />
+                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  Connect Wallet
+                </div>
+              </div>
+            ) : (
+              <WalletConnect />
+            )}
+          </div>
+
+          {/* Social Media Dropdown */}
+          <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`${sidebarCollapsed ? 'w-10 h-10 p-0' : 'w-full justify-start'} rounded-full bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative`}
+                  title={sidebarCollapsed ? "Social Media Links" : undefined}
+                >
+                  <Globe className="w-5 h-5 text-white" />
+                  {!sidebarCollapsed && <span className="ml-2">Social & Website</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      Social & Website
+                    </div>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={sidebarCollapsed ? "center" : "start"} className="w-36">
+                <DropdownMenuItem 
+                  onClick={() => window.open('https://oeconomia.tech/', '_blank')}
+                  className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
+                >
+                  <Globe className="w-4 h-4 mr-2" />
+                  Website
+                </DropdownMenuItem>
+                {socialLinks.map((link) => (
+                  <DropdownMenuItem
+                    key={link.name}
+                    onClick={() => link.enabled && window.open(link.url, '_blank')}
+                    className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${!link.enabled ? 'opacity-50' : ''}`}
+                    disabled={!link.enabled}
+                  >
+                    <link.icon className="w-4 h-4 mr-2" />
+                    {link.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
       </aside>
@@ -403,46 +462,6 @@ export function Layout({
               >
                 <Heart className="w-5 h-5 text-cyan-400 group-hover:text-white transition-colors fill-current" />
               </Button>
-
-              <div className="max-w-xs">
-                <WalletConnect />
-              </div>
-
-              {/* Social Media Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-10 h-10 p-0 rounded-full bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0"
-                    title="Social Media Links"
-                  >
-                    <Globe className="w-5 h-5 text-white" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-36">
-                  <DropdownMenuItem 
-                    onClick={() => window.open('https://oeconomia.tech/', '_blank')}
-                    className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
-                  >
-                    <Globe className="w-4 h-4 mr-2" />
-                    Website
-                  </DropdownMenuItem>
-                  {socialLinks.map((link) => (
-                    <DropdownMenuItem
-                      key={link.name}
-                      onClick={() => link.enabled && window.open(link.url, '_blank')}
-                      className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${!link.enabled ? 'opacity-50' : ''}`}
-                      disabled={!link.enabled}
-                    >
-                      <link.icon className="w-4 h-4 mr-2" />
-                      {link.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-
             </div>
           </div>
         </header>
