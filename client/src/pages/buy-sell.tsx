@@ -66,7 +66,7 @@ function BuySellContent() {
   const [showChart, setShowChart] = useState(false);
   const [chartTimeframe, setChartTimeframe] = useState("1D");
   const [hideSidebar, setHideSidebar] = useState(false);
-  const [activeTab, setActiveTab] = useState("Trade");
+  const [activeTab, setActiveTab] = useState("Buy");
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [tokenSelectionFor, setTokenSelectionFor] = useState<'from' | 'to' | 'priceCondition'>('from');
   const [tokenSearchQuery, setTokenSearchQuery] = useState("");
@@ -479,9 +479,6 @@ function BuySellContent() {
     } else if (activeTab === "Sell") {
       setFromToken(tokens[0]); // OEC
       setToToken(tokens[1]); // USDT
-    } else {
-      setFromToken(tokens[1]); // USDT
-      setToToken(tokens[0]); // OEC
     }
   }, [activeTab]);
 
@@ -701,7 +698,7 @@ function BuySellContent() {
               {/* Tab Navigation */}
               <div className="flex items-center justify-between mb-0">
                 <div className="flex space-x-1 bg-[var(--crypto-dark)] rounded-lg p-1">
-                  {["Trade", "Limit", "Buy", "Sell"].map((tab) => (
+                  {["Buy", "Sell"].map((tab) => (
                     <Button
                       key={tab}
                       variant={activeTab === tab ? "default" : "ghost"}
@@ -729,14 +726,6 @@ function BuySellContent() {
                     className={`text-gray-400 hover:text-white ${showChart ? 'text-crypto-blue' : ''}`}
                   >
                     <BarChart3 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <Settings className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
