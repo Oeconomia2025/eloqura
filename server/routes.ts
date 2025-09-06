@@ -24,10 +24,18 @@ import * as schema from "@shared/schema";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get comprehensive token data using Moralis for BSC tokens
+  // Get comprehensive token data - single unified endpoint
   app.get("/api/token/:contractAddress", async (req, res) => {
     try {
       const { contractAddress } = req.params;
+      
+      // Handle null/empty addresses
+      if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
+        return res.status(400).json({ 
+          message: "Invalid contract address",
+          error: "Contract address cannot be null or zero address"
+        });
+      }
       
       // Known token data for when API limits are reached (all lowercase keys)
       const knownTokens: Record<string, any> = {
@@ -429,6 +437,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { contractAddress, timeframe } = req.params;
       
+      // Handle null/empty addresses
+      if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
+        return res.status(400).json({ 
+          message: "Invalid contract address",
+          error: "Contract address cannot be null or zero address"
+        });
+      }
+      
       // Try to get real historical data first
       const historicalData = await historicalDataSyncService.getHistoricalDataByContract(
         contractAddress.toLowerCase(), 
@@ -673,86 +689,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced token data endpoint that also saves to database
-  app.get("/api/token/:contractAddress", async (req, res) => {
-    try {
-      const { contractAddress } = req.params;
-      
-      // Get or create tracked token
-      let trackedToken = await storage.getTrackedToken(contractAddress);
-      
-      // Fetch data from multiple sources
-      const [coinGeckoData, pancakeSwapData, pairData] = await Promise.all([
-        coinGeckoApiService.getTokenDataByContract(contractAddress),
-        pancakeSwapApiService.getTokenData(contractAddress),
-        pancakeSwapApiService.getPairData(contractAddress),
-      ]);
-
-      // Combine data with fallbacks
-      const tokenData: TokenData = {
-        id: contractAddress,
-        name: coinGeckoData?.name || pancakeSwapData?.name || "Unknown Token",
-        symbol: coinGeckoData?.symbol || pancakeSwapData?.symbol || "UNK",
-        contractAddress,
-        price: coinGeckoData?.price || pancakeSwapData?.price || 0,
-        priceChange24h: coinGeckoData?.priceChange24h || 0,
-        priceChangePercent24h: coinGeckoData?.priceChangePercent24h || 0,
-        marketCap: coinGeckoData?.marketCap || (coinGeckoData?.price || 0) * (coinGeckoData?.totalSupply || 0),
-        volume24h: coinGeckoData?.volume24h || pairData?.volume24h || 0,
-        totalSupply: coinGeckoData?.totalSupply || 0,
-        circulatingSupply: coinGeckoData?.circulatingSupply || 0,
-        liquidity: pairData?.liquidity || 0,
-        txCount24h: pairData?.txCount24h || 0,
-        network: "BSC",
-        lastUpdated: new Date().toISOString(),
-      };
-
-      // Create tracked token if it doesn't exist and has valid data
-      if (!trackedToken && tokenData.name !== "Unknown Token") {
-        try {
-          trackedToken = await storage.createTrackedToken({
-            contractAddress,
-            name: tokenData.name,
-            symbol: tokenData.symbol,
-            network: "BSC",
-            isActive: true,
-          });
-          
-          // Save initial snapshot
-          if (trackedToken && tokenData.price > 0) {
-            await storage.createTokenSnapshot({
-              tokenId: trackedToken.id,
-              price: tokenData.price,
-              marketCap: tokenData.marketCap,
-              volume24h: tokenData.volume24h,
-              liquidity: tokenData.liquidity,
-              txCount24h: tokenData.txCount24h,
-              priceChange24h: tokenData.priceChange24h,
-              priceChangePercent24h: tokenData.priceChangePercent24h,
-              totalSupply: tokenData.totalSupply,
-              circulatingSupply: tokenData.circulatingSupply,
-            });
-          }
-        } catch (dbError) {
-          console.warn("Failed to save token to database:", dbError);
-          // Continue without database save
-        }
-      }
-
-      res.json(tokenData);
-    } catch (error) {
-      console.error("Error fetching token data:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch token data",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
+  
 
   // Live Coin Watch API routes - FIXED: return proper coins format
   app.get("/api/live-coin-watch/coins", async (req, res) => {
     try {
+      // Set JSON content type explicitly
+      res.setHeader('Content-Type', 'application/json');
+      
       const storedCoins = await liveCoinWatchSyncService.getStoredCoins();
+      
+      // Ensure we always have data to return
+      if (!storedCoins || storedCoins.length === 0) {
+        return res.json({
+          coins: [],
+          lastUpdated: new Date().toISOString(),
+          isServiceRunning: false,
+          message: "No coins data available, using fallback data"
+        });
+      }
       
       // Transform stored coins to match frontend expectations
       const formattedCoins = storedCoins.map(coin => ({
@@ -773,14 +728,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         coins: formattedCoins,
-        lastUpdated: formattedCoins.length > 0 ? formattedCoins[0].lastUpdated : null,
+        lastUpdated: formattedCoins.length > 0 ? formattedCoins[0].lastUpdated : new Date().toISOString(),
         isServiceRunning: liveCoinWatchSyncService.isServiceRunning(),
       });
     } catch (error) {
       console.error("Error fetching Live Coin Watch data:", error);
       res.status(500).json({ 
         message: "Failed to fetch Live Coin Watch data",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
+        coins: [],
+        lastUpdated: new Date().toISOString(),
+        isServiceRunning: false
       });
     }
   });
