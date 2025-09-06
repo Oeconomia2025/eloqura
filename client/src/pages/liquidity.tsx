@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { 
   Plus, 
   ArrowLeft, 
@@ -76,6 +78,11 @@ function LiquidityContent() {
   const [poolsSortDirection, setPoolsSortDirection] = useState<'asc' | 'desc'>('asc');
   const [tokensSortField, setTokensSortField] = useState<string | null>('marketCap');
   const [tokensSortDirection, setTokensSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Remove liquidity modal state
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [selectedPositionForRemoval, setSelectedPositionForRemoval] = useState<Position | null>(null);
+  const [removalPercentage, setRemovalPercentage] = useState(25);
 
   // Handle URL parameters to switch to tokens tab when returning from token detail
   useEffect(() => {
@@ -816,6 +823,11 @@ function LiquidityContent() {
                                   size="sm" 
                                   variant="outline" 
                                   className="border-gray-600 text-gray-400 hover:bg-gray-600/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPositionForRemoval(position);
+                                    setShowRemoveModal(true);
+                                  }}
                                 >
                                   Remove
                                 </Button>
@@ -1499,6 +1511,152 @@ function LiquidityContent() {
           )}
         </div>
       </div>
+
+      {/* Remove Liquidity Modal */}
+      <Dialog open={showRemoveModal} onOpenChange={setShowRemoveModal}>
+        <DialogContent className="sm:max-w-md crypto-card border-crypto-border">
+          <DialogHeader>
+            <DialogTitle className="text-white">Remove Liquidity</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedPositionForRemoval && (
+                <>Remove liquidity from {selectedPositionForRemoval.token0.symbol}/{selectedPositionForRemoval.token1.symbol} pool</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPositionForRemoval && (
+            <div className="space-y-6">
+              {/* Amount Selection */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-400">Amount to remove</label>
+                  <span className="text-lg font-semibold text-white">{removalPercentage}%</span>
+                </div>
+                
+                <Slider
+                  value={[removalPercentage]}
+                  onValueChange={(value) => setRemovalPercentage(value[0])}
+                  max={100}
+                  min={1}
+                  step={1}
+                  className="w-full"
+                />
+                
+                <div className="grid grid-cols-4 gap-2">
+                  {[25, 50, 75, 100].map((percent) => (
+                    <Button
+                      key={percent}
+                      size="sm"
+                      variant={removalPercentage === percent ? "default" : "outline"}
+                      onClick={() => setRemovalPercentage(percent)}
+                      className={removalPercentage === percent 
+                        ? "bg-crypto-blue hover:bg-crypto-blue/80" 
+                        : "border-crypto-border text-gray-400 hover:text-white"
+                      }
+                    >
+                      {percent}%
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Position Summary */}
+              <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="flex items-center -space-x-2">
+                    <img 
+                      src={selectedPositionForRemoval.token0.logo} 
+                      alt={selectedPositionForRemoval.token0.symbol}
+                      className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
+                    />
+                    <img 
+                      src={selectedPositionForRemoval.token1.logo} 
+                      alt={selectedPositionForRemoval.token1.symbol}
+                      className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">
+                      {selectedPositionForRemoval.token0.symbol}/{selectedPositionForRemoval.token1.symbol}
+                    </h3>
+                    <p className="text-sm text-gray-400">{selectedPositionForRemoval.fee}% Fee Tier</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Position Value</span>
+                    <span className="text-white">{formatPrice(selectedPositionForRemoval.value)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Amount to Remove</span>
+                    <span className="text-white">{formatPrice(selectedPositionForRemoval.value * (removalPercentage / 100))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Estimated {selectedPositionForRemoval.token0.symbol}</span>
+                    <span className="text-white">
+                      {formatNumber(parseFloat(selectedPositionForRemoval.liquidity) * (removalPercentage / 100) * 0.5, 6)} {selectedPositionForRemoval.token0.symbol}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Estimated {selectedPositionForRemoval.token1.symbol}</span>
+                    <span className="text-white">
+                      {formatNumber(parseFloat(selectedPositionForRemoval.liquidity) * (removalPercentage / 100) * 0.5, 6)} {selectedPositionForRemoval.token1.symbol}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Uncollected Fees Warning */}
+              {(parseFloat(selectedPositionForRemoval.uncollectedFees0) > 0 || parseFloat(selectedPositionForRemoval.uncollectedFees1) > 0) && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-yellow-400">
+                      <p className="font-medium mb-1">Uncollected Fees</p>
+                      <p>You have {formatPrice(parseFloat(selectedPositionForRemoval.uncollectedFees0) * selectedPositionForRemoval.token0.price + parseFloat(selectedPositionForRemoval.uncollectedFees1) * selectedPositionForRemoval.token1.price)} in uncollected fees. Consider collecting them first.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRemoveModal(false)}
+                  className="flex-1 border-crypto-border text-gray-400 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsLoading(true);
+                    // Simulate transaction
+                    setTimeout(() => {
+                      setIsLoading(false);
+                      setShowRemoveModal(false);
+                      setSelectedPositionForRemoval(null);
+                      // Here you would typically update the positions list
+                    }, 2000);
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Removing...</span>
+                    </div>
+                  ) : (
+                    "Remove Liquidity"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
