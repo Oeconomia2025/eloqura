@@ -337,7 +337,7 @@ export function Layout({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`${sidebarCollapsed ? 'w-10 h-10 p-0' : 'w-full justify-start'} rounded-full bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative`}
+                  className={`${sidebarCollapsed ? 'w-10 h-10 p-0' : 'w-full justify-start'} rounded-lg bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative`}
                   title={sidebarCollapsed ? "Social Media Links" : undefined}
                 >
                   <Globe className="w-5 h-5 text-white" />
