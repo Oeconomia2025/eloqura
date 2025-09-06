@@ -89,6 +89,11 @@ function LiquidityContent() {
   const [selectedPositionForAddition, setSelectedPositionForAddition] = useState<Position | null>(null);
   const [addAmount0, setAddAmount0] = useState("");
   const [addAmount1, setAddAmount1] = useState("");
+  
+  // Token selection modal state
+  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
+  const [tokenSelectionFor, setTokenSelectionFor] = useState<'token0' | 'token1'>('token0');
+  const [tokenSearchQuery, setTokenSearchQuery] = useState("");
 
   // Handle URL parameters to switch to tokens tab when returning from token detail
   useEffect(() => {
@@ -599,6 +604,22 @@ function LiquidityContent() {
     setExpandedPositions(newExpanded);
   };
 
+  const selectToken = (token: Token) => {
+    if (tokenSelectionFor === 'token0') {
+      setSelectedToken0(token);
+    } else if (tokenSelectionFor === 'token1') {
+      setSelectedToken1(token);
+    }
+    setIsTokenModalOpen(false);
+    setTokenSearchQuery("");
+  };
+
+  // Filter tokens based on search query
+  const filteredAvailableTokens = availableTokens.filter(token => 
+    token.symbol.toLowerCase().includes(tokenSearchQuery.toLowerCase()) ||
+    token.name.toLowerCase().includes(tokenSearchQuery.toLowerCase())
+  );
+
   return (
     <Layout>
       <div className="p-8">
@@ -871,47 +892,45 @@ function LiquidityContent() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm text-gray-400 mb-2 block">Token 1</label>
-                          <Select onValueChange={(value) => {
-                            const token = availableTokens.find(t => t.symbol === value);
-                            setSelectedToken0(token || null);
-                          }}>
-                            <SelectTrigger className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white">
-                              <SelectValue placeholder="Select token" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableTokens.map((token) => (
-                                <SelectItem key={token.symbol} value={token.symbol}>
-                                  <div className="flex items-center space-x-2">
-                                    <img src={token.logo} alt={token.symbol} className="w-5 h-5 rounded-full" />
-                                    <span>{token.symbol}</span>
-                                    <span className="text-gray-400">- {token.name}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setTokenSelectionFor('token0');
+                              setIsTokenModalOpen(true);
+                            }}
+                            className="w-full bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-card)] justify-start h-12"
+                          >
+                            {selectedToken0 ? (
+                              <div className="flex items-center space-x-2">
+                                <img src={selectedToken0.logo} alt={selectedToken0.symbol} className="w-6 h-6 rounded-full" />
+                                <span>{selectedToken0.symbol}</span>
+                                <span className="text-gray-400 text-sm">- {selectedToken0.name}</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Select token</span>
+                            )}
+                          </Button>
                         </div>
                         <div>
                           <label className="text-sm text-gray-400 mb-2 block">Token 2</label>
-                          <Select onValueChange={(value) => {
-                            const token = availableTokens.find(t => t.symbol === value);
-                            setSelectedToken1(token || null);
-                          }}>
-                            <SelectTrigger className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white">
-                              <SelectValue placeholder="Select token" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableTokens.map((token) => (
-                                <SelectItem key={token.symbol} value={token.symbol}>
-                                  <div className="flex items-center space-x-2">
-                                    <img src={token.logo} alt={token.symbol} className="w-5 h-5 rounded-full" />
-                                    <span>{token.symbol}</span>
-                                    <span className="text-gray-400">- {token.name}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setTokenSelectionFor('token1');
+                              setIsTokenModalOpen(true);
+                            }}
+                            className="w-full bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-card)] justify-start h-12"
+                          >
+                            {selectedToken1 ? (
+                              <div className="flex items-center space-x-2">
+                                <img src={selectedToken1.logo} alt={selectedToken1.symbol} className="w-6 h-6 rounded-full" />
+                                <span>{selectedToken1.symbol}</span>
+                                <span className="text-gray-400 text-sm">- {selectedToken1.name}</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Select token</span>
+                            )}
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1868,6 +1887,55 @@ function LiquidityContent() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Token Selection Modal */}
+      <Dialog open={isTokenModalOpen} onOpenChange={setIsTokenModalOpen}>
+        <DialogContent className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white max-w-md mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              Select {tokenSelectionFor === 'token0' ? 'Token 1' : 'Token 2'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Search Box */}
+          <div className="mb-4">
+            <Input
+              type="text"
+              placeholder="Search tokens..."
+              value={tokenSearchQuery}
+              onChange={(e) => setTokenSearchQuery(e.target.value)}
+              className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
+            />
+          </div>
+
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {filteredAvailableTokens.map((token) => (
+              <Button
+                key={token.symbol}
+                variant="ghost"
+                onClick={() => selectToken(token)}
+                className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center space-x-3">
+                    <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                    <div className="text-left">
+                      <div className="font-medium">{token.symbol}</div>
+                      <div className="text-sm text-gray-400">{token.name}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-white">${formatNumber(token.price, 6)}</div>
+                    <div className="text-xs text-gray-400">
+                      Balance: {formatNumber(token.balance || 0, 2)}
+                    </div>
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>
