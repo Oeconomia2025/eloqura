@@ -147,7 +147,7 @@ function LiquidityContent() {
       id: "1",
       token0: {
         symbol: "OEC",
-        name: "Oeconomia",
+        name: "Eloqura",
         address: "0x55d398326f99059fF775485246999027B3197955",
         decimals: 18,
         logo: "/oec-logo.png",
@@ -186,7 +186,7 @@ function LiquidityContent() {
       },
       token1: {
         symbol: "OEC",
-        name: "Oeconomia",
+        name: "Eloqura",
         address: "0x55d398326f99059fF775485246999027B3197955",
         decimals: 18,
         logo: "/oec-logo.png",

@@ -246,7 +246,7 @@ export function Layout({
     <div className="min-h-screen bg-background text-foreground flex">
       {/* Sidebar Navigation */}
       <aside className={`fixed inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} bg-gray-950 border-r border-gray-700 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}>
-        <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b border-gray-700">
+        <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4">
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center w-full' : 'space-x-3'}`}>
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
               <img 
@@ -282,7 +282,7 @@ export function Layout({
           </div>
         </div>
 
-        <div className="sticky top-20 bg-gray-950 z-10 border-b border-gray-700">
+        <div className="sticky top-20 bg-gray-950 z-10">
           <nav className="p-4">
             <ul className="space-y-2">
               {sidebarItems.map((item, index) => (
@@ -453,9 +453,9 @@ export function Layout({
           {children}
 
           {/* Footer */}
-          <footer className="border-t border-gray-700 mt-8 py-6 px-6 text-center">
+          <footer className="mt-8 py-6 px-6 text-center">
             <p className="text-sm text-muted-foreground">
-              © 2025 Oeconomia. All rights reserved.
+              © 2025 Eloqura. All rights reserved.
             </p>
           </footer>
         </main>

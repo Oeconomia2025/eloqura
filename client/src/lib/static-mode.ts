@@ -6,7 +6,7 @@ export const IS_STATIC_DEPLOYMENT = !window.location.hostname.includes('replit')
 // Mock data for static deployment
 export const STATIC_TOKEN_DATA = {
   id: "oeconomia",
-  name: "Oeconomia",
+  name: "Eloqura",
   symbol: "OEC",
   price: 0.00001234,
   priceChange24h: 5.67,
