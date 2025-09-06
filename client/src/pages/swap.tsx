@@ -1813,7 +1813,7 @@ function SwapContent() {
                           strokeWidth={2}
                           fill={`url(#areaGradient-${fromToken?.symbol || 'default'})`}
                           dot={false}
-                          activeDot={{ r: 4, stroke: getTokenColor(fromToken), strokeWidth: 2 }}
+                          activeDot={{ r: 4, stroke: getTokenColor(fromToken || undefined), strokeWidth: 2 }}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
