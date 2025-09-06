@@ -315,7 +315,7 @@ export function Layout({
         </div>
 
         {/* Bottom section with wallet and social links */}
-        <div className="sticky bottom-0 bg-gray-950 p-4 space-y-3 border-t border-gray-700">
+        <div className="sticky bottom-0 bg-gray-950 p-4 space-y-3">
           {/* Connect Wallet */}
           <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
             {sidebarCollapsed ? (
