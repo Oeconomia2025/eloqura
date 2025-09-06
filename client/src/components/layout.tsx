@@ -181,6 +181,7 @@ export function Layout({
   const sidebarItems = [
     { icon: ArrowUpDown, label: 'Trade', path: '/swap', active: location === '/swap' },
     { icon: Droplets, label: 'Pools', path: '/liquidity', active: location === '/liquidity' },
+    { icon: ArrowUpDown, label: 'Bridge', path: '/bridge', active: location === '/bridge' },
   ];
 
   return (
