@@ -24,8 +24,10 @@ import {
   ArrowLeftRight
 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area, BarChart, Bar } from 'recharts';
-import { useTokens } from '@/hooks/use-token-data';
-import type { Token as TokenType } from '@shared/schema';
+import { useTokenData } from '@/hooks/use-token-data';
+import { useQuery } from '@tanstack/react-query';
+import { formatCryptoData } from '@/utils/crypto-logos';
+import type { LiveCoinWatchDbCoin } from '@shared/schema';
 
 // Token interface for form handling
 interface Token {
@@ -194,9 +196,28 @@ function LiquidityContent() {
     }
   };
 
-  // Load tokens data
-  const { data: tokensList } = useTokens();
-  const tokens = tokensList || [];
+  // Fetch Live Coin Watch data from database
+  const { data: liveCoinWatchData, isLoading: isLiveCoinWatchLoading } = useQuery<{coins: LiveCoinWatchDbCoin[]}>({
+    queryKey: ["/api/live-coin-watch/coins"],
+    refetchInterval: 15 * 1000, // Refresh every 15 seconds for real-time data
+  });
+
+  // Transform Live Coin Watch data into the format expected by the UI
+  const tokens = liveCoinWatchData?.coins?.map((coin: LiveCoinWatchDbCoin) => {
+    const formatted = formatCryptoData(coin);
+    
+    return {
+      id: coin.code,
+      name: formatted.cleanName,
+      symbol: formatted.cleanCode,
+      logo: formatted.logo,
+      price: coin.rate,
+      priceChangePercent24h: coin.deltaDay ? (coin.deltaDay - 1) * 100 : 0,
+      marketCap: coin.cap || 0,
+      volume24h: coin.volume || 0,
+      holders: Math.floor(Math.random() * 100000), // Mock holder data since not available in Live Coin Watch
+    };
+  }) || [];
 
   // Filter and sort pools
   const filteredPools = mockPools
@@ -206,7 +227,7 @@ function LiquidityContent() {
       pool.token0.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pool.token1.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       if (!poolsSortField) return 0;
       
       let aValue, bValue;
@@ -254,7 +275,7 @@ function LiquidityContent() {
         token.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     )
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       if (!a || !b) return 0;
       if (!tokensSortField) return 0;
       
@@ -322,7 +343,7 @@ function LiquidityContent() {
   };
 
   // Handle token selection for liquidity creation
-  const handleTokenSelect = (token: TokenType, isToken0: boolean) => {
+  const handleTokenSelect = (token: any, isToken0: boolean) => {
     const formattedToken: Token = {
       symbol: token.symbol,
       name: token.name,
@@ -360,7 +381,7 @@ function LiquidityContent() {
   };
 
   // Handle token click to navigate to detail page
-  const handleTokenClick = (token: TokenType) => {
+  const handleTokenClick = (token: any) => {
     if (token && token.id) {
       setLocation(`/token/${token.id}`);
     }
@@ -623,7 +644,7 @@ function LiquidityContent() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {tokens.slice(0, 20).map(token => token && (
+                  {tokens.slice(0, 20).map((token: any) => token && (
                     <SelectItem key={token.id} value={token.symbol}>
                       <div className="flex items-center space-x-2">
                         <Avatar className="w-6 h-6">
@@ -664,7 +685,7 @@ function LiquidityContent() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {tokens.slice(0, 20).map(token => token && (
+                  {tokens.slice(0, 20).map((token: any) => token && (
                     <SelectItem key={token.id} value={token.symbol}>
                       <div className="flex items-center space-x-2">
                         <Avatar className="w-6 h-6">
@@ -988,7 +1009,7 @@ function LiquidityContent() {
         <TabsContent value="tokens" className="space-y-4">
           {/* Tokens Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTokens.slice(0, 50).map(token => token && (
+            {filteredTokens.slice(0, 50).map((token: any) => token && (
               <Card key={token.id} className="hover:bg-muted/50 transition-colors cursor-pointer group">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
