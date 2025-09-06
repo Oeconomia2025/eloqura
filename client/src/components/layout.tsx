@@ -319,7 +319,7 @@ export function Layout({
           {/* Connect Wallet */}
           <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
             <WalletConnect 
-                  isCollapsed={sidebarCollapsed}
+                  collapsed={sidebarCollapsed}
                 />
           </div>
 

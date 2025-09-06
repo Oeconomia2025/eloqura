@@ -1777,10 +1777,10 @@ function SwapContent() {
                       <AreaChart data={chartPriceHistory}>
                         <defs>
                           <linearGradient id={`areaGradient-${fromToken?.symbol || 'default'}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={getTokenColor(fromToken)} stopOpacity={1.0}/>
-                            <stop offset="25%" stopColor={getTokenColor(fromToken)} stopOpacity={1.0}/>
-                            <stop offset="75%" stopColor={getTokenColor(fromToken)} stopOpacity={0.5}/>
-                            <stop offset="100%" stopColor={getTokenColor(fromToken)} stopOpacity={0}/>
+                            <stop offset="0%" stopColor={getTokenColor(fromToken || undefined)} stopOpacity={1.0}/>
+                            <stop offset="25%" stopColor={getTokenColor(fromToken || undefined)} stopOpacity={1.0}/>
+                            <stop offset="75%" stopColor={getTokenColor(fromToken || undefined)} stopOpacity={0.5}/>
+                            <stop offset="100%" stopColor={getTokenColor(fromToken || undefined)} stopOpacity={0}/>
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--crypto-border)" />
@@ -1809,7 +1809,7 @@ function SwapContent() {
                         <Area 
                           type="monotone" 
                           dataKey="price" 
-                          stroke={getTokenColor(fromToken)}
+                          stroke={getTokenColor(fromToken || undefined)}
                           strokeWidth={2}
                           fill={`url(#areaGradient-${fromToken?.symbol || 'default'})`}
                           dot={false}
