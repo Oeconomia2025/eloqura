@@ -258,7 +258,6 @@ export function Layout({
             {!sidebarCollapsed && (
               <div>
                 <h2 className="text-lg font-bold">Eloqura</h2>
-                <p className="text-xs text-gray-400">OEC Dashboard</p>
               </div>
             )}
           </div>
