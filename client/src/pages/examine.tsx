@@ -673,8 +673,8 @@ function LiquidityContent() {
                         <p className="text-gray-400 text-sm mb-1">Active Positions</p>
                         <p className="text-2xl font-bold text-white">{positions.length}</p>
                       </div>
-                      <div className="w-12 h-12 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-lg flex items-center justify-center">
-                        <Star className="w-6 h-6 text-violet-400" />
+                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
+                        <Star className="w-6 h-6 text-purple-400" />
                       </div>
                     </div>
                   </CardContent>
@@ -683,229 +683,160 @@ function LiquidityContent() {
 
               {/* Positions List */}
               <Card className="crypto-card border">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl text-white">My Liquidity Positions</CardTitle>
-                  <p className="text-gray-400 text-sm">Manage your liquidity positions and collect fees</p>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white">Your Positions</CardTitle>
+                    <Button
+                      onClick={() => setLocation('/swap')}
+                      variant="outline"
+                      size="sm"
+                      className="border-crypto-border text-crypto-blue hover:bg-crypto-blue/10"
+                    >
+                      <ArrowLeftRight className="w-4 h-4 mr-2" />
+                      Go to Swap
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="space-y-0.5">
                   {positions.length === 0 ? (
-                    <div className="p-12 text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Droplets className="w-8 h-8 text-cyan-400" />
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gradient-to-r from-crypto-blue/20 to-crypto-green/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Droplets className="w-8 h-8 text-crypto-blue" />
                       </div>
-                      <h3 className="text-lg font-semibold text-white mb-2">No Liquidity Positions</h3>
-                      <p className="text-gray-400 mb-6">Start earning fees by providing liquidity to trading pairs</p>
-                      <Button 
+                      <h3 className="text-xl font-semibold text-white mb-2">No liquidity positions</h3>
+                      <p className="text-gray-400 mb-6">Create your first position to start earning fees</p>
+                      <Button
                         onClick={() => setActiveView('create')}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
+                        className="bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90"
                       >
-                        Create Your First Position
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Position
                       </Button>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-700">
-                      {positions.map((position, index) => {
-                        const isExpanded = expandedPositions.has(position.id);
-                        const fees0Value = parseFloat(position.uncollectedFees0) * position.token0.price;
-                        const fees1Value = parseFloat(position.uncollectedFees1) * position.token1.price;
-                        const totalFeesValue = fees0Value + fees1Value;
-
-                        return (
-                          <div key={position.id} className="p-6">
-                            <div 
-                              className="flex items-center justify-between cursor-pointer"
-                              onClick={() => togglePositionExpansion(position.id)}
-                            >
+                    positions.map((position) => {
+                      const isExpanded = expandedPositions.has(position.id);
+                      return (
+                        <div key={position.id} className="bg-[var(--crypto-dark)] border border-[var(--crypto-border)] rounded-lg overflow-hidden">
+                          {/* Collapsed Header */}
+                          <div 
+                            className="p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
+                            onClick={() => togglePositionExpansion(position.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              {/* Left: Token Pair & Status */}
                               <div className="flex items-center space-x-4">
-                                {/* Token Logos */}
-                                <div className="flex -space-x-2">
-                                  <img src={position.token0.logo} alt={position.token0.symbol} className="w-10 h-10 rounded-full border-2 border-gray-700" />
-                                  <img src={position.token1.logo} alt={position.token1.symbol} className="w-10 h-10 rounded-full border-2 border-gray-700" />
+                                <div className="flex items-center -space-x-2">
+                                  <img 
+                                    src={position.token0.logo} 
+                                    alt={position.token0.symbol}
+                                    className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
+                                  />
+                                  <img 
+                                    src={position.token1.logo} 
+                                    alt={position.token1.symbol}
+                                    className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
+                                  />
                                 </div>
-
-                                {/* Position Info */}
-                                <div>
-                                  <h3 className="text-lg font-semibold text-white">
+                                <div className="flex items-center space-x-3">
+                                  <h3 className="text-white font-semibold">
                                     {position.token0.symbol}/{position.token1.symbol}
                                   </h3>
-                                  <div className="flex items-center space-x-3 text-sm">
-                                    <Badge variant="secondary" className="bg-gray-700/50 text-gray-300">
-                                      {position.fee}% Fee
-                                    </Badge>
-                                    <Badge 
-                                      variant={position.status === 'in-range' ? 'default' : 'destructive'}
-                                      className={position.status === 'in-range' 
-                                        ? 'bg-green-500/20 text-green-300 border-green-500/30' 
-                                        : 'bg-red-500/20 text-red-300 border-red-500/30'
-                                      }
-                                    >
-                                      {position.status === 'in-range' ? 'In Range' : 'Out of Range'}
-                                    </Badge>
-                                  </div>
+                                  <Badge className={`text-xs ${position.status === 'in-range' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {position.status === 'in-range' ? 'In Range' : 'Out of Range'}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs">
+                                    {position.fee}% Fee
+                                  </Badge>
                                 </div>
                               </div>
 
+                              {/* Center: Key Values */}
                               <div className="flex items-center space-x-6">
-                                <div className="text-right">
-                                  <p className="text-lg font-semibold text-white">
-                                    {formatPrice(position.value)}
+                                <div className="text-center min-w-[120px]">
+                                  <p className="text-green-400 font-semibold">
+                                    {formatPrice(parseFloat(position.uncollectedFees0) * position.token0.price + parseFloat(position.uncollectedFees1) * position.token1.price)}
                                   </p>
-                                  <p className="text-sm text-green-400">
-                                    +{formatPrice(totalFeesValue)} fees
-                                  </p>
+                                  <p className="text-xs text-gray-400">Uncollected Fees</p>
                                 </div>
-                                {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                                <div className="text-center min-w-[120px]">
+                                  <p className="text-white font-semibold">{formatPrice(position.value)}</p>
+                                  <p className="text-xs text-gray-400">{position.liquidity} Liquidity</p>
+                                </div>
+                                <div className="flex justify-center min-w-[48px]">
+                                  <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white">
+                                    <ExternalLink className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                                <div className="text-center min-w-[80px]">
+                                  <p className="text-cyan-400 font-semibold">
+                                    {position.id === "3" ? "6.00%" : position.id === "4" ? "3.00%" : 
+                                     position.id === "1" ? "40.53%" : "43.15%"}
+                                  </p>
+                                  <p className="text-xs text-gray-400">APR</p>
+                                </div>
+                              </div>
+
+                              {/* Right: Collect Fees + Expand */}
+                              <div className="flex items-center space-x-3">
+                                <Button 
+                                  size="sm" 
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle collect fees
+                                  }}
+                                >
+                                  Collect Fees
+                                </Button>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                                )}
                               </div>
                             </div>
+                          </div>
 
-                            {/* Expanded Position Details */}
-                            {isExpanded && (
-                              <div className="mt-6 pt-6 border-t border-gray-700/50">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                  {/* Position Details */}
-                                  <div className="space-y-4">
-                                    <h4 className="font-semibold text-white mb-3">Position Details</h4>
-                                    
-                                    <div className="space-y-3">
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-gray-400">Liquidity:</span>
-                                        <span className="text-white font-medium">{position.liquidity}</span>
-                                      </div>
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-gray-400">Current Price:</span>
-                                        <span className="text-white font-medium">
-                                          {formatNumber(position.currentPrice, 6)}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-gray-400">Min Price:</span>
-                                        <span className="text-white font-medium">
-                                          {formatNumber(position.minPrice, 6)}
-                                        </span>
-                                      </div>
-                                      <div className="flex justify-between text-sm">
-                                        <span className="text-gray-400">Max Price:</span>
-                                        <span className="text-white font-medium">
-                                          {formatNumber(position.maxPrice, 6)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Token Composition */}
-                                  <div className="space-y-4">
-                                    <h4 className="font-semibold text-white mb-3">Composition</h4>
-                                    
-                                    <div className="space-y-3">
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                          <img src={position.token0.logo} alt={position.token0.symbol} className="w-5 h-5 rounded-full" />
-                                          <span className="text-sm text-gray-300">{position.token0.symbol}</span>
-                                        </div>
-                                        <div className="text-right">
-                                          <p className="text-sm text-white font-medium">
-                                            {formatNumber(position.value / (2 * position.token0.price), 4)}
-                                          </p>
-                                          <p className="text-xs text-gray-400">
-                                            {formatPrice(position.value / 2)}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                          <img src={position.token1.logo} alt={position.token1.symbol} className="w-5 h-5 rounded-full" />
-                                          <span className="text-sm text-gray-300">{position.token1.symbol}</span>
-                                        </div>
-                                        <div className="text-right">
-                                          <p className="text-sm text-white font-medium">
-                                            {formatNumber(position.value / (2 * position.token1.price), 4)}
-                                          </p>
-                                          <p className="text-xs text-gray-400">
-                                            {formatPrice(position.value / 2)}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Uncollected Fees */}
-                                  <div className="space-y-4">
-                                    <h4 className="font-semibold text-white mb-3">Uncollected Fees</h4>
-                                    
-                                    <div className="space-y-3">
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                          <img src={position.token0.logo} alt={position.token0.symbol} className="w-5 h-5 rounded-full" />
-                                          <span className="text-sm text-gray-300">{position.token0.symbol}</span>
-                                        </div>
-                                        <div className="text-right">
-                                          <p className="text-sm text-green-400 font-medium">
-                                            {position.uncollectedFees0}
-                                          </p>
-                                          <p className="text-xs text-gray-400">
-                                            {formatPrice(fees0Value)}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                          <img src={position.token1.logo} alt={position.token1.symbol} className="w-5 h-5 rounded-full" />
-                                          <span className="text-sm text-gray-300">{position.token1.symbol}</span>
-                                        </div>
-                                        <div className="text-right">
-                                          <p className="text-sm text-green-400 font-medium">
-                                            {position.uncollectedFees1}
-                                          </p>
-                                          <p className="text-xs text-gray-400">
-                                            {formatPrice(fees1Value)}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div className="border-t border-gray-700/50 pt-3">
-                                        <div className="flex justify-between">
-                                          <span className="text-sm text-gray-400">Total Fees:</span>
-                                          <span className="text-sm text-green-400 font-medium">
-                                            {formatPrice(totalFeesValue)}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
+                          {/* Expanded Details */}
+                          {isExpanded && (
+                            <div className="border-t border-[var(--crypto-border)] p-4 bg-gray-900/20">
+                              <div className="grid grid-cols-3 gap-6 mb-4">
+                                <div>
+                                  <p className="text-xs text-gray-400 mb-1">Min Price</p>
+                                  <p className="text-lg font-bold text-white">{formatNumber(position.minPrice, 6)}</p>
                                 </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex space-x-3 mt-6 pt-4 border-t border-gray-700/50">
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-green-500 hover:bg-green-600 text-white"
-                                  >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Collect Fees
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                                  >
-                                    Add Liquidity
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                                  >
-                                    Remove Liquidity
-                                  </Button>
+                                <div>
+                                  <p className="text-xs text-gray-400 mb-1">Max Price</p>
+                                  <p className="text-lg font-bold text-white">{formatNumber(position.maxPrice, 6)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-400 mb-1">Current Price</p>
+                                  <p className="text-lg font-bold text-white">{formatNumber(position.currentPrice, 6)}</p>
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+
+                              <div className="flex items-center space-x-3">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="border-crypto-blue/30 text-crypto-blue hover:bg-crypto-blue/10"
+                                >
+                                  Add Liquidity
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="border-gray-600 text-gray-400 hover:bg-gray-600/10"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                 </CardContent>
               </Card>
@@ -914,349 +845,668 @@ function LiquidityContent() {
 
           {/* Create Position View */}
           {activeView === 'create' && (
-            <div className="max-w-3xl mx-auto space-y-6">
-              <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold text-white">Create Liquidity Position</h2>
-                <p className="text-gray-400">Add liquidity to a trading pair and start earning fees</p>
-              </div>
-
-              <Card className="crypto-card border">
-                <CardHeader>
-                  <CardTitle className="text-white">Select Token Pair</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Token Selection */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">First Token</label>
-                      <Select value={selectedToken0?.symbol || ""} onValueChange={(value) => {
-                        const token = availableTokens.find(t => t.symbol === value);
-                        setSelectedToken0(token || null);
-                      }}>
-                        <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                          <div className="flex items-center space-x-2">
-                            {selectedToken0 && (
-                              <img src={selectedToken0.logo} alt={selectedToken0.symbol} className="w-5 h-5 rounded-full" />
-                            )}
-                            <span>{selectedToken0 ? selectedToken0.symbol : "Select token"}</span>
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700">
-                          {availableTokens.map((token) => (
-                            <SelectItem key={token.symbol} value={token.symbol} className="text-white hover:bg-gray-700">
-                              <div className="flex items-center space-x-2">
-                                <img src={token.logo} alt={token.symbol} className="w-5 h-5 rounded-full" />
-                                <span>{token.symbol}</span>
-                                <span className="text-gray-400 text-sm">- {token.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">Second Token</label>
-                      <Select value={selectedToken1?.symbol || ""} onValueChange={(value) => {
-                        const token = availableTokens.find(t => t.symbol === value);
-                        setSelectedToken1(token || null);
-                      }}>
-                        <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                          <div className="flex items-center space-x-2">
-                            {selectedToken1 && (
-                              <img src={selectedToken1.logo} alt={selectedToken1.symbol} className="w-5 h-5 rounded-full" />
-                            )}
-                            <span>{selectedToken1 ? selectedToken1.symbol : "Select token"}</span>
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700">
-                          {availableTokens.map((token) => (
-                            <SelectItem key={token.symbol} value={token.symbol} className="text-white hover:bg-gray-700">
-                              <div className="flex items-center space-x-2">
-                                <img src={token.logo} alt={token.symbol} className="w-5 h-5 rounded-full" />
-                                <span>{token.symbol}</span>
-                                <span className="text-gray-400 text-sm">- {token.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Fee Tier Selection */}
-                  {selectedToken0 && selectedToken1 && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Create Interface */}
+              <div className="lg:col-span-2">
+                <Card className="crypto-card border">
+                  <CardHeader>
+                    <CardTitle className="text-white">Create a New Position</CardTitle>
+                    <p className="text-gray-400">Select a fee tier and price range to provide liquidity</p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Token Pair Selection */}
                     <div className="space-y-4">
-                      <label className="text-sm font-medium text-gray-300">Fee Tier</label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {feeOptions.map((option) => (
-                          <Button
-                            key={option.value}
-                            variant={selectedFee === option.value ? "default" : "outline"}
-                            className={selectedFee === option.value 
-                              ? "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white border-0" 
-                              : "border-gray-600 text-gray-300 hover:bg-gray-700/50"
-                            }
-                            onClick={() => setSelectedFee(option.value)}
-                          >
-                            <div className="text-center">
-                              <div className="font-semibold">{option.label}</div>
-                              <div className="text-xs opacity-75">{option.description}</div>
-                            </div>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Amount Inputs */}
-                  {selectedToken0 && selectedToken1 && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">
-                          {selectedToken0.symbol} Amount
-                        </label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            placeholder="0.0"
-                            value={amount0}
-                            onChange={(e) => setAmount0(e.target.value)}
-                            className="bg-gray-800 border-gray-700 text-white pr-16"
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                            {selectedToken0.symbol}
-                          </div>
+                      <h3 className="text-lg font-semibold text-white">Select Pair</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-gray-400 mb-2 block">Token 1</label>
+                          <Select onValueChange={(value) => {
+                            const token = availableTokens.find(t => t.symbol === value);
+                            setSelectedToken0(token || null);
+                          }}>
+                            <SelectTrigger className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white">
+                              <SelectValue placeholder="Select token" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableTokens.map((token) => (
+                                <SelectItem key={token.symbol} value={token.symbol}>
+                                  <div className="flex items-center space-x-2">
+                                    <img src={token.logo} alt={token.symbol} className="w-5 h-5 rounded-full" />
+                                    <span>{token.symbol}</span>
+                                    <span className="text-gray-400">- {token.name}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          Balance: {formatNumber(selectedToken0.balance || 0, 4)} {selectedToken0.symbol}
-                        </div>
-                      </div>
-
-                      <div className="flex justify-center">
-                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                          <Plus className="w-4 h-4 text-gray-400" />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">
-                          {selectedToken1.symbol} Amount
-                        </label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            placeholder="0.0"
-                            value={amount1}
-                            onChange={(e) => setAmount1(e.target.value)}
-                            className="bg-gray-800 border-gray-700 text-white pr-16"
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                            {selectedToken1.symbol}
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Balance: {formatNumber(selectedToken1.balance || 0, 4)} {selectedToken1.symbol}
+                        <div>
+                          <label className="text-sm text-gray-400 mb-2 block">Token 2</label>
+                          <Select onValueChange={(value) => {
+                            const token = availableTokens.find(t => t.symbol === value);
+                            setSelectedToken1(token || null);
+                          }}>
+                            <SelectTrigger className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white">
+                              <SelectValue placeholder="Select token" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableTokens.map((token) => (
+                                <SelectItem key={token.symbol} value={token.symbol}>
+                                  <div className="flex items-center space-x-2">
+                                    <img src={token.logo} alt={token.symbol} className="w-5 h-5 rounded-full" />
+                                    <span>{token.symbol}</span>
+                                    <span className="text-gray-400">- {token.name}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
-                  )}
 
-                  {/* Position Summary */}
-                  {selectedToken0 && selectedToken1 && amount0 && amount1 && (
-                    <Card className="bg-gray-800/50 border-gray-700">
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold text-white mb-3">Position Preview</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">{selectedToken0.symbol} Deposited</span>
-                            <span className="text-white">{amount0}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">{selectedToken1.symbol} Deposited</span>
-                            <span className="text-white">{amount1}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Fee Tier</span>
-                            <span className="text-white">{selectedFee}%</span>
-                          </div>
-                          <div className="flex justify-between font-medium pt-2 border-t border-gray-700">
-                            <span className="text-gray-300">Total Value</span>
-                            <span className="text-white">
-                              ${formatNumber((parseFloat(amount0) * selectedToken0.price) + (parseFloat(amount1) * selectedToken1.price))}
+                    {/* Fee Tier Selection */}
+                    {selectedToken0 && selectedToken1 && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-white">Select Fee Tier</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {feeOptions.map((option) => (
+                            <Button
+                              key={option.value}
+                              variant={selectedFee === option.value ? "default" : "outline"}
+                              onClick={() => setSelectedFee(option.value)}
+                              className={`h-auto p-4 flex flex-col items-center space-y-2 ${
+                                selectedFee === option.value
+                                  ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white border-crypto-blue"
+                                  : "border-[var(--crypto-border)] text-gray-400 hover:text-white hover:border-crypto-blue/50"
+                              }`}
+                            >
+                              <span className="font-semibold">{option.label}</span>
+                              <span className="text-xs opacity-80 text-center">{option.description}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Price Range */}
+                    {selectedToken0 && selectedToken1 && selectedFee && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-white">Set Price Range</h3>
+                          <div className="flex items-center space-x-2 text-sm text-gray-400">
+                            <span>Current Price:</span>
+                            <span className="text-white font-medium">
+                              {formatNumber(selectedToken1.price / selectedToken0.price, 6)} {selectedToken1.symbol}
                             </span>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                        
+                        <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm text-gray-400 mb-2 block">Min Price</label>
+                              <Input
+                                type="number"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(e.target.value)}
+                                placeholder="0.0"
+                                className="bg-transparent border-0 text-white text-xl focus:ring-0 focus:border-0 focus:outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                              />
+                              <p className="text-xs text-gray-400 mt-1">
+                                {selectedToken1.symbol} per {selectedToken0.symbol}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm text-gray-400 mb-2 block">Max Price</label>
+                              <Input
+                                type="number"
+                                value={maxPrice}
+                                onChange={(e) => setMaxPrice(e.target.value)}
+                                placeholder="0.0"
+                                className="bg-transparent border-0 text-white text-xl focus:ring-0 focus:border-0 focus:outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                              />
+                              <p className="text-xs text-gray-400 mt-1">
+                                {selectedToken1.symbol} per {selectedToken0.symbol}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Action Buttons */}
-                  <div className="flex space-x-4 pt-4">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setActiveView('positions')}
-                      className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
-                    >
-                      Cancel
+                    {/* Deposit Amounts */}
+                    {selectedToken0 && selectedToken1 && minPrice && maxPrice && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-white">Deposit Amounts</h3>
+                        
+                        <div className="space-y-3">
+                          <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-gray-400 text-sm">{selectedToken0.symbol}</span>
+                              <span className="text-gray-400 text-sm">
+                                Balance: {formatNumber(selectedToken0.balance || 0, 2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Input
+                                type="number"
+                                value={amount0}
+                                onChange={(e) => setAmount0(e.target.value)}
+                                placeholder="0.0"
+                                className="flex-1 bg-transparent border-none text-white text-xl font-semibold"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <img src={selectedToken0.logo} alt={selectedToken0.symbol} className="w-6 h-6 rounded-full" />
+                                <span className="text-white font-medium">{selectedToken0.symbol}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-gray-400 text-sm">{selectedToken1.symbol}</span>
+                              <span className="text-gray-400 text-sm">
+                                Balance: {formatNumber(selectedToken1.balance || 0, 2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Input
+                                type="number"
+                                value={amount1}
+                                onChange={(e) => setAmount1(e.target.value)}
+                                placeholder="0.0"
+                                className="flex-1 bg-transparent border-none text-white text-xl font-semibold"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <img src={selectedToken1.logo} alt={selectedToken1.symbol} className="w-6 h-6 rounded-full" />
+                                <span className="text-white font-medium">{selectedToken1.symbol}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Create Position Button */}
+                    {selectedToken0 && selectedToken1 && amount0 && amount1 && (
+                      <Button
+                        onClick={() => {
+                          setIsLoading(true);
+                          // Simulate transaction
+                          setTimeout(() => {
+                            setIsLoading(false);
+                            setActiveView('positions');
+                          }, 2000);
+                        }}
+                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50 py-6 text-lg"
+                      >
+                        {isLoading ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Creating Position...</span>
+                          </div>
+                        ) : (
+                          "Create Position"
+                        )}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Info Sidebar */}
+              <div className="space-y-6">
+                <Card className="crypto-card border">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center space-x-2">
+                      <Info className="w-5 h-5" />
+                      <span>Position Summary</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {selectedToken0 && selectedToken1 ? (
+                      <>
+                        <div className="flex items-center space-x-3 p-3 bg-[var(--crypto-dark)] rounded-lg">
+                          <div className="flex items-center -space-x-2">
+                            <img src={selectedToken0.logo} alt={selectedToken0.symbol} className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]" />
+                            <img src={selectedToken1.logo} alt={selectedToken1.symbol} className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-white">{selectedToken0.symbol}/{selectedToken1.symbol}</p>
+                            <p className="text-sm text-gray-400">{selectedFee}% Fee Tier</p>
+                          </div>
+                        </div>
+                        
+                        {amount0 && amount1 && (
+                          <>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Est. Total Value</span>
+                                <span className="text-white">
+                                  {formatPrice((parseFloat(amount0) * selectedToken0.price) + (parseFloat(amount1) * selectedToken1.price))}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400">Network Fee</span>
+                                <span className="text-white">~$2.50</span>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                              <div className="flex items-start space-x-2">
+                                <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                                <div className="text-xs text-yellow-400">
+                                  <p className="font-medium mb-1">Impermanent Loss Risk</p>
+                                  <p>Your position may lose value if token prices diverge significantly.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-400 text-sm">Select tokens to see position details</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="crypto-card border">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center space-x-2">
+                      <Zap className="w-5 h-5" />
+                      <span>Learn More</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <div>
+                        <p className="font-medium">About Liquidity Pools</p>
+                        <p className="text-xs opacity-80">Learn how AMMs work</p>
+                      </div>
                     </Button>
-                    <Button 
-                      onClick={() => {
-                        setIsLoading(true);
-                        setTimeout(() => {
-                          setIsLoading(false);
-                          setActiveView('positions');
-                        }, 2000);
-                      }}
-                      disabled={!selectedToken0 || !selectedToken1 || !amount0 || !amount1 || isLoading}
-                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
-                    >
-                      {isLoading ? "Creating Position..." : "Create Position"}
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <div>
+                        <p className="font-medium">Fee Tier Guide</p>
+                        <p className="text-xs opacity-80">Choose the right fee</p>
+                      </div>
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <div>
+                        <p className="font-medium">Impermanent Loss</p>
+                        <p className="text-xs opacity-80">Understand the risks</p>
+                      </div>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
           {/* Pools View */}
           {activeView === 'pools' && (
             <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">Liquidity Pools</h2>
-                  <p className="text-gray-400">Browse available pools and provide liquidity to earn fees</p>
-                </div>
-                <Button 
-                  onClick={() => setActiveView('create')}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Position
-                </Button>
+              {/* Stats Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Card className="crypto-card p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">24H Volume</span>
+                    <TrendingUp className="w-4 h-4 text-crypto-green" />
+                  </div>
+                  <div className="text-2xl font-bold text-crypto-green">$8.7M</div>
+                  <div className="text-crypto-green text-sm">+16.3%</div>
+                </Card>
+                
+                <Card className="crypto-card p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">Total TVL</span>
+                    <TrendingUp className="w-4 h-4 text-crypto-blue" />
+                  </div>
+                  <div className="text-2xl font-bold text-crypto-blue">$32.4M</div>
+                  <div className="text-crypto-green text-sm">+2.8%</div>
+                </Card>
+                
+                <Card className="crypto-card p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">Active Pools</span>
+                    <div className="w-4 h-4 bg-crypto-purple rounded-full" />
+                  </div>
+                  <div className="text-2xl font-bold text-crypto-purple">1,247</div>
+                  <div className="text-gray-400 text-sm">pools</div>
+                </Card>
+                
+                <Card className="crypto-card p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-400 text-sm">Avg APR</span>
+                    <TrendingUp className="w-4 h-4 text-crypto-green" />
+                  </div>
+                  <div className="text-2xl font-bold text-crypto-green">19.2%</div>
+                  <div className="text-crypto-green text-sm">+0.4%</div>
+                </Card>
               </div>
 
-              {/* Search and Filters */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
+              {/* Navigation and Search */}
+              <div className="flex justify-between items-center">
+                <div className="grid w-auto grid-cols-2 bg-gray-800 border border-gray-700 rounded-lg p-1">
+                  <Button 
+                    variant={activeTab === 'pools' ? "default" : "ghost"} 
+                    size="sm" 
+                    className={activeTab === 'pools' ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-2 rounded-md w-24" : "text-gray-400 hover:text-white px-6 py-2 rounded-md hover:bg-gray-700/50 w-24"}
+                    onClick={() => setActiveTab('pools')}
+                  >
+                    Pools
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'tokens' ? "default" : "ghost"} 
+                    size="sm" 
+                    className={activeTab === 'tokens' ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-2 rounded-md w-24" : "text-gray-400 hover:text-white px-6 py-2 rounded-md hover:bg-gray-700/50 w-24"}
+                    onClick={() => setActiveTab('tokens')}
+                  >
+                    Tokens
+                  </Button>
+                </div>
+                
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
-                    placeholder="Search pools..."
+                    placeholder={activeTab === 'pools' ? "Search pools..." : "Search tokens..."}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-gray-800 border-gray-700 text-white"
+                    className="pl-10 bg-[#1a1b23] border-crypto-border text-white placeholder:text-gray-400 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-crypto-border focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
-                <Select value={timeframe} onValueChange={setTimeframe}>
-                  <SelectTrigger className="w-32 bg-gray-800 border-gray-700 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    {timeframes.map((tf) => (
-                      <SelectItem key={tf.key} value={tf.key} className="text-white hover:bg-gray-700">
-                        {tf.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
-              {/* Pools Table */}
-              <Card className="crypto-card border">
-                <CardContent className="p-0">
-                  {/* Table Header */}
-                  <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-700 bg-gray-800/50">
-                    <button 
-                      onClick={() => handlePoolsSort('tokenA.symbol')}
-                      className="text-left text-sm font-medium text-gray-300 hover:text-white flex items-center space-x-1"
-                    >
-                      <span>Pool</span>
-                      {getSortIcon('tokenA.symbol', poolsSortField, poolsSortDirection)}
-                    </button>
-                    <button 
-                      onClick={() => handlePoolsSort('tvl')}
-                      className="text-left text-sm font-medium text-gray-300 hover:text-white flex items-center space-x-1"
-                    >
-                      <span>TVL</span>
-                      {getSortIcon('tvl', poolsSortField, poolsSortDirection)}
-                    </button>
-                    <button 
-                      onClick={() => handlePoolsSort('volume24h')}
-                      className="text-left text-sm font-medium text-gray-300 hover:text-white flex items-center space-x-1"
-                    >
-                      <span>Volume 24H</span>
-                      {getSortIcon('volume24h', poolsSortField, poolsSortDirection)}
-                    </button>
-                    <button 
-                      onClick={() => handlePoolsSort('volume7d')}
-                      className="text-left text-sm font-medium text-gray-300 hover:text-white flex items-center space-x-1"
-                    >
-                      <span>Volume 7D</span>
-                      {getSortIcon('volume7d', poolsSortField, poolsSortDirection)}
-                    </button>
-                    <button 
-                      onClick={() => handlePoolsSort('apr')}
-                      className="text-left text-sm font-medium text-gray-300 hover:text-white flex items-center space-x-1"
-                    >
-                      <span>APR</span>
-                      {getSortIcon('apr', poolsSortField, poolsSortDirection)}
-                    </button>
-                    <span className="text-sm font-medium text-gray-300">Actions</span>
-                  </div>
-
-                  {/* Table Body */}
-                  <div className="divide-y divide-gray-700">
-                    {filteredPools.map((pool) => (
-                      <div key={pool.id} className="grid grid-cols-6 gap-4 p-4 hover:bg-gray-800/30 transition-colors">
-                        {/* Pool Info */}
-                        <div className="flex items-center space-x-3">
-                          <div className="flex -space-x-2">
-                            <img src={pool.tokenA.logo} alt={pool.tokenA.symbol} className="w-8 h-8 rounded-full border-2 border-gray-700" />
-                            <img src={pool.tokenB.logo} alt={pool.tokenB.symbol} className="w-8 h-8 rounded-full border-2 border-gray-700" />
-                          </div>
-                          <div>
-                            <div className="font-medium text-white">
-                              {pool.tokenA.symbol}/{pool.tokenB.symbol}
-                            </div>
-                            <div className="text-sm text-gray-400">{pool.fee}</div>
-                          </div>
-                        </div>
-
-                        {/* TVL */}
-                        <div className="flex items-center">
-                          <span className="text-white font-medium">{pool.tvl}</span>
-                        </div>
-
-                        {/* Volume 24h */}
-                        <div className="flex items-center">
-                          <span className="text-white font-medium">{pool.volume24h}</span>
-                        </div>
-
-                        {/* Volume 7d */}
-                        <div className="flex items-center">
-                          <span className="text-white font-medium">{pool.volume7d}</span>
-                        </div>
-
-                        {/* APR */}
-                        <div className="flex items-center">
-                          <span className="text-green-400 font-medium">{pool.apr}</span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center">
-                          <Button 
-                            size="sm" 
-                            onClick={() => setActiveView('create')}
-                            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
+              {/* Tables Container */}
+              {activeTab === 'pools' ? (
+                <div>
+                <div className="border rounded-lg overflow-hidden relative max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide">
+                  <table className="w-full">
+                    <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
+                      <tr>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">#</th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handlePoolsSort('tokenA.symbol')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
                           >
-                            Add Liquidity
-                          </Button>
-                        </div>
-                      </div>
+                            <span>Pool</span>
+                            {getSortIcon('tokenA.symbol', poolsSortField, poolsSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handlePoolsSort('fee')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>Fee</span>
+                            {getSortIcon('fee', poolsSortField, poolsSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handlePoolsSort('volume24h')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>24H Vol</span>
+                            {getSortIcon('volume24h', poolsSortField, poolsSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handlePoolsSort('volume7d')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>7D Vol</span>
+                            {getSortIcon('volume7d', poolsSortField, poolsSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handlePoolsSort('tvl')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>TVL</span>
+                            {getSortIcon('tvl', poolsSortField, poolsSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handlePoolsSort('apr')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>APR</span>
+                            {getSortIcon('apr', poolsSortField, poolsSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handlePoolsSort('priceChange24h')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>24H %</span>
+                            {getSortIcon('priceChange24h', poolsSortField, poolsSortDirection)}
+                          </button>
+                        </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPools.map((pool, index) => (
+                        <tr 
+                          key={pool.id} 
+                          className="border-b border-crypto-border hover:bg-gray-800/40 hover:border-crypto-blue/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                          onClick={() => setActiveView('create')}
+                        >
+                          <td className="py-4 px-6">
+                            <span className="text-gray-400 font-mono group-hover:text-white transition-colors duration-200">{index + 1}</span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center -space-x-2">
+                                <img 
+                                  src={pool.tokenA.logo} 
+                                  alt={pool.tokenA.symbol}
+                                  className="w-8 h-8 rounded-full z-10"
+                                />
+                                <img 
+                                  src={pool.tokenB.logo} 
+                                  alt={pool.tokenB.symbol}
+                                  className="w-8 h-8 rounded-full"
+                                />
+                              </div>
+                              <div>
+                                <div className="font-medium group-hover:text-white transition-colors duration-200">
+                                  {pool.tokenA.symbol}/{pool.tokenB.symbol}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <Badge variant="outline" className="border-crypto-border text-crypto-blue">
+                              {pool.fee}
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-6 font-mono">{pool.volume24h}</td>
+                          <td className="py-4 px-6 font-mono text-gray-400">{pool.volume7d}</td>
+                          <td className="py-4 px-6 font-mono">{pool.tvl}</td>
+                          <td className="py-4 px-6">
+                            <span className="text-crypto-green font-medium">{pool.apr}</span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className={`flex items-center space-x-1 ${
+                              pool.priceChange24h >= 0 ? 'text-crypto-green' : 'text-red-400'
+                            }`}>
+                              {pool.priceChange24h >= 0 ? (
+                                <TrendingUp className="w-4 h-4" />
+                              ) : (
+                                <TrendingDown className="w-4 h-4" />
+                              )}
+                              <span className="font-medium">
+                                {pool.priceChange24h >= 0 ? '+' : ''}{pool.priceChange24h}%
+                              </span>
+                            </div>
+                          </td>
+
+                        </tr>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
+                    
+                    {filteredPools.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="text-center py-12">
+                          <div className="text-gray-400 mb-2">No pools found</div>
+                          <div className="text-sm text-gray-500">Try adjusting your search terms</div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Footer Note */}
+              <div className="text-center text-sm text-gray-500">
+                <p>Pool data updates every 30 seconds • APR calculations include trading fees and liquidity mining rewards</p>
+              </div>
+              </div>
+              ) : (
+                <div>
+                <div className="border rounded-lg overflow-hidden relative max-h-[700px] overflow-y-auto scrollbar-hide">
+                  <table className="w-full">
+                    <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
+                      <tr>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">#</th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handleTokensSort('symbol')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>Token</span>
+                            {getSortIcon('symbol', tokensSortField, tokensSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handleTokensSort('price')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>Price</span>
+                            {getSortIcon('price', tokensSortField, tokensSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handleTokensSort('change24h')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>24H Change</span>
+                            {getSortIcon('change24h', tokensSortField, tokensSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handleTokensSort('volume24h')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>24H Volume</span>
+                            {getSortIcon('volume24h', tokensSortField, tokensSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handleTokensSort('marketCap')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>Market Cap</span>
+                            {getSortIcon('marketCap', tokensSortField, tokensSortDirection)}
+                          </button>
+                        </th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                          <button 
+                            onClick={() => handleTokensSort('holders')}
+                            className="flex items-center space-x-1 hover:text-white transition-colors"
+                          >
+                            <span>Holders</span>
+                            {getSortIcon('holders', tokensSortField, tokensSortDirection)}
+                          </button>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTokens.map((token, index) => (
+                        <tr key={token.id} className="border-b border-crypto-border hover:bg-gray-800/40 hover:border-crypto-green/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                            onClick={() => setLocation(`/coin/${token.symbol}`)}>
+                          <td className="py-4 px-6">
+                            <span className="text-gray-400 font-mono group-hover:text-white transition-colors duration-200">{index + 1}</span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center space-x-3">
+                              <img 
+                                src={token.logo} 
+                                alt={token.symbol}
+                                className="w-8 h-8 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/oec-logo.png';
+                                }}
+                              />
+                              <div>
+                                <div className="font-medium group-hover:text-white transition-colors duration-200">{token.symbol} <span className="text-sm text-gray-400 font-normal group-hover:text-gray-300">{token.name}</span></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 font-mono">
+                            ${token.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className={`flex items-center space-x-1 ${
+                              token.change24h >= 0 ? 'text-crypto-green' : 'text-red-400'
+                            }`}>
+                              {token.change24h >= 0 ? (
+                                <TrendingUp className="w-4 h-4" />
+                              ) : (
+                                <TrendingDown className="w-4 h-4" />
+                              )}
+                              <span className="font-medium">
+                                {token.change24h >= 0 ? '+' : ''}{token.change24h.toFixed(2)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 font-mono">
+                            {token.volume24h > 0 ? `$${(token.volume24h / 1000000).toFixed(1)}M` : 'N/A'}
+                          </td>
+                          <td className="py-4 px-6 font-mono">
+                            {token.marketCap > 0 ? (
+                              token.marketCap > 1000000000 ? 
+                                `$${(token.marketCap / 1000000000).toFixed(1)}B` : 
+                                `$${(token.marketCap / 1000000).toFixed(0)}M`
+                            ) : 'N/A'}
+                          </td>
+                          <td className="py-4 px-6 font-mono">
+                            {token.holders.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                      
+                      {filteredTokens.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="text-center py-12">
+                            <div className="text-gray-400 mb-2">No tokens found</div>
+                            <div className="text-sm text-gray-500">Try adjusting your search terms</div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Footer Note */}
+                <div className="text-center text-sm text-gray-500">
+                  <p>Token data updates every 30 seconds • Prices from BSC network via Moralis API</p>
+                </div>
+                </div>
+              )}
             </div>
           )}
         </div>
