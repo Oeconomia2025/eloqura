@@ -169,6 +169,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get token data - using static data
+  app.get("/api/token/:contractAddress", async (req, res) => {
+    try {
+      const { contractAddress } = req.params;
+      
+      // Return static token data
+      const staticTokenData = {
+        contract_address: contractAddress,
+        name: "Tether USD",
+        symbol: "USDT",
+        decimals: 18,
+        total_supply: "1000000000000000000000000000",
+        price: "1.00",
+        price_change_24h: "0.01",
+        market_cap: "95000000000",
+        volume_24h: "45000000000",
+        holders: "5000000",
+        logo: null
+      };
+      
+      res.json(staticTokenData);
+    } catch (error) {
+      console.error("Error fetching token data:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch token data",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Get price history - using static data
+  app.get("/api/price-history/:contractAddress/:timeframe", async (req, res) => {
+    try {
+      const { contractAddress, timeframe } = req.params;
+      
+      // Generate static price history data
+      const now = new Date();
+      const staticPriceHistory = [];
+      
+      // Generate 24 hours of hourly data points
+      for (let i = 23; i >= 0; i--) {
+        const timestamp = new Date(now.getTime() - (i * 60 * 60 * 1000));
+        const basePrice = 1.0;
+        const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
+        const price = basePrice + variation;
+        
+        staticPriceHistory.push({
+          timestamp: timestamp.toISOString(),
+          price: price.toFixed(4),
+          volume: (Math.random() * 1000000 + 500000).toFixed(0)
+        });
+      }
+      
+      res.json(staticPriceHistory);
+    } catch (error) {
+      console.error("Error fetching price history:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch price history",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Get recent transactions - using static data (Moralis disabled)
   app.get("/api/transactions/:contractAddress", async (req, res) => {
     try {
