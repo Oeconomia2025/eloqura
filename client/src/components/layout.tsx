@@ -293,7 +293,7 @@ export function Layout({
                         ? 'text-white font-medium shadow-lg transition-all duration-200' 
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
-                    style={item.active ? { background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' } : {}}
+                    style={item.active ? { background: 'linear-gradient(45deg, #b19cd9, #8b5cf6)' } : {}}
                     title={sidebarCollapsed ? item.label : undefined}
                   >
                     <item.icon className="w-5 h-5 flex-shrink-0" />
