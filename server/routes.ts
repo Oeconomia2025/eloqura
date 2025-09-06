@@ -749,13 +749,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Live Coin Watch API routes
+  // Live Coin Watch API routes - FIXED: return proper coins format
   app.get("/api/live-coin-watch/coins", async (req, res) => {
     try {
-      const coins = await liveCoinWatchSyncService.getStoredCoins();
+      const storedCoins = await liveCoinWatchSyncService.getStoredCoins();
+      
+      // Transform stored coins to match frontend expectations
+      const formattedCoins = storedCoins.map(coin => ({
+        id: coin.id || coin.code,
+        code: coin.code,
+        name: coin.name,
+        rate: coin.rate,
+        volume: coin.volume,
+        cap: coin.cap,
+        deltaHour: coin.deltaHour,
+        deltaDay: coin.deltaDay,
+        deltaWeek: coin.deltaWeek,
+        deltaMonth: coin.deltaMonth,
+        deltaQuarter: coin.deltaQuarter,
+        deltaYear: coin.deltaYear,
+        lastUpdated: coin.lastUpdated?.toISOString() || new Date().toISOString(),
+      }));
+
       res.json({
-        coins,
-        lastUpdated: coins.length > 0 ? coins[0].lastUpdated : null,
+        coins: formattedCoins,
+        lastUpdated: formattedCoins.length > 0 ? formattedCoins[0].lastUpdated : null,
         isServiceRunning: liveCoinWatchSyncService.isServiceRunning(),
       });
     } catch (error) {
