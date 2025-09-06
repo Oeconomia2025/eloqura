@@ -7,15 +7,6 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Get the correct API base URL
-const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    // In browser - use current origin for API calls
-    return window.location.origin;
-  }
-  // Fallback for SSR
-  return 'http://localhost:5000';
-};
 
 export async function apiRequest(
   method: string,
@@ -61,7 +52,7 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-import { getApiBaseUrl } from './environment.js';
+import { getApiBaseUrl } from './environment';
 
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
