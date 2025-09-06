@@ -318,7 +318,9 @@ export function Layout({
         <div className="sticky bottom-0 bg-gray-950 p-4 space-y-3">
           {/* Connect Wallet */}
           <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-            <WalletConnect collapsed={sidebarCollapsed} />
+            <WalletConnect 
+                  isCollapsed={sidebarCollapsed}
+                />
           </div>
 
           {/* Social Media Dropdown */}
@@ -328,7 +330,7 @@ export function Layout({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center min-w-[2.5rem] max-w-[2.5rem]' : 'w-full justify-start'} bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative`}
+                  className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full justify-start'} bg-background text-foreground hover:bg-accent/50 hover:border hover:border-primary/20 hover:text-foreground transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative`}
                   style={{ borderRadius: '5px' }}
                   title={sidebarCollapsed ? "Social Media Links" : undefined}
                 >

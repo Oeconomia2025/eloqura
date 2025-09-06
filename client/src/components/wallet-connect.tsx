@@ -14,7 +14,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
   const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
   const { toast } = useToast()
-  
+
   const { data: balance } = useBalance({
     address,
   })
@@ -44,7 +44,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
 
   // Define preferred wallet order and limit
   const preferredWallets = ['MetaMask', 'WalletConnect', 'Coinbase Wallet', 'Trust Wallet']
-  
+
   // Helper function to get unique, valid connectors
   const getUniqueValidConnectors = () => {
     const validConnectors = connectors.filter(c => 
@@ -52,23 +52,23 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
       c.name.trim() !== '' && 
       c.name !== 'undefined'
     )
-    
+
     // Remove duplicates by name (keep first occurrence)
     return validConnectors.filter((connector, index, arr) => 
       arr.findIndex(c => c.name === connector.name) === index
     )
   }
-  
+
   const getDisplayedConnectors = () => {
     const uniqueConnectors = getUniqueValidConnectors()
-    
+
     if (showAllWallets) {
       return uniqueConnectors
     }
-    
+
     const preferred = uniqueConnectors.filter(c => preferredWallets.includes(c.name))
     const others = uniqueConnectors.filter(c => !preferredWallets.includes(c.name))
-    
+
     // Show first 6 preferred wallets, fill remaining with others if needed
     return [...preferred, ...others].slice(0, 6)
   }
@@ -89,14 +89,14 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
               localStorage.removeItem('wagmi.connected')
               localStorage.removeItem('wagmi.recentConnectorId')
             }
-            
+
             disconnect()
-            
+
             // Force a small delay then reload to ensure clean state
             setTimeout(() => {
               window.location.reload()
             }, 500)
-            
+
             toast({
               title: "Wallet disconnected",
               description: "Your wallet has been disconnected successfully",
@@ -148,7 +148,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
             Choose a wallet to connect to the Oeconomia dashboard
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-3 gap-2 mt-4">
           {displayedConnectors.map((connector) => (
             <Button
@@ -194,7 +194,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
               </div>
             </Button>
           ))}
-          
+
           {hasMoreWallets && !showAllWallets && (
             <Button
               variant="ghost"
@@ -205,7 +205,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
             </Button>
           )}
         </div>
-        
+
         {showAllWallets && (
           <div className="mt-3">
             <Button
@@ -217,7 +217,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
             </Button>
           </div>
         )}
-        
+
         <div className="mt-4 p-3 bg-gradient-to-r from-[var(--crypto-dark)] to-gray-900/50 rounded-xl border border-gray-700/50">
           <p className="text-xs text-gray-400 text-center leading-relaxed">
             🔒 Secure connection to BSC network<br/>
