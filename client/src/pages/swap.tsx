@@ -702,7 +702,7 @@ function SwapContent() {
               {/* Tab Navigation */}
               <div className="flex items-center justify-between mb-0">
                 <div className="flex space-x-1 bg-[var(--crypto-dark)] rounded-lg p-1">
-                  {["Trade", "Limit", "Buy", "Sell"].map((tab) => (
+                  {["Trade", "Limit"].map((tab) => (
                     <Button
                       key={tab}
                       variant={activeTab === tab ? "default" : "ghost"}
