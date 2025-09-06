@@ -7,6 +7,16 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get the correct API base URL
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // In browser - use current origin for API calls
+    return window.location.origin;
+  }
+  // Fallback for SSR
+  return 'http://localhost:5000';
+};
+
 export async function apiRequest(
   method: string,
   url: string,
@@ -38,7 +48,7 @@ export async function apiRequest(
       fullUrl = url;
     }
   }
-  
+
   const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -82,7 +92,7 @@ export const getQueryFn: <T>(options: {
           url = `/.netlify/functions/${cleanPath.replace(/\//g, '-')}`;
         }
       }
-      
+
       const res = await fetch(url, {
         credentials: "include",
       });

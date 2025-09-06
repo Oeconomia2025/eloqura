@@ -694,20 +694,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Live Coin Watch API routes - FIXED: return proper coins format
   app.get("/api/live-coin-watch/coins", async (req, res) => {
     try {
+      console.log("📊 Live Coin Watch coins endpoint called");
+      
       // Set JSON content type explicitly
       res.setHeader('Content-Type', 'application/json');
       
       const storedCoins = await liveCoinWatchSyncService.getStoredCoins();
-      
-      // Ensure we always have data to return
-      if (!storedCoins || storedCoins.length === 0) {
-        return res.json({
-          coins: [],
-          lastUpdated: new Date().toISOString(),
-          isServiceRunning: false,
-          message: "No coins data available, using fallback data"
-        });
-      }
+      console.log(`📊 Retrieved ${storedCoins.length} coins from service`);
       
       // Transform stored coins to match frontend expectations
       const formattedCoins = storedCoins.map(coin => ({
@@ -726,13 +719,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastUpdated: coin.lastUpdated?.toISOString() || new Date().toISOString(),
       }));
 
-      res.json({
+      const response = {
         coins: formattedCoins,
         lastUpdated: formattedCoins.length > 0 ? formattedCoins[0].lastUpdated : new Date().toISOString(),
         isServiceRunning: liveCoinWatchSyncService.isServiceRunning(),
-      });
+      };
+      
+      console.log(`📊 Returning ${formattedCoins.length} coins to frontend`);
+      res.json(response);
     } catch (error) {
-      console.error("Error fetching Live Coin Watch data:", error);
+      console.error("❌ Error fetching Live Coin Watch data:", error);
       res.status(500).json({ 
         message: "Failed to fetch Live Coin Watch data",
         error: error instanceof Error ? error.message : "Unknown error",

@@ -3,6 +3,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { liveCoinWatchSyncService } from "./services/live-coin-watch-sync";
+import cors from "cors";
+import path from "path";
 
 const app = express();
 app.set('trust proxy', 1);
