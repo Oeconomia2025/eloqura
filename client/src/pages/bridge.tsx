@@ -953,27 +953,7 @@ function BridgeContent() {
                     </div>
                   </div>
 
-                  {/* Bridge Button (moved below "To" field) */}
-                  <div className="mt-4">
-                    <Button
-                      onClick={handleSwapExecution} // Reusing handleSwapExecution for bridge action
-                      disabled={
-                        isLoading ||
-                        !fromToken || !toToken || !fromAmount
-                      }
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
-                    >
-                      {isLoading ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Bridging...</span>
-                        </div>
-                      ) : (
-                        `Bridge ${fromToken?.symbol || ''}`
-                      )}
-                    </Button>
-                  </div>
-                </>
+                  </>
               )}
 
               {/* Bridge Information */}
