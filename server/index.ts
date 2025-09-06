@@ -41,10 +41,13 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  // 🚫 SIMULATING REPLIT USAGE EXHAUSTION - ALL SERVICES STOPPED
-  console.log('⛽ REPLIT USAGE EXHAUSTED - All sync services stopped');
-  console.log('🚫 No API calls, no database writes, no background processes');
-  console.log('📊 Website continues working via Netlify functions only');
+  // Start background services for live data synchronization
+  try {
+    await liveCoinWatchSyncService.start();
+    log('✅ Live Coin Watch sync service started');
+  } catch (error) {
+    log(`⚠️ Warning: Live Coin Watch sync service failed to start: ${error}`);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
