@@ -108,8 +108,6 @@ export function Layout({
   const [selectedDonationType, setSelectedDonationType] = useState<string>('');
   const [donorName, setDonorName] = useState('');
   const [location, navigate] = useLocation();
-  const isNavigatingRef = useRef(false);
-  const lockedCollapsedStateRef = useRef<boolean | null>(null);
 
   // Social media links data
   const socialLinks = [
@@ -163,40 +161,7 @@ export function Layout({
     localStorage.setItem('sidebar-collapsed', sidebarCollapsed.toString());
   }, [sidebarCollapsed]);
 
-  // Monitor collapsed state changes and prevent unwanted expansion during navigation
-  useEffect(() => {
-    // If we have a locked state during navigation, enforce it immediately
-    if (lockedCollapsedStateRef.current !== null && sidebarCollapsed !== lockedCollapsedStateRef.current) {
-      console.log('Enforcing locked collapsed state:', lockedCollapsedStateRef.current);
-      // Use multiple approaches to ensure the state sticks
-      setSidebarCollapsed(lockedCollapsedStateRef.current);
-      // Also update localStorage immediately
-      localStorage.setItem('sidebar-collapsed', lockedCollapsedStateRef.current.toString());
-      // Force a re-render in the next tick
-      setTimeout(() => {
-        if (lockedCollapsedStateRef.current !== null) {
-          setSidebarCollapsed(lockedCollapsedStateRef.current);
-        }
-      }, 0);
-    }
-  }, [sidebarCollapsed]);
-
-  // Clear navigation flag and unlock state when location changes
-  useEffect(() => {
-    if (isNavigatingRef.current) {
-      setTimeout(() => {
-        isNavigatingRef.current = false;
-        lockedCollapsedStateRef.current = null; // Unlock the state
-        console.log('Navigation completed, unlocking state');
-      }, 100);
-    }
-  }, [location]);
-
   const handleNavigation = (path: string) => {
-    // Store and lock the current collapsed state BEFORE any navigation
-    const wasCollapsed = sidebarCollapsed;
-    console.log('Navigation clicked, current collapsed state:', wasCollapsed);
-
     // On mobile, just navigate and close sidebar
     if (window.innerWidth < 1024) {
       navigate(path);
@@ -204,38 +169,14 @@ export function Layout({
       return;
     }
 
-    // On desktop, prevent any state changes during navigation
-    lockedCollapsedStateRef.current = wasCollapsed;
-    isNavigatingRef.current = true;
-    console.log('Locking collapsed state to:', wasCollapsed);
-
-    // Force the current state to localStorage before navigation
-    localStorage.setItem('sidebar-collapsed', wasCollapsed.toString());
-
-    // Navigate to the path
+    // On desktop, just navigate - let the state persist naturally
     navigate(path);
-
-    // Immediately after navigation, force the state back
-    setTimeout(() => {
-      console.log('Post-navigation: forcing state back to', wasCollapsed);
-      setSidebarCollapsed(wasCollapsed);
-      localStorage.setItem('sidebar-collapsed', wasCollapsed.toString());
-    }, 1);
   };
 
   const toggleCollapsed = () => {
-    isNavigatingRef.current = false; // Clear navigation flag
     const newState = !sidebarCollapsed;
-    console.log('Toggle clicked, changing from', sidebarCollapsed, 'to', newState);
     setSidebarCollapsed(newState);
-    // Immediately save to localStorage to prevent reset
-    localStorage.setItem('sidebar-collapsed', newState.toString());
   };
-
-  // Debug: Monitor all state changes
-  useEffect(() => {
-    console.log('sidebarCollapsed state changed to:', sidebarCollapsed);
-  }, [sidebarCollapsed]);
 
   const sidebarItems = [
     { icon: ArrowUpDown, label: 'Swap', path: '/swap', active: location === '/swap' },
