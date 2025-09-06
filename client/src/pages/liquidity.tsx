@@ -1525,7 +1525,7 @@ function LiquidityContent() {
 
       {/* Remove Liquidity Modal */}
       <Dialog open={showRemoveModal} onOpenChange={setShowRemoveModal}>
-        <DialogContent className="sm:max-w-md crypto-card border-crypto-border">
+        <DialogContent className="sm:max-w-md crypto-card border-crypto-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">Remove Liquidity</DialogTitle>
             <DialogDescription className="text-gray-400">
@@ -1671,7 +1671,7 @@ function LiquidityContent() {
 
       {/* Add Liquidity Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="sm:max-w-lg crypto-card border-crypto-border">
+        <DialogContent className="sm:max-w-lg crypto-card border-crypto-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">Add Liquidity</DialogTitle>
             <DialogDescription className="text-gray-400">
