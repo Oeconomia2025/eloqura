@@ -318,16 +318,7 @@ export function Layout({
         <div className="sticky bottom-0 bg-gray-950 p-4 space-y-3">
           {/* Connect Wallet */}
           <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-            {sidebarCollapsed ? (
-              <div className="w-10 h-10 relative group">
-                <WalletConnect />
-                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                  Connect Wallet
-                </div>
-              </div>
-            ) : (
-              <WalletConnect />
-            )}
+            <WalletConnect collapsed={sidebarCollapsed} />
           </div>
 
           {/* Social Media Dropdown */}

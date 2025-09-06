@@ -7,7 +7,7 @@ import { Wallet, LogOut, Copy, ExternalLink } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WalletIcon } from './wallet-icons'
 
-export function WalletConnect() {
+export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [showAllWallets, setShowAllWallets] = useState(false)
   const { address, isConnected, chain } = useAccount()
@@ -79,47 +79,65 @@ export function WalletConnect() {
 
   if (isConnected && address) {
     return (
-      <Button 
-        onClick={() => {
-          // Clear localStorage wallet data
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('wagmi.store')
-            localStorage.removeItem('wagmi.wallet')
-            localStorage.removeItem('wagmi.connected')
-            localStorage.removeItem('wagmi.recentConnectorId')
-          }
-          
-          disconnect()
-          
-          // Force a small delay then reload to ensure clean state
-          setTimeout(() => {
-            window.location.reload()
-          }, 500)
-          
-          toast({
-            title: "Wallet disconnected",
-            description: "Your wallet has been disconnected successfully",
-          })
-        }}
-        className="w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0"
-        style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
-      >
-        <Wallet className="w-4 h-4 mr-2" />
-        {formatAddress(address)}
-      </Button>
+      <div className="relative group">
+        <Button 
+          onClick={() => {
+            // Clear localStorage wallet data
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('wagmi.store')
+              localStorage.removeItem('wagmi.wallet')
+              localStorage.removeItem('wagmi.connected')
+              localStorage.removeItem('wagmi.recentConnectorId')
+            }
+            
+            disconnect()
+            
+            // Force a small delay then reload to ensure clean state
+            setTimeout(() => {
+              window.location.reload()
+            }, 500)
+            
+            toast({
+              title: "Wallet disconnected",
+              description: "Your wallet has been disconnected successfully",
+            })
+          }}
+          className={`${collapsed ? 'w-10 h-10 p-0' : 'w-full'} text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0`}
+          style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
+        >
+          <Wallet className="w-4 h-4" />
+          {!collapsed && (
+            <>
+              <span className="ml-2">{formatAddress(address)}</span>
+            </>
+          )}
+        </Button>
+        {collapsed && (
+          <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+            {formatAddress(address)}
+          </div>
+        )}
+      </div>
     )
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          className="w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0"
-          style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
-        >
-          <Wallet className="w-4 h-4 mr-2" />
-          Connect Wallet
-        </Button>
+        <div className="relative group">
+          <Button 
+            className={`${collapsed ? 'w-10 h-10 p-0' : 'w-full'} text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0`}
+            style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
+          >
+            <Wallet className="w-4 h-4" />
+            {!collapsed && <span className="ml-2">Connect Wallet</span>}
+          </Button>
+          {collapsed && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+              Connect Wallet
+            </div>
+          )}
+        </div>
       </DialogTrigger>
       <DialogContent className="bg-gradient-to-br from-[var(--crypto-card)] to-[var(--crypto-dark)] border-crypto-blue/20 shadow-xl max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
