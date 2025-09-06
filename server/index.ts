@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { liveCoinWatchSyncService } from "./services/live-coin-watch-sync";
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -39,6 +40,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Add health check endpoint
+  app.get('/healthz', (_req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
   const server = await registerRoutes(app);
 
   // Start background services for live data synchronization
@@ -53,8 +59,11 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    log(`Error ${status}: ${message}`, 'error');
+    if (err.stack) {
+      log(err.stack, 'error');
+    }
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
