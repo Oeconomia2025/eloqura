@@ -704,85 +704,8 @@ function BridgeContent() {
         <div className={showChart ? (hideSidebar ? 'lg:col-span-1' : 'xl:col-span-2') : 'lg:col-span-2'}>
           <Card className="crypto-card border h-full">
             <CardHeader className="pb-0">
-              {/* Header without tab navigation */}
-              <div className="flex items-center justify-between mb-0">
-                <div className="text-xl font-semibold text-white">
-                  Cross-Chain Bridge
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowChart(!showChart);
-                      setHideSidebar(!showChart);
-                      setChartVisible(!showChart);
-                    }}
-                    className={`text-gray-400 hover:text-white ${showChart ? 'text-crypto-blue' : ''}`}
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
             </CardHeader>
             <CardContent className="space-y-0 relative">
-              {/* Settings Panel */}
-              {showSettings && (
-                <Card className="bg-[var(--crypto-dark)] border-[var(--crypto-border)]">
-                  <CardContent className="p-4 space-y-4">
-                    <div>
-                      <label className="text-sm text-gray-400 mb-2 block">Slippage Tolerance</label>
-                      <div className="flex space-x-2 mb-2">
-                        {[0.1, 0.5, 1.0].map((value) => (
-                          <Button
-                            key={value}
-                            variant={slippage === value && !isSlippageCustom ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => {
-                              setSlippage(value);
-                              setIsSlippageCustom(false);
-                            }}
-                            className="text-xs"
-                          >
-                            {value}%
-                          </Button>
-                        ))}
-                        <div className="flex items-center space-x-1">
-                          <Input
-                            type="number"
-                            placeholder="Custom"
-                            value={customSlippage}
-                            onChange={(e) => {
-                              setCustomSlippage(e.target.value);
-                              if (e.target.value) {
-                                setSlippage(parseFloat(e.target.value));
-                                setIsSlippageCustom(true);
-                              }
-                            }}
-                            className="w-20 h-8 text-xs"
-                          />
-                          <span className="text-xs text-gray-400">%</span>
-                        </div>
-                      </div>
-                      {slippage > 5 && (
-                        <div className="flex items-center space-x-1 text-yellow-500 text-xs">
-                          <AlertTriangle className="w-3 h-3" />
-                          <span>High slippage tolerance</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Bridge Mode Interface - Always shown */}
               {(
                 <>
