@@ -67,20 +67,8 @@ interface LayoutProps {
 // Page information for each route
 const pageInfo = {
   '/': {
-    title: 'Dashboard',
-    description: 'Real-time overview of OEC token metrics and performance'
-  },
-  '/analytics': {
-    title: 'Analytics',
-    description: 'Advanced market analysis and trading insights'
-  },
-  '/staking': {
-    title: 'Staking',
-    description: 'Earn rewards by staking your OEC tokens'
-  },
-  '/portfolio': {
-    title: 'Portfolio',
-    description: 'Track your DeFi positions and asset performance'
+    title: 'Token Swap',
+    description: 'Trade tokens instantly on the Oeconomia ecosystem'
   },
   '/swap': {
     title: 'Token Swap',
@@ -89,22 +77,6 @@ const pageInfo = {
   '/liquidity': {
     title: 'Liquidity Pools',
     description: 'Provide liquidity to earn fees and rewards'
-  },
-  '/lend': {
-    title: 'Lend',
-    description: 'Deposit collateral and borrow ALUD (Alluria USD) against your assets'
-  },
-  '/governance': {
-    title: 'Governance',
-    description: 'Participate in decentralized decision-making and protocol governance'
-  },
-  '/learn': {
-    title: 'Learn',
-    description: 'Educational resources about Oeconomia ecosystem and blockchain technology'
-  },
-  '/nft-market': { // Added NFT Market route information
-    title: 'NFT Market',
-    description: 'Stake tokens and discover unique NFTs'
   }
 } as const;
 
