@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +19,8 @@ import {
   Zap,
   Shield,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  ArrowLeftRight
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -1229,6 +1229,41 @@ function BridgeContent() {
             </CardContent>
           </Card>
 
+          {/* Transaction History Preview */}
+          <Card className="crypto-card border">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center space-x-2">
+                <Clock className="w-5 h-5" />
+                <span>Recent Bridges</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-2">
+                    <ArrowLeftRight className="w-3 h-3 text-gray-400" />
+                    <span className="text-gray-300">USDT BSC → OEC</span>
+                  </div>
+                  <span className="text-green-400">+125.50 USDT</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-2">
+                    <ArrowLeftRight className="w-3 h-3 text-gray-400" />
+                    <span className="text-gray-300">ETH ETH → BSC</span>
+                  </div>
+                  <span className="text-green-400">+0.085 ETH</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-2">
+                    <ArrowLeftRight className="w-3 h-3 text-gray-400" />
+                    <span className="text-gray-300">BNB BSC → OEC</span>
+                  </div>
+                  <span className="text-green-400">+2.15 BNB</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Safety Features */}
           <Card className="crypto-card border">
             <CardHeader>
@@ -1254,41 +1289,6 @@ function BridgeContent() {
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full" />
                   <span className="text-sm text-gray-300">Contract Verification</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Transaction History Preview */}
-          <Card className="crypto-card border">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center space-x-2">
-                <Clock className="w-5 h-5" />
-                <span>Recent Swaps</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-300">USDT → OEC</span>
-                  </div>
-                  <span className="text-green-400">+125.50 OEC</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-300">BNB → USDT</span>
-                  </div>
-                  <span className="text-green-400">+645.00 USDT</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-300">OEC → WETH</span>
-                  </div>
-                  <span className="text-green-400">+0.085 WETH</span>
                 </div>
               </div>
             </CardContent>

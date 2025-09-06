@@ -1673,36 +1673,6 @@ function SwapContent() {
             </CardContent>
           </Card>
 
-          {/* Safety Features */}
-          <Card className="crypto-card border">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center space-x-2">
-                <Shield className="w-5 h-5" />
-                <span>Safety Features</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">MEV Protection</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">Slippage Control</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">Price Impact Warning</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">Contract Verification</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Transaction History Preview */}
           <Card className="crypto-card border">
             <CardHeader>
@@ -1733,6 +1703,36 @@ function SwapContent() {
                     <span className="text-gray-300">OEC → WETH</span>
                   </div>
                   <span className="text-green-400">+0.085 WETH</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Safety Features */}
+          <Card className="crypto-card border">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center space-x-2">
+                <Shield className="w-5 h-5" />
+                <span>Safety Features</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  <span className="text-sm text-gray-300">MEV Protection</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  <span className="text-sm text-gray-300">Slippage Control</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  <span className="text-sm text-gray-300">Price Impact Warning</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  <span className="text-sm text-gray-300">Contract Verification</span>
                 </div>
               </div>
             </CardContent>
