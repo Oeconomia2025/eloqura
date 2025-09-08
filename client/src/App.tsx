@@ -1,4 +1,4 @@
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -17,6 +17,13 @@ import Examine from '@/pages/examine'
 import NotFound from '@/pages/not-found'
 
 function Router() {
+  const [location] = useLocation();
+  
+  useEffect(() => {
+    // Scroll to top when route changes
+    window.scrollTo(0, 0);
+  }, [location]);
+
   return (
     <Switch>
       <Route path="/" component={Landing} />
