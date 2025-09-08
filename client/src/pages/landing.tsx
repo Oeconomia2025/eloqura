@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -79,16 +78,16 @@ export default function Landing() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-                Eloqura
-              </h1>
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-indigo-300 via-purple-300 to-teal-400 bg-clip-text text-transparent">
+              Eloqura
+            </h1>
             </div>
-            
+
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               The next-generation DeFi platform powering the Oeconomia ecosystem. 
               Trade, earn, and build wealth with cutting-edge financial tools.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
               <Button 
                 size="lg" 
@@ -140,7 +139,7 @@ export default function Landing() {
               to participate in the decentralized economy.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <Card 
