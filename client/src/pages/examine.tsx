@@ -271,7 +271,7 @@ function LiquidityContent() {
       name: "Oeconomia",
       address: "0x55d398326f99059fF775485246999027B3197955",
       decimals: 18,
-      logo: "/oec-logo.png",
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo.png",
       price: 0.85,
       balance: 1000
     },

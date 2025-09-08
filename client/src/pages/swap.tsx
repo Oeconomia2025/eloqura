@@ -209,7 +209,7 @@ function SwapContent() {
       name: "Eloqura",
       address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
-      logo: "/oec-logo.png",
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo.png",
       price: 7.37374,
       balance: 1250.50
     },
