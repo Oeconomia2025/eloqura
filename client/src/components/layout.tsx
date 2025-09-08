@@ -239,10 +239,9 @@ export function Layout({
                     onClick={() => handleNavigation(item.path)}
                     className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full px-3 py-2 space-x-3'} flex items-center rounded-lg text-left transition-colors group relative ${
                       item.active 
-                        ? 'text-white font-medium shadow-lg transition-all duration-200' 
+                        ? 'bg-[#b19cd9] text-white font-medium shadow-lg transition-all duration-200' 
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
-                    style={item.active ? { background: 'linear-gradient(45deg, #b19cd9, #8b5cf6)' } : {}}
                     title={sidebarCollapsed ? item.label : undefined}
                   >
                     <item.icon className="w-5 h-5 flex-shrink-0" />
