@@ -239,7 +239,7 @@ export function Layout({
                     onClick={() => handleNavigation(item.path)}
                     className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full px-3 py-2 space-x-3'} flex items-center rounded-lg text-left transition-colors group relative ${
                       item.active 
-                        ? 'bg-[#b19cd9] text-white font-medium shadow-lg transition-all duration-200' 
+                        ? 'bg-crypto-blue text-white font-medium shadow-lg transition-all duration-200' 
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     }`}
                     title={sidebarCollapsed ? item.label : undefined}
