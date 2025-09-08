@@ -168,7 +168,7 @@ function LiquidityContent() {
         name: "Eloqura",
         address: "0x55d398326f99059fF775485246999027B3197955",
         decimals: 18,
-        logo: "/oec-logo.png",
+        logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
         price: 0.85,
         balance: 1000
       },
@@ -207,7 +207,7 @@ function LiquidityContent() {
         name: "Eloqura",
         address: "0x55d398326f99059fF775485246999027B3197955",
         decimals: 18,
-        logo: "/oec-logo.png",
+        logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
         price: 0.85,
         balance: 1000
       },
@@ -386,7 +386,7 @@ function LiquidityContent() {
     },
     {
       id: 2,
-      tokenA: { symbol: "OEC", name: "Oeconomia", logo: "/oec-logo.png" },
+      tokenA: { symbol: "OEC", name: "Oeconomia", logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png" },
       tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
       fee: "0.30%",
       volume24h: "$567K",
