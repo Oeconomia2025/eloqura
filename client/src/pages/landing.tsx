@@ -71,15 +71,15 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/10 to-cyan-900/20" />
         <div className="relative max-w-7xl mx-auto px-6 py-24">
           <div className="text-center space-y-8">
-            <div className="flex items-center justify-center space-x-4 mb-8">
-              <div className="w-16 h-16 rounded-full overflow-hidden">
+            <div className="flex items-center justify-center space-x-6 mb-8">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden">
                 <img 
                   src="/oec-logo.png" 
                   alt="Eloqura Logo" 
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
                 Eloqura
               </h1>
             </div>
