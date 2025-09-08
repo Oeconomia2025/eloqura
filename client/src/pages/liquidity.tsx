@@ -72,24 +72,24 @@ function LiquidityContent() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Sorting state
   const [poolsSortField, setPoolsSortField] = useState<string | null>(null);
   const [poolsSortDirection, setPoolsSortDirection] = useState<'asc' | 'desc'>('asc');
   const [tokensSortField, setTokensSortField] = useState<string | null>('marketCap');
   const [tokensSortDirection, setTokensSortDirection] = useState<'asc' | 'desc'>('desc');
-  
+
   // Remove liquidity modal state
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [selectedPositionForRemoval, setSelectedPositionForRemoval] = useState<Position | null>(null);
   const [removalPercentage, setRemovalPercentage] = useState(25);
-  
+
   // Add liquidity modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedPositionForAddition, setSelectedPositionForAddition] = useState<Position | null>(null);
   const [addAmount0, setAddAmount0] = useState("");
   const [addAmount1, setAddAmount1] = useState("");
-  
+
   // Token selection modal state
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [tokenSelectionFor, setTokenSelectionFor] = useState<'token0' | 'token1'>('token0');
@@ -101,15 +101,15 @@ function LiquidityContent() {
     const tab = urlParams.get('tab');
     const create = urlParams.get('create');
     const tokenParam = urlParams.get('token');
-    
+
     if (tab === 'tokens') {
       setActiveTab('tokens');
       setActiveView('pools'); // Ensure we're in the pools view which contains the tabs
     }
-    
+
     if (create === 'true') {
       setActiveView('create');
-      
+
       // Pre-select token if specified
       if (tokenParam) {
         // Find the token from our tokens list by ID
@@ -356,7 +356,7 @@ function LiquidityContent() {
   // Transform Live Coin Watch data into the format expected by the UI
   const tokens = liveCoinWatchData?.coins?.map((coin: LiveCoinWatchDbCoin) => {
     const formatted = formatCryptoData(coin);
-    
+
     return {
       id: coin.code,
       name: formatted.cleanName,
@@ -497,17 +497,17 @@ function LiquidityContent() {
   // Sort pools data  
   const sortedPools = [...mockPools].sort((a, b) => {
     if (!poolsSortField) return 0;
-    
+
     let aValue: any = a;
     let bValue: any = b;
-    
+
     // Handle nested properties
     const fieldParts = poolsSortField.split('.');
     for (const part of fieldParts) {
       aValue = aValue?.[part];
       bValue = bValue?.[part];
     }
-    
+
     // Handle different data types
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       // Remove currency symbols and convert to numbers for volume/TVL
@@ -519,7 +519,7 @@ function LiquidityContent() {
         bValue = bValue.toLowerCase();
       }
     }
-    
+
     if (poolsSortDirection === 'asc') {
       return aValue > bValue ? 1 : -1;
     } else {
@@ -533,16 +533,16 @@ function LiquidityContent() {
       // Default fallback: sort by market cap descending (largest first)
       return (b.marketCap || 0) - (a.marketCap || 0);
     }
-    
+
     let aValue: any = a[tokensSortField as keyof typeof a];
     let bValue: any = b[tokensSortField as keyof typeof b];
-    
+
     // Handle string sorting
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       aValue = aValue.toLowerCase();
       bValue = bValue.toLowerCase();
     }
-    
+
     if (tokensSortDirection === 'asc') {
       return aValue > bValue ? 1 : -1;
     } else {
@@ -971,7 +971,7 @@ function LiquidityContent() {
                             </span>
                           </div>
                         </div>
-                        
+
                         <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -1009,7 +1009,7 @@ function LiquidityContent() {
                     {selectedToken0 && selectedToken1 && minPrice && maxPrice && (
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-white">Deposit Amounts</h3>
-                        
+
                         <div className="space-y-3">
                           <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
                             <div className="flex items-center justify-between mb-3">
@@ -1108,7 +1108,7 @@ function LiquidityContent() {
                             <p className="text-sm text-gray-400">{selectedFee}% Fee Tier</p>
                           </div>
                         </div>
-                        
+
                         {amount0 && amount1 && (
                           <>
                             <div className="space-y-2">
@@ -1123,7 +1123,7 @@ function LiquidityContent() {
                                 <span className="text-white">~$2.50</span>
                               </div>
                             </div>
-                            
+
                             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
                               <div className="flex items-start space-x-2">
                                 <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
@@ -1190,7 +1190,7 @@ function LiquidityContent() {
                   <div className="text-2xl font-bold text-crypto-green">$8.7M</div>
                   <div className="text-crypto-green text-sm">+16.3%</div>
                 </Card>
-                
+
                 <Card className="crypto-card p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Total TVL</span>
@@ -1199,7 +1199,7 @@ function LiquidityContent() {
                   <div className="text-2xl font-bold text-crypto-blue">$32.4M</div>
                   <div className="text-crypto-green text-sm">+2.8%</div>
                 </Card>
-                
+
                 <Card className="crypto-card p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Active Pools</span>
@@ -1208,7 +1208,7 @@ function LiquidityContent() {
                   <div className="text-2xl font-bold text-crypto-purple">1,247</div>
                   <div className="text-gray-400 text-sm">pools</div>
                 </Card>
-                
+
                 <Card className="crypto-card p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Avg APR</span>
@@ -1239,7 +1239,7 @@ function LiquidityContent() {
                     Tokens
                   </Button>
                 </div>
-                
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
@@ -1383,7 +1383,7 @@ function LiquidityContent() {
 
                         </tr>
                     ))}
-                    
+
                     {filteredPools.length === 0 && (
                       <tr>
                         <td colSpan={8} className="text-center py-12">
@@ -1395,7 +1395,7 @@ function LiquidityContent() {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Footer Note */}
               <div className="text-center text-sm text-gray-500">
                 <p>Pool data updates every 30 seconds • APR calculations include trading fees and liquidity mining rewards</p>
@@ -1518,7 +1518,7 @@ function LiquidityContent() {
                           </td>
                         </tr>
                       ))}
-                      
+
                       {filteredTokens.length === 0 && (
                         <tr>
                           <td colSpan={7} className="text-center py-12">
@@ -1530,7 +1530,7 @@ function LiquidityContent() {
                     </tbody>
                   </table>
                 </div>
-                
+
                 {/* Footer Note */}
                 <div className="text-center text-sm text-gray-500">
                   <p>Token data updates every 30 seconds • Prices from BSC network via Moralis API</p>
@@ -1553,7 +1553,7 @@ function LiquidityContent() {
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedPositionForRemoval && (
             <div className="space-y-6">
               {/* Amount Selection */}
@@ -1562,7 +1562,7 @@ function LiquidityContent() {
                   <label className="text-sm text-gray-400">Amount to remove</label>
                   <span className="text-lg font-semibold text-white">{removalPercentage}%</span>
                 </div>
-                
+
                 <Slider
                   value={[removalPercentage]}
                   onValueChange={(value) => setRemovalPercentage(value[0])}
@@ -1571,7 +1571,7 @@ function LiquidityContent() {
                   step={1}
                   className="w-full"
                 />
-                
+
                 <div className="grid grid-cols-4 gap-2">
                   {[25, 50, 75, 100].map((percent) => (
                     <Button
@@ -1612,7 +1612,7 @@ function LiquidityContent() {
                     <p className="text-sm text-gray-400">{selectedPositionForRemoval.fee}% Fee Tier</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Position Value</span>
@@ -1699,7 +1699,7 @@ function LiquidityContent() {
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedPositionForAddition && (
             <div className="space-y-6">
               {/* Position Summary */}
@@ -1724,7 +1724,7 @@ function LiquidityContent() {
                     <p className="text-sm text-gray-400">{selectedPositionForAddition.fee}% Fee Tier</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Current Position Value</span>
@@ -1746,7 +1746,7 @@ function LiquidityContent() {
               {/* Deposit Amounts */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-white">Deposit Amounts</h3>
-                
+
                 <div className="space-y-3">
                   <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
