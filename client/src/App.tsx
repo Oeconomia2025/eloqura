@@ -8,13 +8,13 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { DisclaimerModal } from "@/components/disclaimer-modal";
 import { liveCoinWatchSyncService } from "@/services/live-coin-watch-sync";
-import Landing from "./pages/landing";
-import Swap from "./pages/swap";
-import Liquidity from "./pages/liquidity";
-import Examine from "./pages/examine";
-import Bridge from "./pages/bridge";
-import BuySell from "./pages/buy-sell";
-import NotFound from "./pages/not-found";
+import Landing from '@/pages/landing'
+import Swap from '@/pages/swap'
+import BuySell from '@/pages/buy-sell'
+import Bridge from '@/pages/bridge'
+import Liquidity from '@/pages/liquidity'
+import Examine from '@/pages/examine'
+import NotFound from '@/pages/not-found'
 
 function Router() {
   return (
@@ -22,10 +22,10 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/landing" component={Landing} />
       <Route path="/swap" component={Swap} />
+      <Route path="/buy-sell" component={BuySell} />
+      <Route path="/bridge" component={Bridge} />
       <Route path="/liquidity" component={Liquidity} />
       <Route path="/examine" component={Examine} />
-      <Route path="/bridge" component={Bridge} />
-      <Route path="/buy-sell" component={BuySell} />
       <Route path="*" component={NotFound} />
     </Switch>
   );
