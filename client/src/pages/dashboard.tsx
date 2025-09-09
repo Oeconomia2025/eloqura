@@ -103,21 +103,21 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Total Portfolio Value</p>
+                    <p className="text-white/80 text-sm mb-1">Total Portfolio Value</p>
                     <p className="text-2xl font-bold text-white">{formatPrice(portfolioValue)}</p>
                     <div className="flex items-center mt-2">
                       {portfolioChange >= 0 ? (
-                        <TrendingUp className="w-4 h-4 text-green-400 mr-1" />
+                        <TrendingUp className="w-4 h-4 text-white mr-1" />
                       ) : (
-                        <TrendingDown className="w-4 h-4 text-red-400 mr-1" />
+                        <TrendingDown className="w-4 h-4 text-white mr-1" />
                       )}
-                      <span className={`text-sm font-medium ${portfolioChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <span className="text-sm font-medium text-white">
                         {formatChange(portfolioChange)}
                       </span>
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-lg flex items-center justify-center">
-                    <Wallet className="w-6 h-6 text-cyan-400" />
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Wallet className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -127,12 +127,12 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Active Positions</p>
+                    <p className="text-white/80 text-sm mb-1">Active Positions</p>
                     <p className="text-2xl font-bold text-white">{totalPositions}</p>
-                    <p className="text-sm text-gray-400 mt-2">Across 3 protocols</p>
+                    <p className="text-sm text-white/80 mt-2">Across 3 protocols</p>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-violet-400" />
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -142,15 +142,15 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">Staking Rewards</p>
+                    <p className="text-white/80 text-sm mb-1">Staking Rewards</p>
                     <p className="text-2xl font-bold text-white">$284.50</p>
                     <div className="flex items-center mt-2">
-                      <Zap className="w-4 h-4 text-yellow-400 mr-1" />
-                      <span className="text-sm text-yellow-400 font-medium">18.5% APY</span>
+                      <Zap className="w-4 h-4 text-white mr-1" />
+                      <span className="text-sm text-white font-medium">18.5% APY</span>
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 rounded-lg flex items-center justify-center">
-                    <Star className="w-6 h-6 text-yellow-400" />
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Star className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -160,15 +160,15 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm mb-1">24h Volume</p>
+                    <p className="text-white/80 text-sm mb-1">24h Volume</p>
                     <p className="text-2xl font-bold text-white">$1,840</p>
                     <div className="flex items-center mt-2">
-                      <Activity className="w-4 h-4 text-green-400 mr-1" />
-                      <span className="text-sm text-green-400 font-medium">+12.8%</span>
+                      <Activity className="w-4 h-4 text-white mr-1" />
+                      <span className="text-sm text-white font-medium">+12.8%</span>
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded-lg flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-green-400" />
+                  <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </CardContent>
