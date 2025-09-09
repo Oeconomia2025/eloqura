@@ -99,7 +99,7 @@ export default function Dashboard() {
 
           {/* Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 backdrop-blur-sm">
+            <Card className="bg-gradient-to-r from-cyan-500 to-blue-500 border border-cyan-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -123,7 +123,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 backdrop-blur-sm">
+            <Card className="bg-gradient-to-r from-violet-500 to-purple-500 border border-violet-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -138,7 +138,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 backdrop-blur-sm">
+            <Card className="bg-gradient-to-r from-yellow-500 to-orange-500 border border-yellow-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -156,7 +156,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 backdrop-blur-sm">
+            <Card className="bg-gradient-to-r from-green-500 to-emerald-500 border border-green-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
