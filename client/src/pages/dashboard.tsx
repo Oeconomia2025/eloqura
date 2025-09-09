@@ -55,7 +55,7 @@ export default function Dashboard() {
       name: "Oeconomia",
       price: 0.85,
       change: 12.4,
-      logo: "/oec-logo.png",
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/Eloqura.png",
       balance: 1250.00
     },
     {
