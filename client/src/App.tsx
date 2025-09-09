@@ -15,10 +15,11 @@ import Bridge from '@/pages/bridge'
 import Liquidity from '@/pages/liquidity'
 import Examine from '@/pages/examine'
 import NotFound from '@/pages/not-found'
+import Dashboard from '@/pages/dashboard'
 
 function Router() {
   const [location] = useLocation();
-  
+
   useEffect(() => {
     // Scroll to top when route changes
     window.scrollTo(0, 0);
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/bridge" component={Bridge} />
       <Route path="/liquidity" component={Liquidity} />
       <Route path="/examine" component={Examine} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="*" component={NotFound} />
     </Switch>
   );

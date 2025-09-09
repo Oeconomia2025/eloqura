@@ -180,6 +180,7 @@ export function Layout({
   };
 
   const sidebarItems = [
+    { icon: BarChart3, label: 'Dashboard', path: '/dashboard', active: location === '/dashboard' },
     { icon: ArrowUpDown, label: 'Trade', path: '/swap', active: location === '/swap' },
     { icon: DollarSign, label: 'Buy/Sell', path: '/buy-sell', active: location === '/buy-sell' },
     { icon: ArrowLeftRight, label: 'Bridge', path: '/bridge', active: location === '/bridge' },
