@@ -99,7 +99,7 @@ export default function Dashboard() {
 
           {/* Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="crypto-card border">
+            <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 backdrop-blur-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -116,14 +116,14 @@ export default function Dashboard() {
                       </span>
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-lg flex items-center justify-center">
                     <Wallet className="w-6 h-6 text-cyan-400" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="crypto-card border">
+            <Card className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 backdrop-blur-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -131,14 +131,14 @@ export default function Dashboard() {
                     <p className="text-2xl font-bold text-white">{totalPositions}</p>
                     <p className="text-sm text-gray-400 mt-2">Across 3 protocols</p>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-lg flex items-center justify-center">
                     <BarChart3 className="w-6 h-6 text-violet-400" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="crypto-card border">
+            <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 backdrop-blur-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -149,14 +149,14 @@ export default function Dashboard() {
                       <span className="text-sm text-yellow-400 font-medium">18.5% APY</span>
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-yellow-500/30 to-orange-500/30 rounded-lg flex items-center justify-center">
                     <Star className="w-6 h-6 text-yellow-400" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="crypto-card border">
+            <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 backdrop-blur-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -167,7 +167,7 @@ export default function Dashboard() {
                       <span className="text-sm text-green-400 font-medium">+12.8%</span>
                     </div>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded-lg flex items-center justify-center">
                     <DollarSign className="w-6 h-6 text-green-400" />
                   </div>
                 </div>
