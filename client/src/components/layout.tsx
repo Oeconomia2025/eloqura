@@ -267,18 +267,7 @@ export function Layout({
 
         {/* Lavender Card */}
         <div className="px-4 pb-4">
-          <Card className="bg-gradient-to-br from-purple-100/10 to-lavender-200/10 border border-purple-300/30 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
-                  <Star className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-white">Premium Features</h3>
-                  <p className="text-xs text-gray-400">Unlock advanced analytics</p>
-                </div>
-              </div>
-            </CardContent>
+          <Card className="h-16 bg-gradient-to-r from-purple-300 to-purple-400 border-0">
           </Card>
         </div>
 
