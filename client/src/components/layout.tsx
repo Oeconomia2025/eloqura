@@ -30,7 +30,7 @@ import {
   AlertTriangle,
   Heart,
   Image, // Added Image icon import
-  ArrowLeftRICHT,
+  ArrowLeftRight,
   Microscope, // Added Microscope icon import
   Star // Added Star icon import
 } from "lucide-react";
