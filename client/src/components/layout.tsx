@@ -266,25 +266,28 @@ export function Layout({
 
         {/* Bottom section with wallet and social links */}
         <div className="sticky bottom-0 bg-background p-4 space-y-3">
-          {/* OEC Button */}
+          {/* Oeconomia Button */}
           <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => window.open('https://oeconomia.tech/', '_blank')}
-              className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full justify-start'} bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative`}
-              style={{ borderRadius: '5px' }}
-              title={sidebarCollapsed ? "OEC" : undefined}
+              className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full justify-start'} bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
+              style={{ 
+                borderRadius: '5px',
+                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box'
+              }}
+              title={sidebarCollapsed ? "Oeconomia" : undefined}
             >
               <img 
                 src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png" 
                 alt="OEC Logo" 
                 className="w-5 h-5 flex-shrink-0"
               />
-              {!sidebarCollapsed && <span className="ml-2">OEC</span>}
+              {!sidebarCollapsed && <span className="ml-2">Oeconomia</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                  OEC
+                  Oeconomia
                 </div>
               )}
             </Button>
