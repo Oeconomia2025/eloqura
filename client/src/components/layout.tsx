@@ -31,8 +31,7 @@ import {
   Heart,
   Image, // Added Image icon import
   ArrowLeftRight,
-  Microscope, // Added Microscope icon import
-  Star // Added Star icon import
+  Microscope // Added Microscope icon import
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 import { WalletConnect } from "@/components/wallet-connect";
@@ -43,7 +42,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Card, CardContent } from "@/components/ui/card"; // Imported CardContent
+import { Card } from "@/components/ui/card";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -259,12 +258,6 @@ export function Layout({
               ))}
             </ul>
           </nav>
-          
-          {/* Lavender Card */}
-          <div className="px-4 pb-4">
-            <Card className="h-16 bg-gradient-to-r from-purple-300 to-purple-400 border-0">
-            </Card>
-          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
