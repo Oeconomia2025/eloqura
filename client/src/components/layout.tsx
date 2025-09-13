@@ -271,7 +271,7 @@ export function Layout({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.open('https://oeconomia.tech/', '_blank')}
+              onClick={() => window.open('https://oeconomia.io/', '_blank')}
               className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full justify-start'} bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
               style={{ 
                 borderRadius: '5px',
@@ -328,7 +328,7 @@ export function Layout({
                 style={!sidebarCollapsed ? { width: 'var(--radix-dropdown-menu-trigger-width)' } : undefined}
               >
                 <DropdownMenuItem 
-                  onClick={() => window.open('https://oeconomia.tech/', '_blank')}
+                  onClick={() => window.open('https://oeconomia.io/', '_blank')}
                   className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
                 >
                   <Globe className="w-4 h-4 mr-2" />
