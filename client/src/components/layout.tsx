@@ -259,16 +259,16 @@ export function Layout({
               ))}
             </ul>
           </nav>
+          
+          {/* Lavender Card */}
+          <div className="px-4 pb-4">
+            <Card className="h-16 bg-gradient-to-r from-purple-300 to-purple-400 border-0">
+            </Card>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Content area */}
-        </div>
-
-        {/* Lavender Card */}
-        <div className="px-4 pb-4">
-          <Card className="h-16 bg-gradient-to-r from-purple-300 to-purple-400 border-0">
-          </Card>
         </div>
 
         {/* Bottom section with wallet and social links */}
