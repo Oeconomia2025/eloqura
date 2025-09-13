@@ -30,8 +30,9 @@ import {
   AlertTriangle,
   Heart,
   Image, // Added Image icon import
-  ArrowLeftRight,
-  Microscope // Added Microscope icon import
+  ArrowLeftRICHT,
+  Microscope, // Added Microscope icon import
+  Star // Added Star icon import
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 import { WalletConnect } from "@/components/wallet-connect";
@@ -42,7 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card"; // Imported CardContent
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -262,6 +263,23 @@ export function Layout({
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Content area */}
+        </div>
+
+        {/* Lavender Card */}
+        <div className="px-4 pb-4">
+          <Card className="bg-gradient-to-br from-purple-100/10 to-lavender-200/10 border border-purple-300/30 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+                  <Star className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-white">Premium Features</h3>
+                  <p className="text-xs text-gray-400">Unlock advanced analytics</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Bottom section with wallet and social links */}
