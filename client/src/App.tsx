@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { DisclaimerModal } from "@/components/disclaimer-modal";
 import { liveCoinWatchSyncService } from "@/services/live-coin-watch-sync";
 import Landing from '@/pages/landing'
 import Swap from '@/pages/swap'
@@ -59,7 +58,6 @@ function App() {
         <ThemeProvider>
           <TooltipProvider>
             <Toaster />
-            <DisclaimerModal />
             <Router />
           </TooltipProvider>
         </ThemeProvider>
