@@ -66,45 +66,47 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden min-h-screen">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/10 to-cyan-900/20" />
-        <div className="relative max-w-7xl mx-auto px-6 py-24">
-          <div className="text-center space-y-8">
-            <div className="flex items-center justify-center space-x-6 mb-8">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden">
-                <img 
-                  src="/oec-logo.png" 
-                  alt="Eloqura Logo" 
-                  className="w-full h-full object-cover"
-                />
+        <div className="relative max-w-7xl mx-auto px-6 py-24 min-h-screen flex items-center">
+          <div className="w-full">
+            <div className="text-center space-y-8">
+              <div className="flex items-center justify-center space-x-6 mb-8">
+                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden">
+                  <img 
+                    src="/oec-logo.png" 
+                    alt="Eloqura Logo" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-indigo-300 via-purple-300 to-teal-400 bg-clip-text text-transparent">
+                Eloqura
+              </h1>
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-indigo-300 via-purple-300 to-teal-400 bg-clip-text text-transparent">
-              Eloqura
-            </h1>
-            </div>
 
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              The next-generation DeFi platform powering the Oeconomia ecosystem. 
-              Trade, earn, and build wealth with cutting-edge financial tools.
-            </p>
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                The next-generation DeFi platform powering the Oeconomia ecosystem. 
+                Trade, earn, and build wealth with cutting-edge financial tools.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/swap')}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 text-lg"
-              >
-                Start Trading
-                <ChevronRight className="w-5 h-5 ml-2" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => navigate('/liquidity')}
-                className="border-purple-500/50 hover:bg-purple-500/10 px-8 py-3 text-lg"
-              >
-                Explore Pools
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate('/swap')}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 text-lg"
+                >
+                  Start Trading
+                  <ChevronRight className="w-5 h-5 ml-2" />
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => navigate('/liquidity')}
+                  className="border-purple-500/50 hover:bg-purple-500/10 px-8 py-3 text-lg"
+                >
+                  Explore Pools
+                </Button>
+              </div>
             </div>
           </div>
         </div>
