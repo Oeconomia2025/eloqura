@@ -10,7 +10,7 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 import { usePriceHistory, useTokenData } from "@/hooks/use-token-data";
 import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits, parseUnits, parseEther } from "viem";
-import { ELOQURA_CONTRACTS, ROUTER_ABI, ERC20_ABI } from "@/lib/contracts";
+import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI } from "@/lib/contracts";
 
 // WETH ABI for deposit/withdraw
 const WETH_ABI = [
@@ -227,7 +227,7 @@ function SwapContent() {
   // Get wallet connection status
   const { address, isConnected, chainId } = useAccount();
 
-  // Sepolia testnet tokens - using deployed Eloqura contracts
+  // Sepolia testnet tokens - official testnet contract addresses
   const sepoliaTokens: Token[] = [
     {
       symbol: "ETH",
@@ -245,32 +245,76 @@ function SwapContent() {
       logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
       price: 0,
     },
+    {
+      symbol: "LINK",
+      name: "Chainlink",
+      address: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+      decimals: 18,
+      logo: "https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png",
+      price: 0,
+    },
+    {
+      symbol: "USDC",
+      name: "USD Coin",
+      address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      decimals: 6,
+      logo: "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
+      price: 0,
+    },
+    {
+      symbol: "AAVE",
+      name: "Aave",
+      address: "0x5bB220Afc6E2e008CB2302a83536A019ED245AA2",
+      decimals: 18,
+      logo: "https://assets.coingecko.com/coins/images/12645/small/aave-token-round.png",
+      price: 0,
+    },
+    {
+      symbol: "DAI",
+      name: "Dai Stablecoin",
+      address: "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6",
+      decimals: 18,
+      logo: "https://assets.coingecko.com/coins/images/9956/small/dai-multi-collateral-mcd.png",
+      price: 0,
+    },
   ];
 
   const tokens = sepoliaTokens;
   const publicClient = usePublicClient();
 
-  // Store balances in state (like staking app does)
-  const [ethBalance, setEthBalance] = useState<bigint>(0n);
-  const [wethBalance, setWethBalance] = useState<bigint>(0n);
+  // Store all token balances in a single state object (address -> balance)
+  const [tokenBalances, setTokenBalances] = useState<Record<string, bigint>>({});
 
-  // Fetch balances directly from blockchain (bypasses wagmi cache)
+  // Fetch all token balances directly from blockchain
   const fetchBalances = async () => {
     if (!publicClient || !address) return;
 
     try {
-      // Fetch ETH balance
-      const ethBal = await publicClient.getBalance({ address });
-      setEthBalance(ethBal);
+      const balances: Record<string, bigint> = {};
 
-      // Fetch WETH balance
-      const wethBal = await publicClient.readContract({
-        address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [address],
-      }) as bigint;
-      setWethBalance(wethBal);
+      // Fetch ETH balance (native)
+      const ethBal = await publicClient.getBalance({ address });
+      balances["0x0000000000000000000000000000000000000000"] = ethBal;
+
+      // Fetch all ERC20 token balances
+      for (const token of tokens) {
+        if (token.address === "0x0000000000000000000000000000000000000000") continue; // Skip native ETH
+
+        try {
+          const bal = await publicClient.readContract({
+            address: token.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }) as bigint;
+          balances[token.address] = bal;
+        } catch (err) {
+          console.warn(`Failed to fetch balance for ${token.symbol}:`, err);
+          balances[token.address] = 0n;
+        }
+      }
+
+      setTokenBalances(balances);
     } catch (error) {
       console.error('Error fetching balances:', error);
     }
@@ -283,13 +327,8 @@ function SwapContent() {
 
   // Update token balances dynamically
   const tokensWithBalances = tokens.map(token => {
-    if (token.symbol === "ETH") {
-      return { ...token, balance: parseFloat(formatUnits(ethBalance, 18)) };
-    }
-    if (token.symbol === "WETH") {
-      return { ...token, balance: parseFloat(formatUnits(wethBalance, 18)) };
-    }
-    return { ...token, balance: 0 };
+    const balance = tokenBalances[token.address] ?? 0n;
+    return { ...token, balance: parseFloat(formatUnits(balance, token.decimals)) };
   });
 
   // Set and sync tokens with balances
@@ -313,7 +352,7 @@ function SwapContent() {
         if (updated) setToToken(updated);
       }
     }
-  }, [ethBalance, wethBalance]);
+  }, [tokenBalances]);
 
   // Contract write hooks for swap execution
   const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract();
@@ -324,13 +363,26 @@ function SwapContent() {
   // Reset form and refetch balances after successful transaction
   useEffect(() => {
     if (isConfirmed) {
-      setFromAmount("");
-      setToAmount("");
-      setQuote(null);
-      // Refetch balances after successful swap
+      // Check if this was an approval tx (form still has values)
+      const wasApproval = isApproving;
+      setIsApproving(false);
+
+      if (wasApproval) {
+        // After approval, re-check approval status
+        setTimeout(() => {
+          checkApproval();
+        }, 1000);
+      } else {
+        // After swap, reset form
+        setFromAmount("");
+        setToAmount("");
+        setQuote(null);
+      }
+
+      // Refetch balances after any successful transaction
       setTimeout(() => {
         fetchBalances();
-      }, 1000); // Small delay to ensure blockchain state is updated
+      }, 1000);
     }
   }, [isConfirmed]);
 
@@ -351,9 +403,9 @@ function SwapContent() {
     });
   };
 
-  // Get swap quote - handles ETH/WETH wrapping and router quotes
+  // Get swap quote - handles ETH/WETH wrapping, Eloqura pools, and Uniswap
   const getSwapQuote = async (from: Token, to: Token, amount: string, direction: 'from' | 'to' = 'from') => {
-    if (!amount || parseFloat(amount) === 0) return null;
+    if (!amount || parseFloat(amount) === 0 || !publicClient) return null;
 
     setIsLoading(true);
 
@@ -363,6 +415,7 @@ function SwapContent() {
     let minimumReceived: number;
     let exchangeRate: number;
     let priceImpact: number = 0;
+    let routeSource: string = 'direct';
 
     // ETH <-> WETH is always 1:1 (wrapping/unwrapping)
     const isWrapUnwrap =
@@ -375,13 +428,71 @@ function SwapContent() {
       outputAmount = inputAmount;
       fee = 0; // No fee for wrap/unwrap
       priceImpact = 0;
+      routeSource = 'wrap';
     } else {
-      // For other pairs, we would query the router
-      // For now, show that no liquidity pool exists
-      exchangeRate = 0;
-      outputAmount = 0;
-      fee = inputAmount * 0.003; // 0.3% fee
-      priceImpact = 0;
+      // Try to get quote from Uniswap V3
+      try {
+        // Convert addresses - use Uniswap WETH for ETH
+        const tokenInAddress = from.symbol === 'ETH'
+          ? UNISWAP_CONTRACTS.sepolia.WETH
+          : from.address;
+        const tokenOutAddress = to.symbol === 'ETH'
+          ? UNISWAP_CONTRACTS.sepolia.WETH
+          : to.address;
+
+        const amountIn = parseUnits(amount, from.decimals);
+
+        // Try different fee tiers (0.3% is most common)
+        const feeTiers = [UNISWAP_FEE_TIERS.MEDIUM, UNISWAP_FEE_TIERS.LOW, UNISWAP_FEE_TIERS.HIGH];
+        let bestQuote: bigint | null = null;
+        let bestFeeTier = UNISWAP_FEE_TIERS.MEDIUM;
+
+        for (const feeTier of feeTiers) {
+          try {
+            const result = await publicClient.simulateContract({
+              address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
+              abi: UNISWAP_QUOTER_ABI,
+              functionName: 'quoteExactInputSingle',
+              args: [{
+                tokenIn: tokenInAddress as `0x${string}`,
+                tokenOut: tokenOutAddress as `0x${string}`,
+                amountIn: amountIn,
+                fee: feeTier,
+                sqrtPriceLimitX96: 0n,
+              }],
+            });
+
+            const quoteAmount = result.result[0];
+            if (!bestQuote || quoteAmount > bestQuote) {
+              bestQuote = quoteAmount;
+              bestFeeTier = feeTier;
+            }
+          } catch (e) {
+            // This fee tier doesn't have a pool, try next
+            continue;
+          }
+        }
+
+        if (bestQuote) {
+          outputAmount = parseFloat(formatUnits(bestQuote, to.decimals));
+          exchangeRate = outputAmount / inputAmount;
+          fee = inputAmount * (bestFeeTier / 1000000); // Convert fee tier to percentage
+          priceImpact = 0; // Could calculate from sqrtPriceX96After
+          routeSource = 'uniswap';
+        } else {
+          // No Uniswap pool found
+          outputAmount = 0;
+          exchangeRate = 0;
+          fee = 0;
+          routeSource = 'none';
+        }
+      } catch (error) {
+        console.warn('Uniswap quote failed:', error);
+        outputAmount = 0;
+        exchangeRate = 0;
+        fee = 0;
+        routeSource = 'none';
+      }
     }
 
     if (direction === 'from') {
@@ -399,7 +510,7 @@ function SwapContent() {
       priceImpact,
       minimumReceived: minimumReceived.toString(),
       fee,
-      route: [from.symbol, to.symbol]
+      route: routeSource === 'uniswap' ? [from.symbol, 'Uniswap', to.symbol] : [from.symbol, to.symbol]
     };
 
     setQuote(swapQuote);
@@ -417,14 +528,64 @@ function SwapContent() {
     setQuote(null);
   };
 
-  const handleSwapExecution = async () => {
-    if (!fromToken || !toToken || !fromAmount || !isConnected) return;
+  // State for token approval
+  const [needsApproval, setNeedsApproval] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
-    const amount = parseEther(fromAmount);
+  // Check if token needs approval for Uniswap
+  const checkApproval = async () => {
+    if (!fromToken || !address || !publicClient || fromToken.symbol === 'ETH') {
+      setNeedsApproval(false);
+      return;
+    }
+
+    try {
+      const allowance = await publicClient.readContract({
+        address: fromToken.address as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [address, UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`],
+      }) as bigint;
+
+      const amount = parseUnits(fromAmount || '0', fromToken.decimals);
+      setNeedsApproval(allowance < amount);
+    } catch (error) {
+      console.warn('Error checking approval:', error);
+      setNeedsApproval(false);
+    }
+  };
+
+  // Check approval when fromToken or fromAmount changes
+  useEffect(() => {
+    if (fromToken && fromAmount && parseFloat(fromAmount) > 0) {
+      checkApproval();
+    }
+  }, [fromToken, fromAmount, address]);
+
+  const handleApprove = async () => {
+    if (!fromToken || fromToken.symbol === 'ETH') return;
+
+    setIsApproving(true);
+    try {
+      writeContract({
+        address: fromToken.address as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`, parseUnits('1000000000', fromToken.decimals)],
+      });
+    } catch (error) {
+      console.error('Approval error:', error);
+      setIsApproving(false);
+    }
+  };
+
+  const handleSwapExecution = async () => {
+    if (!fromToken || !toToken || !fromAmount || !isConnected || !address) return;
 
     try {
       // ETH -> WETH (Wrap)
       if (fromToken.symbol === 'ETH' && toToken.symbol === 'WETH') {
+        const amount = parseEther(fromAmount);
         writeContract({
           address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
           abi: WETH_ABI,
@@ -434,6 +595,7 @@ function SwapContent() {
       }
       // WETH -> ETH (Unwrap)
       else if (fromToken.symbol === 'WETH' && toToken.symbol === 'ETH') {
+        const amount = parseEther(fromAmount);
         writeContract({
           address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
           abi: WETH_ABI,
@@ -441,9 +603,58 @@ function SwapContent() {
           args: [amount],
         });
       }
-      // Other swaps would go through the router
+      // Uniswap V3 swap
       else {
-        console.log('Router swaps not yet implemented - need liquidity pools first');
+        const amountIn = parseUnits(fromAmount, fromToken.decimals);
+        const amountOutMin = quote
+          ? parseUnits(quote.minimumReceived, toToken.decimals)
+          : 0n;
+
+        // Use Uniswap WETH for ETH swaps
+        const tokenIn = fromToken.symbol === 'ETH'
+          ? UNISWAP_CONTRACTS.sepolia.WETH
+          : fromToken.address;
+        const tokenOut = toToken.symbol === 'ETH'
+          ? UNISWAP_CONTRACTS.sepolia.WETH
+          : toToken.address;
+
+        // Deadline 20 minutes from now
+        const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+
+        if (fromToken.symbol === 'ETH') {
+          // ETH -> Token: send ETH value with the swap
+          writeContract({
+            address: UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`,
+            abi: UNISWAP_ROUTER_ABI,
+            functionName: 'exactInputSingle',
+            args: [{
+              tokenIn: tokenIn as `0x${string}`,
+              tokenOut: tokenOut as `0x${string}`,
+              fee: UNISWAP_FEE_TIERS.MEDIUM,
+              recipient: address,
+              amountIn: amountIn,
+              amountOutMinimum: amountOutMin,
+              sqrtPriceLimitX96: 0n,
+            }],
+            value: amountIn,
+          });
+        } else {
+          // Token -> Token or Token -> ETH
+          writeContract({
+            address: UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`,
+            abi: UNISWAP_ROUTER_ABI,
+            functionName: 'exactInputSingle',
+            args: [{
+              tokenIn: tokenIn as `0x${string}`,
+              tokenOut: tokenOut as `0x${string}`,
+              fee: UNISWAP_FEE_TIERS.MEDIUM,
+              recipient: address,
+              amountIn: amountIn,
+              amountOutMinimum: amountOutMin,
+              sqrtPriceLimitX96: 0n,
+            }],
+          });
+        }
       }
     } catch (error) {
       console.error('Swap execution error:', error);
@@ -1405,14 +1616,30 @@ function SwapContent() {
 
 
 
-              {/* Action Button */}
-              {(
+              {/* Action Button - Approve or Swap */}
+              {activeTab === "Trade" && needsApproval && fromToken && fromToken.symbol !== 'ETH' && fromAmount ? (
+                <Button
+                  onClick={handleApprove}
+                  disabled={isLoading || isWritePending || isConfirming || isApproving || !isConnected}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
+                >
+                  {isWritePending || isApproving ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Approving...</span>
+                    </div>
+                  ) : (
+                    `Approve ${fromToken.symbol}`
+                  )}
+                </Button>
+              ) : (
                 <Button
                   onClick={handleSwapExecution}
                   disabled={
                     isLoading || isWritePending || isConfirming ||
                     !isConnected ||
                     (activeTab === "Trade" && (!fromToken || !toToken || (!fromAmount && !toAmount))) ||
+                    (activeTab === "Trade" && quote && quote.exchangeRate === 0 && fromToken?.symbol !== 'ETH' && toToken?.symbol !== 'WETH' && fromToken?.symbol !== 'WETH' && toToken?.symbol !== 'ETH') ||
                     (activeTab === "Limit" && (!fromToken || !toToken || !fromAmount || !limitOrder.triggerPrice)) ||
                     (activeTab === "Buy" && (!toToken || !fiatAmount)) ||
                     (activeTab === "Sell" && (!fromToken || !fromAmount))
@@ -1432,7 +1659,7 @@ function SwapContent() {
                   ) : isLoading ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Processing...</span>
+                      <span>Getting Quote...</span>
                     </div>
                   ) : !isConnected ? (
                     "Connect Wallet"
@@ -1441,6 +1668,8 @@ function SwapContent() {
                     (!fromAmount && !toAmount) ? "Enter Amount" :
                     fromToken.symbol === 'ETH' && toToken.symbol === 'WETH' ? `Wrap ${fromToken.symbol}` :
                     fromToken.symbol === 'WETH' && toToken.symbol === 'ETH' ? `Unwrap ${fromToken.symbol}` :
+                    quote && quote.exchangeRate === 0 ? "No Liquidity" :
+                    quote && quote.route.includes('Uniswap') ? `Swap via Uniswap` :
                     `Swap ${fromToken.symbol}`
                   ) : activeTab === "Limit" ? (
                     !fromToken || !toToken ? "Select Tokens" :

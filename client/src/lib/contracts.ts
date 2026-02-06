@@ -9,6 +9,133 @@ export const ELOQURA_CONTRACTS = {
   },
 } as const;
 
+// Uniswap V3 Contract Addresses - Sepolia Testnet
+export const UNISWAP_CONTRACTS = {
+  sepolia: {
+    chainId: 11155111,
+    SwapRouter02: "0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E",
+    QuoterV2: "0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3",
+    Factory: "0x0227628f3F023bb0B980b67D528571c95c6DaC1c",
+    WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14", // Uniswap's WETH on Sepolia
+  },
+} as const;
+
+// Uniswap V3 SwapRouter02 ABI (exactInputSingle for simple swaps)
+export const UNISWAP_ROUTER_ABI = [
+  {
+    name: "exactInputSingle",
+    type: "function",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tokenIn", type: "address" },
+          { name: "tokenOut", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "recipient", type: "address" },
+          { name: "amountIn", type: "uint256" },
+          { name: "amountOutMinimum", type: "uint256" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+    ],
+    outputs: [{ name: "amountOut", type: "uint256" }],
+    stateMutability: "payable",
+  },
+  {
+    name: "exactOutputSingle",
+    type: "function",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tokenIn", type: "address" },
+          { name: "tokenOut", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "recipient", type: "address" },
+          { name: "amountOut", type: "uint256" },
+          { name: "amountInMaximum", type: "uint256" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+    ],
+    outputs: [{ name: "amountIn", type: "uint256" }],
+    stateMutability: "payable",
+  },
+  {
+    name: "multicall",
+    type: "function",
+    inputs: [
+      { name: "deadline", type: "uint256" },
+      { name: "data", type: "bytes[]" },
+    ],
+    outputs: [{ name: "results", type: "bytes[]" }],
+    stateMutability: "payable",
+  },
+] as const;
+
+// Uniswap V3 QuoterV2 ABI for getting quotes
+export const UNISWAP_QUOTER_ABI = [
+  {
+    name: "quoteExactInputSingle",
+    type: "function",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tokenIn", type: "address" },
+          { name: "tokenOut", type: "address" },
+          { name: "amountIn", type: "uint256" },
+          { name: "fee", type: "uint24" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+    ],
+    outputs: [
+      { name: "amountOut", type: "uint256" },
+      { name: "sqrtPriceX96After", type: "uint160" },
+      { name: "initializedTicksCrossed", type: "uint32" },
+      { name: "gasEstimate", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    name: "quoteExactOutputSingle",
+    type: "function",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tokenIn", type: "address" },
+          { name: "tokenOut", type: "address" },
+          { name: "amount", type: "uint256" },
+          { name: "fee", type: "uint24" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+    ],
+    outputs: [
+      { name: "amountIn", type: "uint256" },
+      { name: "sqrtPriceX96After", type: "uint160" },
+      { name: "initializedTicksCrossed", type: "uint32" },
+      { name: "gasEstimate", type: "uint256" },
+    ],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+// Common Uniswap V3 fee tiers (in hundredths of a bip, i.e., 1e-6)
+export const UNISWAP_FEE_TIERS = {
+  LOWEST: 100,   // 0.01%
+  LOW: 500,      // 0.05%
+  MEDIUM: 3000,  // 0.3%
+  HIGH: 10000,   // 1%
+} as const;
+
 // Router ABI - main functions for swaps and liquidity
 export const ROUTER_ABI = [
   // Swap functions

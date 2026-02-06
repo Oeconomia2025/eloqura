@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
-import { 
-  Plus, 
-  ArrowLeft, 
-  Settings, 
-  Info, 
+import {
+  Plus,
+  ArrowLeft,
+  Settings,
+  Info,
   TrendingUp,
   TrendingDown,
   Droplets,
@@ -31,6 +31,9 @@ import { useTokenData } from "@/hooks/use-token-data";
 import { useQuery } from "@tanstack/react-query";
 import { formatCryptoData } from "@/utils/crypto-logos";
 import type { LiveCoinWatchDbCoin } from "@shared/schema";
+import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { formatUnits, parseUnits } from "viem";
+import { ELOQURA_CONTRACTS, FACTORY_ABI, ROUTER_ABI, PAIR_ABI, ERC20_ABI } from "@/lib/contracts";
 
 interface Token {
   symbol: string;
@@ -94,6 +97,183 @@ function LiquidityContent() {
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [tokenSelectionFor, setTokenSelectionFor] = useState<'token0' | 'token1'>('token0');
   const [tokenSearchQuery, setTokenSearchQuery] = useState("");
+
+  // Wagmi hooks for blockchain interaction
+  const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+
+  // Real Eloqura pool data
+  const [eloquraPairs, setEloquraPairs] = useState<Array<{
+    address: string;
+    token0: string;
+    token1: string;
+    reserve0: bigint;
+    reserve1: bigint;
+    lpBalance: bigint;
+    totalSupply: bigint;
+  }>>([]);
+
+  // Fetch Eloqura pairs from Factory
+  const fetchEloquraPairs = async () => {
+    if (!publicClient) return;
+
+    try {
+      const pairCount = await publicClient.readContract({
+        address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+        abi: FACTORY_ABI,
+        functionName: 'allPairsLength',
+      }) as bigint;
+
+      const pairs = [];
+      for (let i = 0; i < Number(pairCount); i++) {
+        const pairAddress = await publicClient.readContract({
+          address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+          abi: FACTORY_ABI,
+          functionName: 'allPairs',
+          args: [BigInt(i)],
+        }) as `0x${string}`;
+
+        const [token0, token1, reserves, totalSupply] = await Promise.all([
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token0' }),
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token1' }),
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'getReserves' }),
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'totalSupply' }),
+        ]) as [string, string, [bigint, bigint, number], bigint];
+
+        let lpBalance = 0n;
+        if (address) {
+          lpBalance = await publicClient.readContract({
+            address: pairAddress,
+            abi: PAIR_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }) as bigint;
+        }
+
+        pairs.push({
+          address: pairAddress,
+          token0: token0 as string,
+          token1: token1 as string,
+          reserve0: reserves[0],
+          reserve1: reserves[1],
+          lpBalance,
+          totalSupply,
+        });
+      }
+
+      setEloquraPairs(pairs);
+    } catch (error) {
+      console.error('Error fetching Eloqura pairs:', error);
+    }
+  };
+
+  // Fetch pairs on mount and when address changes
+  useEffect(() => {
+    fetchEloquraPairs();
+  }, [publicClient, address]);
+
+  // Refetch after successful transaction
+  useEffect(() => {
+    if (isConfirmed) {
+      setTimeout(fetchEloquraPairs, 1000);
+    }
+  }, [isConfirmed]);
+
+  // Add liquidity to Eloqura
+  const handleAddLiquidityEloqura = async () => {
+    if (!selectedToken0 || !selectedToken1 || !amount0 || !amount1 || !address) return;
+
+    const amount0Wei = parseUnits(amount0, selectedToken0.decimals);
+    const amount1Wei = parseUnits(amount1, selectedToken1.decimals);
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+
+    // Check if one token is ETH/WETH
+    const isToken0ETH = selectedToken0.symbol === 'ETH';
+    const isToken1ETH = selectedToken1.symbol === 'ETH';
+
+    if (isToken0ETH || isToken1ETH) {
+      // Use addLiquidityETH
+      const tokenAddress = isToken0ETH ? selectedToken1.address : selectedToken0.address;
+      const tokenAmount = isToken0ETH ? amount1Wei : amount0Wei;
+      const ethAmount = isToken0ETH ? amount0Wei : amount1Wei;
+
+      writeContract({
+        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+        abi: ROUTER_ABI,
+        functionName: 'addLiquidityETH',
+        args: [
+          tokenAddress as `0x${string}`,
+          tokenAmount,
+          0n, // amountTokenMin (0 for simplicity, should calculate with slippage)
+          0n, // amountETHMin
+          address,
+          deadline,
+        ],
+        value: ethAmount,
+      });
+    } else {
+      // Use addLiquidity for token-token pairs
+      writeContract({
+        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+        abi: ROUTER_ABI,
+        functionName: 'addLiquidity',
+        args: [
+          selectedToken0.address as `0x${string}`,
+          selectedToken1.address as `0x${string}`,
+          amount0Wei,
+          amount1Wei,
+          0n, // amountAMin
+          0n, // amountBMin
+          address,
+          deadline,
+        ],
+      });
+    }
+  };
+
+  // Remove liquidity from Eloqura
+  const handleRemoveLiquidityEloqura = async (pairAddress: string, lpAmount: bigint, token0: string, token1: string) => {
+    if (!address) return;
+
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+    const isToken0WETH = token0.toLowerCase() === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+    const isToken1WETH = token1.toLowerCase() === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+
+    if (isToken0WETH || isToken1WETH) {
+      const tokenAddress = isToken0WETH ? token1 : token0;
+
+      writeContract({
+        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+        abi: ROUTER_ABI,
+        functionName: 'removeLiquidityETH',
+        args: [
+          tokenAddress as `0x${string}`,
+          lpAmount,
+          0n,
+          0n,
+          address,
+          deadline,
+        ],
+      });
+    } else {
+      writeContract({
+        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+        abi: ROUTER_ABI,
+        functionName: 'removeLiquidity',
+        args: [
+          token0 as `0x${string}`,
+          token1 as `0x${string}`,
+          lpAmount,
+          0n,
+          0n,
+          address,
+          deadline,
+        ],
+      });
+    }
+  };
 
   // Handle URL parameters to switch to tokens tab when returning from token detail
   useEffect(() => {
