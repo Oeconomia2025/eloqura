@@ -191,39 +191,44 @@ export function Layout({
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
+      {/* Collapse/Expand button - outside all containers for true fixed positioning */}
+      <button
+        onClick={toggleCollapsed}
+        className={`hidden lg:flex fixed top-[29px] z-[60] w-6 h-6 rounded-full items-center justify-center transition-all duration-300 bg-gray-800 border border-[var(--crypto-border)] ${
+          sidebarCollapsed ? "left-[52px]" : "left-[180px]"
+        }`}
+        title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {sidebarCollapsed ? <ChevronRight className="w-3 h-3 text-violet-400" /> : <ChevronLeft className="w-3 h-3 text-violet-400" />}
+      </button>
+
       {/* Sidebar Navigation */}
-      <aside className={`fixed inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} bg-background border-r border-border transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}>
-        <div className="sticky top-0 z-10 bg-background flex items-center justify-between h-20 px-4">
-          <div 
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} bg-black border-r border-[var(--crypto-border)] transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between h-20 px-4 bg-black">
+          <div
             className={`flex items-center cursor-pointer hover:opacity-80 transition-opacity ${sidebarCollapsed ? 'justify-center w-full' : 'space-x-3'}`}
             onClick={() => navigate('/')}
             title="Go to Home"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-              <img 
-                src="/oec-logo.png" 
-                alt="Eloqura Logo" 
+              <img
+                src="/oec-logo.png"
+                alt="Eloqura Logo"
                 className="w-full h-full object-cover"
               />
             </div>
             {!sidebarCollapsed && (
               <div>
-                <h2 className="text-lg font-bold">Eloqura</h2>
+                <h2 className="text-lg font-bold whitespace-nowrap">Eloqura</h2>
               </div>
             )}
           </div>
           <div className="flex items-center space-x-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleCollapsed}
-              className="hidden lg:flex"
-            >
-              {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden"
             >
@@ -232,24 +237,27 @@ export function Layout({
           </div>
         </div>
 
-        <div className="sticky top-20 bg-background z-10">
-          <nav className="p-4">
+        <div className="sticky top-20 z-10 bg-black">
+          <nav className="p-2">
             <ul className="space-y-2">
               {sidebarItems.map((item, index) => (
                 <li key={index}>
-                  <button 
+                  <button
                     onClick={() => handleNavigation(item.path)}
-                    className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full px-3 py-2 space-x-3'} flex items-center rounded-lg text-left transition-colors group relative ${
-                      item.active 
-                        ? 'bg-crypto-blue text-white font-medium shadow-lg transition-all duration-200' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    className={`w-full flex items-center ${
+                      sidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'
+                    } py-2 rounded-lg text-left transition-colors group relative ${
+                      item.active
+                        ? 'text-white font-medium shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }`}
+                    style={item.active ? { background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' } : {}}
                     title={sidebarCollapsed ? item.label : undefined}
                   >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    {!sidebarCollapsed && <span>{item.label}</span>}
+                    <item.icon className={`w-5 h-5 flex-shrink-0 ${item.active ? 'text-white' : 'text-violet-400'}`} />
+                    {!sidebarCollapsed && <span className="whitespace-nowrap">{item.label}</span>}
                     {sidebarCollapsed && (
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                         {item.label}
                       </div>
                     )}
@@ -265,27 +273,25 @@ export function Layout({
         </div>
 
         {/* Bottom section with wallet and social links */}
-        <div className="sticky bottom-0 bg-background p-4 space-y-3">
+        <div className="sticky bottom-0 p-2 flex flex-col space-y-2 bg-black">
           {/* Social Media Dropdown */}
-          <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full justify-start'} bg-background text-foreground hover:bg-accent/50 hover:border hover:border-primary/20 hover:text-foreground transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative`}
-                  style={{ borderRadius: '5px' }}
-                  title={sidebarCollapsed ? "Social Media Links" : undefined}
-                >
-                  <Globe className="w-5 h-5 text-white" />
-                  {!sidebarCollapsed && <span className="ml-2">Social & Website</span>}
-                  {sidebarCollapsed && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                      Social & Website
-                    </div>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`w-full flex items-center ${
+                  sidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'
+                } py-2 rounded-lg text-left transition-colors group relative bg-gray-800 text-white hover:bg-gray-700`}
+                title={sidebarCollapsed ? "Links" : undefined}
+              >
+                <Globe className="w-5 h-5 flex-shrink-0 text-violet-400" />
+                {!sidebarCollapsed && <span className="whitespace-nowrap">Links</span>}
+                {sidebarCollapsed && (
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    Links
+                  </div>
+                )}
+              </button>
+            </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align={sidebarCollapsed ? "center" : "start"} 
                 side={sidebarCollapsed ? "right" : "top"}
@@ -313,41 +319,34 @@ export function Layout({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
 
           {/* Oeconomia Button */}
-          <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open('https://oeconomia.io/', '_blank')}
-              className={`${sidebarCollapsed ? 'w-10 h-10 p-0 justify-center' : 'w-full justify-start'} bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 group relative border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
-              style={{ 
-                borderRadius: '5px',
-                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box'
-              }}
-              title={sidebarCollapsed ? "Oeconomia" : undefined}
-            >
-              <img 
-                src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png" 
-                alt="OEC Logo" 
-                className="w-5 h-5 flex-shrink-0"
-              />
-              {!sidebarCollapsed && <span className="ml-2">Oeconomia</span>}
-              {sidebarCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                  Oeconomia
-                </div>
-              )}
-            </Button>
-          </div>
+          <button
+            onClick={() => window.open('https://oeconomia.io/', '_blank')}
+            className={`w-full flex items-center ${
+              sidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'
+            } py-2 rounded-lg text-left transition-colors group relative text-white hover:bg-white/5`}
+            style={{
+              background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
+              border: '2px solid transparent'
+            }}
+            title={sidebarCollapsed ? "Oeconomia" : undefined}
+          >
+            <img
+              src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
+              alt="OEC Logo"
+              className="w-5 h-5 flex-shrink-0"
+            />
+            {!sidebarCollapsed && <span className="whitespace-nowrap">Oeconomia</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Oeconomia
+              </div>
+            )}
+          </button>
 
           {/* Connect Wallet */}
-          <div className={`${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-            <WalletConnect 
-                  collapsed={sidebarCollapsed}
-                />
-          </div>
+          <WalletConnect collapsed={sidebarCollapsed} />
         </div>
 
       </aside>

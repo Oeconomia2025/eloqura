@@ -8,12 +8,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { usePriceHistory, useTokenData } from "@/hooks/use-token-data";
+import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { formatUnits, parseUnits, parseEther } from "viem";
+import { ELOQURA_CONTRACTS, ROUTER_ABI, ERC20_ABI } from "@/lib/contracts";
 
-import { 
-  ArrowUpDown, 
-  Settings, 
-  Info, 
-  Clock, 
+// WETH ABI for deposit/withdraw
+const WETH_ABI = [
+  {
+    name: "deposit",
+    type: "function",
+    inputs: [],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    name: "withdraw",
+    type: "function",
+    inputs: [{ name: "wad", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+import {
+  ArrowUpDown,
+  Settings,
+  Info,
+  Clock,
   TrendingUp,
   TrendingDown,
   Zap,
@@ -99,6 +120,7 @@ function SwapContent() {
   const [chartKey, setChartKey] = useState(0);
   const [chartVisible, setChartVisible] = useState(false);
 
+
   // Helper functions for token selection
   const openTokenModal = (type?: 'from' | 'to' | 'priceCondition') => {
     if (type) {
@@ -133,8 +155,8 @@ function SwapContent() {
       if (token.symbol === priceConditionFrom?.symbol && token.symbol === priceConditionTo?.symbol) {
         // All three would be the same, default the other two
         const defaultToken = token.symbol === 'OEC' ? 
-          tokens.find(t => t.symbol === 'WETH') || tokens[1] : 
-          tokens.find(t => t.symbol === 'OEC') || tokens[0];
+          tokensWithBalances.find(t => t.symbol === 'WETH') || tokensWithBalances[1] : 
+          tokensWithBalances.find(t => t.symbol === 'ETH') || tokensWithBalances[0];
 
         setToToken(defaultToken);
         setPriceConditionTokens({
@@ -158,8 +180,8 @@ function SwapContent() {
       if (token.symbol === fromToken?.symbol && token.symbol === priceConditionFrom?.symbol) {
         // All three would be the same, default the other two
         const defaultToken = token.symbol === 'OEC' ? 
-          tokens.find(t => t.symbol === 'WETH') || tokens[1] : 
-          tokens.find(t => t.symbol === 'OEC') || tokens[0];
+          tokensWithBalances.find(t => t.symbol === 'WETH') || tokensWithBalances[1] : 
+          tokensWithBalances.find(t => t.symbol === 'ETH') || tokensWithBalances[0];
 
         setFromToken(defaultToken);
         setPriceConditionTokens(prev => ({
@@ -189,8 +211,8 @@ function SwapContent() {
       if (token.symbol === fromToken?.symbol && token.symbol === priceConditionFrom?.symbol) {
         // All three would be the same, default the other two
         const defaultToken = token.symbol === 'OEC' ? 
-          tokens.find(t => t.symbol === 'WETH') || tokens[1] : 
-          tokens.find(t => t.symbol === 'OEC') || tokens[0];
+          tokensWithBalances.find(t => t.symbol === 'WETH') || tokensWithBalances[1] : 
+          tokensWithBalances.find(t => t.symbol === 'ETH') || tokensWithBalances[0];
 
         setFromToken(defaultToken);
         setPriceConditionTokens({
@@ -202,57 +224,118 @@ function SwapContent() {
     setIsTokenModalOpen(false);
   };
 
-  // Mock token list - in real implementation, this would come from API
-  const tokens: Token[] = [
+  // Get wallet connection status
+  const { address, isConnected, chainId } = useAccount();
+
+  // Sepolia testnet tokens - using deployed Eloqura contracts
+  const sepoliaTokens: Token[] = [
     {
-      symbol: "OEC",
-      name: "Eloqura",
-      address: "0x0000000000000000000000000000000000000000",
+      symbol: "ETH",
+      name: "Ethereum",
+      address: "0x0000000000000000000000000000000000000000", // Native ETH
       decimals: 18,
-      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
-      price: 7.37374,
-      balance: 1250.50
-    },
-    {
-      symbol: "USDT",
-      name: "Tether USD",
-      address: "0x55d398326f99059fF775485246999027B3197955",
-      decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/325/small/Tether.png",
-      price: 1.00,
-      balance: 485.25
-    },
-    {
-      symbol: "BNB",
-      name: "BNB",
-      address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-      decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png",
-      price: 645.50,
-      balance: 2.15
+      logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+      price: 0,
     },
     {
       symbol: "WETH",
-      name: "Wrapped Ethereum",
-      address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      name: "Wrapped Ether",
+      address: ELOQURA_CONTRACTS.sepolia.WETH,
       decimals: 18,
       logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
-      price: 3850.75,
-      balance: 0.085
+      price: 0,
     },
-    {
-      symbol: "BTCB",
-      name: "Bitcoin BEP2",
-      address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-      decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/14108/small/Binance-bitcoin.png",
-      price: 98500.25,
-      balance: 0.0015
-    }
   ];
 
+  const tokens = sepoliaTokens;
+  const publicClient = usePublicClient();
+
+  // Store balances in state (like staking app does)
+  const [ethBalance, setEthBalance] = useState<bigint>(0n);
+  const [wethBalance, setWethBalance] = useState<bigint>(0n);
+
+  // Fetch balances directly from blockchain (bypasses wagmi cache)
+  const fetchBalances = async () => {
+    if (!publicClient || !address) return;
+
+    try {
+      // Fetch ETH balance
+      const ethBal = await publicClient.getBalance({ address });
+      setEthBalance(ethBal);
+
+      // Fetch WETH balance
+      const wethBal = await publicClient.readContract({
+        address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [address],
+      }) as bigint;
+      setWethBalance(wethBal);
+    } catch (error) {
+      console.error('Error fetching balances:', error);
+    }
+  };
+
+  // Fetch on mount and when address/publicClient changes
+  useEffect(() => {
+    fetchBalances();
+  }, [publicClient, address]);
+
+  // Update token balances dynamically
+  const tokensWithBalances = tokens.map(token => {
+    if (token.symbol === "ETH") {
+      return { ...token, balance: parseFloat(formatUnits(ethBalance, 18)) };
+    }
+    if (token.symbol === "WETH") {
+      return { ...token, balance: parseFloat(formatUnits(wethBalance, 18)) };
+    }
+    return { ...token, balance: 0 };
+  });
+
+  // Set and sync tokens with balances
+  useEffect(() => {
+    const ethToken = tokensWithBalances.find(t => t.symbol === "ETH");
+    const wethToken = tokensWithBalances.find(t => t.symbol === "WETH");
+
+    // Set defaults if not set, or sync existing selections with updated balances
+    if (!fromToken && !toToken) {
+      // Initial setup
+      if (ethToken) setFromToken(ethToken);
+      if (wethToken) setToToken(wethToken);
+    } else {
+      // Sync existing selections with latest balance data
+      if (fromToken) {
+        const updated = tokensWithBalances.find(t => t.symbol === fromToken.symbol);
+        if (updated) setFromToken(updated);
+      }
+      if (toToken) {
+        const updated = tokensWithBalances.find(t => t.symbol === toToken.symbol);
+        if (updated) setToToken(updated);
+      }
+    }
+  }, [ethBalance, wethBalance]);
+
+  // Contract write hooks for swap execution
+  const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
+
+  // Reset form and refetch balances after successful transaction
+  useEffect(() => {
+    if (isConfirmed) {
+      setFromAmount("");
+      setToAmount("");
+      setQuote(null);
+      // Refetch balances after successful swap
+      setTimeout(() => {
+        fetchBalances();
+      }, 1000); // Small delay to ensure blockchain state is updated
+    }
+  }, [isConfirmed]);
+
   // Filter tokens based on search query
-  const filteredTokens = tokens.filter(token => 
+  const filteredTokens = tokensWithBalances.filter(token =>
     token.symbol.toLowerCase().includes(tokenSearchQuery.toLowerCase()) ||
     token.name.toLowerCase().includes(tokenSearchQuery.toLowerCase()) ||
     token.address.toLowerCase().includes(tokenSearchQuery.toLowerCase())
@@ -268,52 +351,58 @@ function SwapContent() {
     });
   };
 
-  // Simulate getting swap quote (from amount to output)
+  // Get swap quote - handles ETH/WETH wrapping and router quotes
   const getSwapQuote = async (from: Token, to: Token, amount: string, direction: 'from' | 'to' = 'from') => {
     if (!amount || parseFloat(amount) === 0) return null;
 
     setIsLoading(true);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
     const inputAmount = parseFloat(amount);
-    let outputAmount, fee, minimumReceived;
+    let outputAmount: number;
+    let fee: number;
+    let minimumReceived: number;
+    let exchangeRate: number;
+    let priceImpact: number = 0;
 
-    let exchangeRate = from.price / to.price;
-    if (direction === 'to') {
-      exchangeRate = to.price / from.price;
+    // ETH <-> WETH is always 1:1 (wrapping/unwrapping)
+    const isWrapUnwrap =
+      (from.symbol === 'ETH' && to.symbol === 'WETH') ||
+      (from.symbol === 'WETH' && to.symbol === 'ETH');
+
+    if (isWrapUnwrap) {
+      // 1:1 exchange for wrap/unwrap
+      exchangeRate = 1;
+      outputAmount = inputAmount;
+      fee = 0; // No fee for wrap/unwrap
+      priceImpact = 0;
+    } else {
+      // For other pairs, we would query the router
+      // For now, show that no liquidity pool exists
+      exchangeRate = 0;
+      outputAmount = 0;
+      fee = inputAmount * 0.003; // 0.3% fee
+      priceImpact = 0;
     }
 
     if (direction === 'from') {
-      outputAmount = inputAmount * exchangeRate;
-      fee = inputAmount * 0.003; // 0.3% fee on input
       minimumReceived = outputAmount * (1 - slippage / 100);
-
-      setToAmount(outputAmount.toFixed(6));
+      setToAmount(outputAmount > 0 ? outputAmount.toFixed(6) : '0');
     } else {
-      const requiredInput = inputAmount * exchangeRate;
-      fee = requiredInput * 0.003; // 0.3% fee on input
-      const totalRequired = requiredInput + fee;
       minimumReceived = inputAmount * (1 - slippage / 100);
-
-      setFromAmount(totalRequired.toFixed(6));
-      outputAmount = inputAmount;
+      setFromAmount(inputAmount > 0 ? inputAmount.toFixed(6) : '0');
     }
 
-    const priceImpact = Math.random() * 2; // 0-2% random impact
-
-    const mockQuote: SwapQuote = {
+    const swapQuote: SwapQuote = {
       inputAmount: direction === 'from' ? amount : fromAmount,
       outputAmount: direction === 'from' ? outputAmount.toString() : amount,
-      exchangeRate: direction === 'from' ? (from.price / to.price) : (to.price / from.price),
+      exchangeRate,
       priceImpact,
       minimumReceived: minimumReceived.toString(),
       fee,
       route: [from.symbol, to.symbol]
     };
 
-    setQuote(mockQuote);
+    setQuote(swapQuote);
     setIsLoading(false);
   };
 
@@ -329,18 +418,36 @@ function SwapContent() {
   };
 
   const handleSwapExecution = async () => {
-    if (!fromToken || !toToken || (!fromAmount && !toAmount)) return;
+    if (!fromToken || !toToken || !fromAmount || !isConnected) return;
 
-    setIsLoading(true);
+    const amount = parseEther(fromAmount);
 
-    // Simulate swap execution
-    setTimeout(() => {
-      setFromAmount("");
-      setToAmount("");
-      setQuote(null);
-      setIsLoading(false);
-      // Here you would integrate with actual swap contract
-    }, 2000);
+    try {
+      // ETH -> WETH (Wrap)
+      if (fromToken.symbol === 'ETH' && toToken.symbol === 'WETH') {
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
+          abi: WETH_ABI,
+          functionName: 'deposit',
+          value: amount,
+        });
+      }
+      // WETH -> ETH (Unwrap)
+      else if (fromToken.symbol === 'WETH' && toToken.symbol === 'ETH') {
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
+          abi: WETH_ABI,
+          functionName: 'withdraw',
+          args: [amount],
+        });
+      }
+      // Other swaps would go through the router
+      else {
+        console.log('Router swaps not yet implemented - need liquidity pools first');
+      }
+    } catch (error) {
+      console.error('Swap execution error:', error);
+    }
   };
 
   // Handle amount changes for both fields
@@ -1303,7 +1410,8 @@ function SwapContent() {
                 <Button
                   onClick={handleSwapExecution}
                   disabled={
-                    isLoading || 
+                    isLoading || isWritePending || isConfirming ||
+                    !isConnected ||
                     (activeTab === "Trade" && (!fromToken || !toToken || (!fromAmount && !toAmount))) ||
                     (activeTab === "Limit" && (!fromToken || !toToken || !fromAmount || !limitOrder.triggerPrice)) ||
                     (activeTab === "Buy" && (!toToken || !fiatAmount)) ||
@@ -1311,27 +1419,41 @@ function SwapContent() {
                   }
                   className="w-full bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
                 >
-                  {isLoading ? (
+                  {isWritePending ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Confirm in Wallet...</span>
+                    </div>
+                  ) : isConfirming ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Confirming...</span>
+                    </div>
+                  ) : isLoading ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Processing...</span>
                     </div>
+                  ) : !isConnected ? (
+                    "Connect Wallet"
                   ) : activeTab === "Trade" ? (
-                    !fromToken || !toToken ? "Select Tokens" : 
-                    (!fromAmount && !toAmount) ? "Enter Amount" : 
-                    `Trade ${fromToken.symbol}`
+                    !fromToken || !toToken ? "Select Tokens" :
+                    (!fromAmount && !toAmount) ? "Enter Amount" :
+                    fromToken.symbol === 'ETH' && toToken.symbol === 'WETH' ? `Wrap ${fromToken.symbol}` :
+                    fromToken.symbol === 'WETH' && toToken.symbol === 'ETH' ? `Unwrap ${fromToken.symbol}` :
+                    `Swap ${fromToken.symbol}`
                   ) : activeTab === "Limit" ? (
-                    !fromToken || !toToken ? "Select Tokens" : 
-                    !fromAmount ? "Enter Amount" : 
+                    !fromToken || !toToken ? "Select Tokens" :
+                    !fromAmount ? "Enter Amount" :
                     !limitOrder.triggerPrice ? "Set Limit Price" :
                     `Place Limit Order`
                   ) : activeTab === "Buy" ? (
-                    !toToken ? "Select Token" : 
-                    !fiatAmount ? "Enter Amount" : 
+                    !toToken ? "Select Token" :
+                    !fiatAmount ? "Enter Amount" :
                     `Buy ${toToken.symbol}`
                   ) : activeTab === "Sell" ? (
-                    !fromToken ? "Select Token" : 
-                    !fromAmount ? "Enter Amount" : 
+                    !fromToken ? "Select Token" :
+                    !fromAmount ? "Enter Amount" :
                     `Sell ${fromToken.symbol}`
                   ) : "Connect Wallet"}
                 </Button>
