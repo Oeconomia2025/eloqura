@@ -181,6 +181,92 @@ function LiquidityContent() {
   const [needsApprovalToken1, setNeedsApprovalToken1] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
+  // Get current pair for selected tokens (if exists)
+  const getCurrentPair = () => {
+    if (!selectedToken0 || !selectedToken1) return null;
+
+    // Get the actual token addresses (ETH uses WETH in pairs)
+    const addr0 = selectedToken0.symbol === 'ETH'
+      ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+      : selectedToken0.address.toLowerCase();
+    const addr1 = selectedToken1.symbol === 'ETH'
+      ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+      : selectedToken1.address.toLowerCase();
+
+    return eloquraPairs.find(pair =>
+      (pair.token0.toLowerCase() === addr0 && pair.token1.toLowerCase() === addr1) ||
+      (pair.token0.toLowerCase() === addr1 && pair.token1.toLowerCase() === addr0)
+    );
+  };
+
+  // Calculate amount1 when amount0 changes based on pool ratio
+  const handleAmount0Change = (value: string) => {
+    setAmount0(value);
+
+    if (!value || !selectedToken0 || !selectedToken1) {
+      return;
+    }
+
+    const pair = getCurrentPair();
+    if (pair) {
+      // Determine which reserve corresponds to which token
+      const addr0 = selectedToken0.symbol === 'ETH'
+        ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+        : selectedToken0.address.toLowerCase();
+
+      const isToken0First = pair.token0.toLowerCase() === addr0;
+      const reserve0 = isToken0First ? pair.reserve0 : pair.reserve1;
+      const reserve1 = isToken0First ? pair.reserve1 : pair.reserve0;
+
+      if (reserve0 > 0n) {
+        const inputAmount = parseFloat(value);
+        const reserve0Float = parseFloat(formatUnits(reserve0, selectedToken0.decimals));
+        const reserve1Float = parseFloat(formatUnits(reserve1, selectedToken1.decimals));
+
+        // Calculate amount1 based on the ratio
+        const calculatedAmount1 = (inputAmount * reserve1Float) / reserve0Float;
+        if (isFinite(calculatedAmount1) && calculatedAmount1 > 0) {
+          setAmount1(calculatedAmount1.toFixed(6));
+        }
+      }
+    }
+    // If no pair exists, user is setting initial ratio - don't auto-calculate
+  };
+
+  // Calculate amount0 when amount1 changes based on pool ratio
+  const handleAmount1Change = (value: string) => {
+    setAmount1(value);
+
+    if (!value || !selectedToken0 || !selectedToken1) {
+      return;
+    }
+
+    const pair = getCurrentPair();
+    if (pair) {
+      // Determine which reserve corresponds to which token
+      const addr0 = selectedToken0.symbol === 'ETH'
+        ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+        : selectedToken0.address.toLowerCase();
+
+      const isToken0First = pair.token0.toLowerCase() === addr0;
+      const reserve0 = isToken0First ? pair.reserve0 : pair.reserve1;
+      const reserve1 = isToken0First ? pair.reserve1 : pair.reserve0;
+
+      if (reserve1 > 0n) {
+        const inputAmount = parseFloat(value);
+        const reserve0Float = parseFloat(formatUnits(reserve0, selectedToken0.decimals));
+        const reserve1Float = parseFloat(formatUnits(reserve1, selectedToken1.decimals));
+
+        // Calculate amount0 based on the ratio
+        const calculatedAmount0 = (inputAmount * reserve0Float) / reserve1Float;
+        if (isFinite(calculatedAmount0) && calculatedAmount0 > 0) {
+          setAmount0(calculatedAmount0.toFixed(6));
+        }
+      }
+    }
+    // If no pair exists, user is setting initial ratio - don't auto-calculate
+  };
+
   // Check token approvals
   const checkApprovals = async () => {
     if (!publicClient || !address || !selectedToken0 || !selectedToken1) return;
@@ -1432,7 +1518,7 @@ function LiquidityContent() {
                               <Input
                                 type="number"
                                 value={amount0}
-                                onChange={(e) => setAmount0(e.target.value)}
+                                onChange={(e) => handleAmount0Change(e.target.value)}
                                 placeholder="0.0"
                                 className="flex-1 bg-transparent border-none text-white text-xl font-semibold"
                               />
@@ -1454,7 +1540,7 @@ function LiquidityContent() {
                               <Input
                                 type="number"
                                 value={amount1}
-                                onChange={(e) => setAmount1(e.target.value)}
+                                onChange={(e) => handleAmount1Change(e.target.value)}
                                 placeholder="0.0"
                                 className="flex-1 bg-transparent border-none text-white text-xl font-semibold"
                               />
