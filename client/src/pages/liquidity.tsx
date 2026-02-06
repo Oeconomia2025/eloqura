@@ -339,186 +339,102 @@ function LiquidityContent() {
 
 
 
-  // Sample positions data
-  const [positions] = useState<Position[]>([
+  // Sepolia testnet tokens for liquidity
+  const sepoliaTokens: Token[] = [
     {
-      id: "1",
-      token0: {
-        symbol: "OEC",
-        name: "Eloqura",
-        address: "0x55d398326f99059fF775485246999027B3197955",
-        decimals: 18,
-        logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
-        price: 0.85,
-        balance: 1000
-      },
-      token1: {
-        symbol: "BNB",
-        name: "Binance Coin",
-        address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-        decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
-        price: 610.50,
-        balance: 5
-      },
-      liquidity: "12.5",
-      fee: 0.25,
-      minPrice: 0.00120,
-      maxPrice: 0.00180,
-      currentPrice: 0.00139,
-      uncollectedFees0: "2.34",
-      uncollectedFees1: "0.0012",
-      value: 2450.75,
-      status: 'in-range'
-    },
-    {
-      id: "2",
-      token0: {
-        symbol: "USDT",
-        name: "Tether USD",
-        address: "0x55d398326f99059fF775485246999027B3197955",
-        decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png",
-        price: 1.00,
-        balance: 500
-      },
-      token1: {
-        symbol: "OEC",
-        name: "Eloqura",
-        address: "0x55d398326f99059fF775485246999027B3197955",
-        decimals: 18,
-        logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
-        price: 0.85,
-        balance: 1000
-      },
-      liquidity: "8.2",
-      fee: 0.5,
-      minPrice: 0.75,
-      maxPrice: 1.20,
-      currentPrice: 0.85,
-      uncollectedFees0: "1.23",
-      uncollectedFees1: "0.89",
-      value: 1680.50,
-      status: 'in-range'
-    },
-    {
-      id: "3",
-      token0: {
-        symbol: "BTC",
-        name: "Bitcoin",
-        address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-        decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
-        price: 97500.00,
-        balance: 0.1
-      },
-      token1: {
-        symbol: "WETH",
-        name: "Wrapped Ethereum",
-        address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
-        decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
-        price: 3200.50,
-        balance: 2
-      },
-      liquidity: "18.7",
-      fee: 0.5,
-      minPrice: 28.5,
-      maxPrice: 32.8,
-      currentPrice: 30.46,
-      uncollectedFees0: "0.0084",
-      uncollectedFees1: "0.257",
-      value: 5250.00,
-      status: 'in-range'
-    },
-    {
-      id: "4",
-      token0: {
-        symbol: "BTC",
-        name: "Bitcoin",
-        address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-        decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
-        price: 97500.00,
-        balance: 0.1
-      },
-      token1: {
-        symbol: "USDC",
-        name: "USD Coin",
-        address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-        decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png",
-        price: 1.00,
-        balance: 1000
-      },
-      liquidity: "22.1",
-      fee: 0.05,
-      minPrice: 95000,
-      maxPrice: 102000,
-      currentPrice: 97500,
-      uncollectedFees0: "0.0009",
-      uncollectedFees1: "31.50",
-      value: 3800.00,
-      status: 'in-range'
-    }
-  ]);
-
-  const availableTokens: Token[] = [
-    {
-      symbol: "OEC",
-      name: "Oeconomia",
-      address: "0x55d398326f99059fF775485246999027B3197955",
+      symbol: "ETH",
+      name: "Ethereum",
+      address: "0x0000000000000000000000000000000000000000",
       decimals: 18,
-      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
-      price: 0.85,
-      balance: 1000
-    },
-    {
-      symbol: "BNB",
-      name: "Binance Coin",
-      address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-      decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
-      price: 610.50,
-      balance: 5
-    },
-    {
-      symbol: "USDT",
-      name: "Tether USD",
-      address: "0x55d398326f99059fF775485246999027B3197955",
-      decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png",
-      price: 1.00,
-      balance: 500
+      logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+      price: 0,
     },
     {
       symbol: "WETH",
-      name: "Wrapped Ethereum",
-      address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      name: "Wrapped Ether",
+      address: ELOQURA_CONTRACTS.sepolia.WETH,
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
-      price: 3200.50,
-      balance: 2
+      logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
+      price: 0,
     },
     {
-      symbol: "BTC",
-      name: "Bitcoin",
-      address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+      symbol: "LINK",
+      name: "Chainlink",
+      address: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
-      price: 97500.00,
-      balance: 0.1
+      logo: "https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png",
+      price: 0,
     },
     {
       symbol: "USDC",
       name: "USD Coin",
-      address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      decimals: 6,
+      logo: "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
+      price: 0,
+    },
+    {
+      symbol: "AAVE",
+      name: "Aave",
+      address: "0x5bB220Afc6E2e008CB2302a83536A019ED245AA2",
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png",
-      price: 1.00,
-      balance: 1000
-    }
+      logo: "https://assets.coingecko.com/coins/images/12645/small/aave-token-round.png",
+      price: 0,
+    },
+    {
+      symbol: "DAI",
+      name: "Dai Stablecoin",
+      address: "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6",
+      decimals: 18,
+      logo: "https://assets.coingecko.com/coins/images/9956/small/dai-multi-collateral-mcd.png",
+      price: 0,
+    },
   ];
+
+  // Helper to get token info from address
+  const getTokenInfo = (tokenAddress: string): Token => {
+    const found = sepoliaTokens.find(t => t.address.toLowerCase() === tokenAddress.toLowerCase());
+    if (found) return found;
+    // Return placeholder for unknown tokens
+    return {
+      symbol: tokenAddress.slice(0, 6) + "...",
+      name: "Unknown Token",
+      address: tokenAddress,
+      decimals: 18,
+      logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+      price: 0,
+    };
+  };
+
+  // Convert Eloqura pairs to Position format for display
+  const positions: Position[] = eloquraPairs
+    .filter(pair => pair.lpBalance > 0n) // Only show pairs where user has LP tokens
+    .map((pair, index) => {
+      const token0Info = getTokenInfo(pair.token0);
+      const token1Info = getTokenInfo(pair.token1);
+      const lpBalanceFormatted = parseFloat(formatUnits(pair.lpBalance, 18));
+      const totalSupply = parseFloat(formatUnits(pair.totalSupply, 18));
+      const sharePercent = totalSupply > 0 ? (lpBalanceFormatted / totalSupply) * 100 : 0;
+      const reserve0 = parseFloat(formatUnits(pair.reserve0, token0Info.decimals));
+      const reserve1 = parseFloat(formatUnits(pair.reserve1, token1Info.decimals));
+
+      return {
+        id: pair.address,
+        token0: token0Info,
+        token1: token1Info,
+        liquidity: lpBalanceFormatted.toFixed(6),
+        fee: 0.3, // Eloqura uses 0.3% fee
+        minPrice: 0,
+        maxPrice: 0,
+        currentPrice: reserve0 > 0 ? reserve1 / reserve0 : 0,
+        uncollectedFees0: "0",
+        uncollectedFees1: "0",
+        value: 0, // Would need price oracle for real value
+        status: 'in-range' as const,
+      };
+    });
+
+  const availableTokens = sepoliaTokens;
 
   const feeOptions = [
     { value: 0.05, label: "0.05%", description: "Best for stablecoin pairs" },
@@ -905,14 +821,15 @@ function LiquidityContent() {
                       <div className="w-16 h-16 bg-gradient-to-r from-crypto-blue/20 to-crypto-green/20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Droplets className="w-8 h-8 text-crypto-blue" />
                       </div>
-                      <h3 className="text-xl font-semibold text-white mb-2">No liquidity positions</h3>
-                      <p className="text-gray-400 mb-6">Create your first position to start earning fees</p>
+                      <h3 className="text-xl font-semibold text-white mb-2">No Eloqura LP Positions</h3>
+                      <p className="text-gray-400 mb-2">You don't have any liquidity positions on Eloqura DEX yet.</p>
+                      <p className="text-gray-500 text-sm mb-6">Add liquidity to earn 0.3% fees on every swap!</p>
                       <Button
                         onClick={() => setActiveView('create')}
                         className="bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Create Position
+                        Add Liquidity
                       </Button>
                     </div>
                   ) : (
