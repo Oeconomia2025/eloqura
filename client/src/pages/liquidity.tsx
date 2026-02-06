@@ -174,13 +174,6 @@ function LiquidityContent() {
     fetchEloquraPairs();
   }, [publicClient, address]);
 
-  // Refetch after successful transaction
-  useEffect(() => {
-    if (isConfirmed) {
-      setTimeout(fetchEloquraPairs, 1000);
-    }
-  }, [isConfirmed]);
-
   // Add liquidity to Eloqura
   const handleAddLiquidityEloqura = async () => {
     if (!selectedToken0 || !selectedToken1 || !amount0 || !amount1 || !address) return;
@@ -339,6 +332,64 @@ function LiquidityContent() {
 
 
 
+  // Token balances state
+  const [tokenBalances, setTokenBalances] = useState<Record<string, bigint>>({});
+
+  // Fetch token balances
+  const fetchTokenBalances = async () => {
+    if (!publicClient || !address) return;
+
+    try {
+      const balances: Record<string, bigint> = {};
+
+      // Fetch ETH balance
+      const ethBal = await publicClient.getBalance({ address });
+      balances["0x0000000000000000000000000000000000000000"] = ethBal;
+
+      // Fetch ERC20 balances
+      const tokenAddresses = [
+        ELOQURA_CONTRACTS.sepolia.WETH,
+        "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
+        "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
+        "0x5bB220Afc6E2e008CB2302a83536A019ED245AA2", // AAVE
+        "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6", // DAI
+      ];
+
+      for (const tokenAddr of tokenAddresses) {
+        try {
+          const bal = await publicClient.readContract({
+            address: tokenAddr as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }) as bigint;
+          balances[tokenAddr] = bal;
+        } catch (err) {
+          balances[tokenAddr] = 0n;
+        }
+      }
+
+      setTokenBalances(balances);
+    } catch (error) {
+      console.error('Error fetching token balances:', error);
+    }
+  };
+
+  // Fetch balances on mount and when address changes
+  useEffect(() => {
+    fetchTokenBalances();
+  }, [publicClient, address]);
+
+  // Refetch balances after successful transaction
+  useEffect(() => {
+    if (isConfirmed) {
+      setTimeout(() => {
+        fetchTokenBalances();
+        fetchEloquraPairs();
+      }, 1000);
+    }
+  }, [isConfirmed]);
+
   // Sepolia testnet tokens for liquidity
   const sepoliaTokens: Token[] = [
     {
@@ -434,7 +485,14 @@ function LiquidityContent() {
       };
     });
 
-  const availableTokens = sepoliaTokens;
+  // Add balances to tokens
+  const availableTokens = sepoliaTokens.map(token => {
+    const balance = tokenBalances[token.address] ?? 0n;
+    return {
+      ...token,
+      balance: parseFloat(formatUnits(balance, token.decimals)),
+    };
+  });
 
   const feeOptions = [
     { value: 0.05, label: "0.05%", description: "Best for stablecoin pairs" },
