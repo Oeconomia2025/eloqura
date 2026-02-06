@@ -34,6 +34,7 @@ import type { LiveCoinWatchDbCoin } from "@shared/schema";
 import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { ELOQURA_CONTRACTS, FACTORY_ABI, ROUTER_ABI, PAIR_ABI, ERC20_ABI } from "@/lib/contracts";
+import { useToast } from "@/hooks/use-toast";
 
 interface Token {
   symbol: string;
@@ -101,8 +102,9 @@ function LiquidityContent() {
   // Wagmi hooks for blockchain interaction
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
-  const { writeContract, data: txHash, isPending: isWritePending } = useWriteContract();
+  const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+  const { toast } = useToast();
 
   // Real Eloqura pool data
   const [eloquraPairs, setEloquraPairs] = useState<Array<{
@@ -174,96 +176,347 @@ function LiquidityContent() {
     fetchEloquraPairs();
   }, [publicClient, address]);
 
-  // Add liquidity to Eloqura
-  const handleAddLiquidityEloqura = async () => {
-    if (!selectedToken0 || !selectedToken1 || !amount0 || !amount1 || !address) return;
+  // Token approval state
+  const [needsApprovalToken0, setNeedsApprovalToken0] = useState(false);
+  const [needsApprovalToken1, setNeedsApprovalToken1] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
-    const amount0Wei = parseUnits(amount0, selectedToken0.decimals);
-    const amount1Wei = parseUnits(amount1, selectedToken1.decimals);
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+  // Check token approvals
+  const checkApprovals = async () => {
+    if (!publicClient || !address || !selectedToken0 || !selectedToken1) return;
 
-    // Check if one token is ETH/WETH
-    const isToken0ETH = selectedToken0.symbol === 'ETH';
-    const isToken1ETH = selectedToken1.symbol === 'ETH';
-
-    if (isToken0ETH || isToken1ETH) {
-      // Use addLiquidityETH
-      const tokenAddress = isToken0ETH ? selectedToken1.address : selectedToken0.address;
-      const tokenAmount = isToken0ETH ? amount1Wei : amount0Wei;
-      const ethAmount = isToken0ETH ? amount0Wei : amount1Wei;
-
-      writeContract({
-        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-        abi: ROUTER_ABI,
-        functionName: 'addLiquidityETH',
-        args: [
-          tokenAddress as `0x${string}`,
-          tokenAmount,
-          0n, // amountTokenMin (0 for simplicity, should calculate with slippage)
-          0n, // amountETHMin
-          address,
-          deadline,
-        ],
-        value: ethAmount,
-      });
+    // ETH doesn't need approval
+    if (selectedToken0.symbol !== 'ETH' && amount0) {
+      try {
+        const allowance = await publicClient.readContract({
+          address: selectedToken0.address as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [address, ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`],
+        }) as bigint;
+        const needed = parseUnits(amount0, selectedToken0.decimals);
+        setNeedsApprovalToken0(allowance < needed);
+      } catch {
+        setNeedsApprovalToken0(false);
+      }
     } else {
-      // Use addLiquidity for token-token pairs
-      writeContract({
-        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-        abi: ROUTER_ABI,
-        functionName: 'addLiquidity',
-        args: [
-          selectedToken0.address as `0x${string}`,
-          selectedToken1.address as `0x${string}`,
-          amount0Wei,
-          amount1Wei,
-          0n, // amountAMin
-          0n, // amountBMin
-          address,
-          deadline,
-        ],
+      setNeedsApprovalToken0(false);
+    }
+
+    if (selectedToken1.symbol !== 'ETH' && amount1) {
+      try {
+        const allowance = await publicClient.readContract({
+          address: selectedToken1.address as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [address, ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`],
+        }) as bigint;
+        const needed = parseUnits(amount1, selectedToken1.decimals);
+        setNeedsApprovalToken1(allowance < needed);
+      } catch {
+        setNeedsApprovalToken1(false);
+      }
+    } else {
+      setNeedsApprovalToken1(false);
+    }
+  };
+
+  // Check approvals when tokens or amounts change
+  useEffect(() => {
+    checkApprovals();
+  }, [selectedToken0, selectedToken1, amount0, amount1, address]);
+
+  // Handle token approval
+  const handleApproveToken = async (tokenIndex: 0 | 1) => {
+    const token = tokenIndex === 0 ? selectedToken0 : selectedToken1;
+    if (!token || token.symbol === 'ETH') return;
+
+    setIsApproving(true);
+    writeContract({
+      address: token.address as `0x${string}`,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`, parseUnits('1000000000', token.decimals)],
+    });
+  };
+
+  // Recheck approvals after successful transaction
+  useEffect(() => {
+    if (isConfirmed && isApproving) {
+      setIsApproving(false);
+      setTimeout(checkApprovals, 1000);
+    }
+  }, [isConfirmed]);
+
+  // Show errors from writeContract
+  useEffect(() => {
+    if (writeError) {
+      console.error('Write contract error:', writeError);
+      toast({
+        title: "Transaction Failed",
+        description: writeError.message?.slice(0, 100) || "Failed to execute transaction",
+        variant: "destructive",
       });
     }
+  }, [writeError]);
+
+  // Track if we're adding liquidity (not approving)
+  const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
+
+  // Show success toast when transaction confirms
+  useEffect(() => {
+    if (isConfirmed && txHash) {
+      if (isApprovingLP) {
+        toast({
+          title: "LP Token Approved!",
+          description: "You can now remove liquidity",
+        });
+        setIsApprovingLP(false);
+        setNeedsLPApproval(false);
+      } else if (isApproving) {
+        toast({
+          title: "Token Approved!",
+          description: "You can now add liquidity",
+        });
+        setIsApproving(false);
+      } else if (isAddingLiquidity) {
+        toast({
+          title: "Liquidity Added!",
+          description: `Successfully added liquidity to ${selectedToken0?.symbol}/${selectedToken1?.symbol} pool`,
+        });
+        setIsAddingLiquidity(false);
+        // Clear the form
+        setAmount0("");
+        setAmount1("");
+      } else if (isRemovingLiquidity) {
+        toast({
+          title: "Liquidity Removed!",
+          description: "Successfully removed liquidity from the pool",
+        });
+        setIsRemovingLiquidity(false);
+        setShowRemoveModal(false);
+        setSelectedPositionForRemoval(null);
+        // Refresh pairs
+        fetchEloquraPairs();
+      }
+    }
+  }, [isConfirmed, txHash]);
+
+  // Add liquidity to Eloqura
+  const handleAddLiquidityEloqura = async () => {
+    if (!selectedToken0 || !selectedToken1 || !amount0 || !amount1 || !address) {
+      toast({
+        title: "Missing Information",
+        description: "Please select both tokens and enter amounts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const amount0Wei = parseUnits(amount0, selectedToken0.decimals);
+      const amount1Wei = parseUnits(amount1, selectedToken1.decimals);
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 minutes
+
+      // Check if one token is ETH
+      const isToken0ETH = selectedToken0.symbol === 'ETH';
+      const isToken1ETH = selectedToken1.symbol === 'ETH';
+
+      toast({
+        title: "Adding Liquidity",
+        description: "Please confirm the transaction in your wallet",
+      });
+
+      setIsAddingLiquidity(true);
+
+      if (isToken0ETH || isToken1ETH) {
+        // Use addLiquidityETH
+        const tokenAddress = isToken0ETH ? selectedToken1.address : selectedToken0.address;
+        const tokenAmount = isToken0ETH ? amount1Wei : amount0Wei;
+        const ethAmount = isToken0ETH ? amount0Wei : amount1Wei;
+
+        console.log('Adding liquidity ETH:', {
+          router: ELOQURA_CONTRACTS.sepolia.Router,
+          token: tokenAddress,
+          tokenAmount: tokenAmount.toString(),
+          ethAmount: ethAmount.toString(),
+          deadline: deadline.toString(),
+        });
+
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+          abi: ROUTER_ABI,
+          functionName: 'addLiquidityETH',
+          args: [
+            tokenAddress as `0x${string}`,
+            tokenAmount,
+            0n, // amountTokenMin (0 for simplicity, should calculate with slippage)
+            0n, // amountETHMin
+            address,
+            deadline,
+          ],
+          value: ethAmount,
+        });
+      } else {
+        // Use addLiquidity for token-token pairs
+        console.log('Adding liquidity tokens:', {
+          router: ELOQURA_CONTRACTS.sepolia.Router,
+          token0: selectedToken0.address,
+          token1: selectedToken1.address,
+          amount0: amount0Wei.toString(),
+          amount1: amount1Wei.toString(),
+          deadline: deadline.toString(),
+        });
+
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+          abi: ROUTER_ABI,
+          functionName: 'addLiquidity',
+          args: [
+            selectedToken0.address as `0x${string}`,
+            selectedToken1.address as `0x${string}`,
+            amount0Wei,
+            amount1Wei,
+            0n, // amountAMin
+            0n, // amountBMin
+            address,
+            deadline,
+          ],
+        });
+      }
+    } catch (error: any) {
+      console.error('Add liquidity error:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to add liquidity",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Track if we're removing liquidity
+  const [isRemovingLiquidity, setIsRemovingLiquidity] = useState(false);
+  const [needsLPApproval, setNeedsLPApproval] = useState(false);
+  const [isApprovingLP, setIsApprovingLP] = useState(false);
+
+  // Check LP token approval for removal
+  const checkLPApproval = async (pairAddress: string, lpAmount: bigint) => {
+    if (!publicClient || !address) return true; // Assume approved if can't check
+
+    try {
+      const allowance = await publicClient.readContract({
+        address: pairAddress as `0x${string}`,
+        abi: PAIR_ABI,
+        functionName: 'balanceOf', // First check balance
+        args: [address],
+      }) as bigint;
+
+      // Check allowance to Router
+      const lpAllowance = await publicClient.readContract({
+        address: pairAddress as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [address, ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`],
+      }) as bigint;
+
+      return lpAllowance >= lpAmount;
+    } catch (error) {
+      console.error('Error checking LP approval:', error);
+      return false;
+    }
+  };
+
+  // Approve LP tokens to Router
+  const handleApproveLPToken = async (pairAddress: string) => {
+    setIsApprovingLP(true);
+    toast({
+      title: "Approving LP Token",
+      description: "Please confirm the approval in your wallet",
+    });
+
+    writeContract({
+      address: pairAddress as `0x${string}`,
+      abi: PAIR_ABI,
+      functionName: 'approve',
+      args: [ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`, parseUnits('1000000000', 18)],
+    });
   };
 
   // Remove liquidity from Eloqura
   const handleRemoveLiquidityEloqura = async (pairAddress: string, lpAmount: bigint, token0: string, token1: string) => {
     if (!address) return;
 
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
-    const isToken0WETH = token0.toLowerCase() === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
-    const isToken1WETH = token1.toLowerCase() === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+    try {
+      // Check if LP tokens are approved
+      const isApproved = await checkLPApproval(pairAddress, lpAmount);
+      if (!isApproved) {
+        setNeedsLPApproval(true);
+        toast({
+          title: "Approval Required",
+          description: "You need to approve LP tokens before removing liquidity",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (isToken0WETH || isToken1WETH) {
-      const tokenAddress = isToken0WETH ? token1 : token0;
-
-      writeContract({
-        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-        abi: ROUTER_ABI,
-        functionName: 'removeLiquidityETH',
-        args: [
-          tokenAddress as `0x${string}`,
-          lpAmount,
-          0n,
-          0n,
-          address,
-          deadline,
-        ],
+      setIsRemovingLiquidity(true);
+      toast({
+        title: "Removing Liquidity",
+        description: "Please confirm the transaction in your wallet",
       });
-    } else {
-      writeContract({
-        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-        abi: ROUTER_ABI,
-        functionName: 'removeLiquidity',
-        args: [
-          token0 as `0x${string}`,
-          token1 as `0x${string}`,
-          lpAmount,
-          0n,
-          0n,
-          address,
-          deadline,
-        ],
+
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+      const isToken0WETH = token0.toLowerCase() === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+      const isToken1WETH = token1.toLowerCase() === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+
+      console.log('Removing liquidity:', {
+        pairAddress,
+        lpAmount: lpAmount.toString(),
+        token0,
+        token1,
+        isToken0WETH,
+        isToken1WETH,
+      });
+
+      if (isToken0WETH || isToken1WETH) {
+        const tokenAddress = isToken0WETH ? token1 : token0;
+
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+          abi: ROUTER_ABI,
+          functionName: 'removeLiquidityETH',
+          args: [
+            tokenAddress as `0x${string}`,
+            lpAmount,
+            0n,
+            0n,
+            address,
+            deadline,
+          ],
+        });
+      } else {
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+          abi: ROUTER_ABI,
+          functionName: 'removeLiquidity',
+          args: [
+            token0 as `0x${string}`,
+            token1 as `0x${string}`,
+            lpAmount,
+            0n,
+            0n,
+            address,
+            deadline,
+          ],
+        });
+      }
+    } catch (error: any) {
+      console.error('Remove liquidity error:', error);
+      setIsRemovingLiquidity(false);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to remove liquidity",
+        variant: "destructive",
       });
     }
   };
@@ -1013,6 +1266,8 @@ function LiquidityContent() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedPositionForRemoval(position);
+                                    setNeedsLPApproval(false);
+                                    setRemovalPercentage(25);
                                     setShowRemoveModal(true);
                                   }}
                                 >
@@ -1215,27 +1470,68 @@ function LiquidityContent() {
 
                     {/* Create Position Button */}
                     {selectedToken0 && selectedToken1 && amount0 && amount1 && (
-                      <Button
-                        onClick={() => {
-                          setIsLoading(true);
-                          // Simulate transaction
-                          setTimeout(() => {
-                            setIsLoading(false);
-                            setActiveView('positions');
-                          }, 2000);
-                        }}
-                        disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50 py-6 text-lg"
-                      >
-                        {isLoading ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Creating Position...</span>
-                          </div>
-                        ) : (
-                          "Create Position"
+                      <div className="space-y-3">
+                        {/* Token0 Approval Button */}
+                        {needsApprovalToken0 && selectedToken0.symbol !== 'ETH' && (
+                          <Button
+                            onClick={() => handleApproveToken(0)}
+                            disabled={isWritePending || isConfirming || isApproving || !isConnected}
+                            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 disabled:opacity-50 py-6 text-lg"
+                          >
+                            {isWritePending && isApproving ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Approving {selectedToken0.symbol}...</span>
+                              </div>
+                            ) : (
+                              `Approve ${selectedToken0.symbol}`
+                            )}
+                          </Button>
                         )}
-                      </Button>
+
+                        {/* Token1 Approval Button */}
+                        {!needsApprovalToken0 && needsApprovalToken1 && selectedToken1.symbol !== 'ETH' && (
+                          <Button
+                            onClick={() => handleApproveToken(1)}
+                            disabled={isWritePending || isConfirming || isApproving || !isConnected}
+                            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 disabled:opacity-50 py-6 text-lg"
+                          >
+                            {isWritePending && isApproving ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Approving {selectedToken1.symbol}...</span>
+                              </div>
+                            ) : (
+                              `Approve ${selectedToken1.symbol}`
+                            )}
+                          </Button>
+                        )}
+
+                        {/* Add Liquidity Button - only show when both tokens are approved */}
+                        {!needsApprovalToken0 && !needsApprovalToken1 && (
+                          <Button
+                            onClick={handleAddLiquidityEloqura}
+                            disabled={isLoading || isWritePending || isConfirming || !isConnected}
+                            className="w-full bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50 py-6 text-lg"
+                          >
+                            {isWritePending ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Confirm in Wallet...</span>
+                              </div>
+                            ) : isConfirming ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Adding Liquidity...</span>
+                              </div>
+                            ) : !isConnected ? (
+                              "Connect Wallet"
+                            ) : (
+                              `Add Liquidity (${selectedToken0.symbol}/${selectedToken1.symbol})`
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -1769,26 +2065,49 @@ function LiquidityContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Position Value</span>
-                    <span className="text-white">{formatPrice(selectedPositionForRemoval.value)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Amount to Remove</span>
-                    <span className="text-white">{formatPrice(selectedPositionForRemoval.value * (removalPercentage / 100))}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Estimated {selectedPositionForRemoval.token0.symbol}</span>
-                    <span className="text-white">
-                      {formatNumber(parseFloat(selectedPositionForRemoval.liquidity) * (removalPercentage / 100) * 0.5, 6)} {selectedPositionForRemoval.token0.symbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Estimated {selectedPositionForRemoval.token1.symbol}</span>
-                    <span className="text-white">
-                      {formatNumber(parseFloat(selectedPositionForRemoval.liquidity) * (removalPercentage / 100) * 0.5, 6)} {selectedPositionForRemoval.token1.symbol}
-                    </span>
-                  </div>
+                  {(() => {
+                    // Calculate actual token amounts based on pool share
+                    const pair = eloquraPairs.find(p => p.address === selectedPositionForRemoval.id);
+                    if (!pair) return null;
+
+                    const lpBalance = parseFloat(formatUnits(pair.lpBalance, 18));
+                    const totalSupply = parseFloat(formatUnits(pair.totalSupply, 18));
+                    const reserve0 = parseFloat(formatUnits(pair.reserve0, selectedPositionForRemoval.token0.decimals));
+                    const reserve1 = parseFloat(formatUnits(pair.reserve1, selectedPositionForRemoval.token1.decimals));
+
+                    // User's share of the pool
+                    const sharePercent = totalSupply > 0 ? lpBalance / totalSupply : 0;
+
+                    // Estimated token amounts for removal
+                    const estimatedToken0 = reserve0 * sharePercent * (removalPercentage / 100);
+                    const estimatedToken1 = reserve1 * sharePercent * (removalPercentage / 100);
+                    const lpToRemove = lpBalance * (removalPercentage / 100);
+
+                    return (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Pool Share</span>
+                          <span className="text-white">{(sharePercent * 100).toFixed(4)}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">LP Tokens to Remove</span>
+                          <span className="text-white">{formatNumber(lpToRemove, 6)} LP</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Estimated {selectedPositionForRemoval.token0.symbol}</span>
+                          <span className="text-white">
+                            {formatNumber(estimatedToken0, 6)} {selectedPositionForRemoval.token0.symbol}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Estimated {selectedPositionForRemoval.token1.symbol}</span>
+                          <span className="text-white">
+                            {formatNumber(estimatedToken1, 6)} {selectedPositionForRemoval.token1.symbol}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1814,29 +2133,60 @@ function LiquidityContent() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => {
-                    setIsLoading(true);
-                    // Simulate transaction
-                    setTimeout(() => {
-                      setIsLoading(false);
-                      setShowRemoveModal(false);
-                      setSelectedPositionForRemoval(null);
-                      // Here you would typically update the positions list
-                    }, 2000);
-                  }}
-                  disabled={isLoading}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Removing...</span>
-                    </div>
-                  ) : (
-                    "Remove Liquidity"
-                  )}
-                </Button>
+                {needsLPApproval ? (
+                  <Button
+                    onClick={() => {
+                      if (selectedPositionForRemoval) {
+                        handleApproveLPToken(selectedPositionForRemoval.id);
+                      }
+                    }}
+                    disabled={isWritePending || isConfirming || isApprovingLP}
+                    className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white"
+                  >
+                    {isWritePending || isApprovingLP ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Approving...</span>
+                      </div>
+                    ) : (
+                      "Approve LP Token"
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      if (selectedPositionForRemoval) {
+                        // Find the pair data to get token addresses
+                        const pair = eloquraPairs.find(p => p.address === selectedPositionForRemoval.id);
+                        if (pair) {
+                          const lpAmountToRemove = (pair.lpBalance * BigInt(removalPercentage)) / 100n;
+                          handleRemoveLiquidityEloqura(
+                            pair.address,
+                            lpAmountToRemove,
+                            pair.token0,
+                            pair.token1
+                          );
+                        }
+                      }
+                    }}
+                    disabled={isWritePending || isConfirming || isRemovingLiquidity}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {isWritePending || isRemovingLiquidity ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Removing...</span>
+                      </div>
+                    ) : isConfirming ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Confirming...</span>
+                      </div>
+                    ) : (
+                      "Remove Liquidity"
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           )}
