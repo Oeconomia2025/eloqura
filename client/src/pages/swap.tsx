@@ -2146,7 +2146,7 @@ function SwapContent() {
             />
           </div>
 
-          <div className="space-y-2 max-h-80 overflow-y-auto">
+          <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
             {filteredTokens.map((token) => (
               <div key={token.symbol} className="flex items-center gap-1">
                 <Button
