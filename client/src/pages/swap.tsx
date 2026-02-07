@@ -256,6 +256,14 @@ function SwapContent() {
   // Sepolia testnet tokens - official testnet contract addresses
   const sepoliaTokens: Token[] = [
     {
+      symbol: "OEC",
+      name: "Oeconomia",
+      address: "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba",
+      decimals: 18,
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
+      price: 0,
+    },
+    {
       symbol: "ETH",
       name: "Ethereum",
       address: "0x0000000000000000000000000000000000000000", // Native ETH
@@ -2162,14 +2170,18 @@ function SwapContent() {
                     </div>
                   </div>
                 </Button>
-                {token.address !== "0x0000000000000000000000000000000000000000" && isConnected && (
-                  <button
-                    onClick={(e) => addTokenToWallet(token, e)}
-                    className="flex-shrink-0 p-2 rounded-lg hover:bg-[var(--crypto-dark)] text-gray-400 hover:text-cyan-400 transition-colors"
-                    title={`Add ${token.symbol} to wallet`}
-                  >
-                    <Wallet className="w-4 h-4" />
-                  </button>
+                {isConnected && (
+                  token.address !== "0x0000000000000000000000000000000000000000" ? (
+                    <button
+                      onClick={(e) => addTokenToWallet(token, e)}
+                      className="flex-shrink-0 p-2 rounded-lg hover:bg-[var(--crypto-dark)] text-gray-400 hover:text-cyan-400 transition-colors"
+                      title={`Add ${token.symbol} to wallet`}
+                    >
+                      <Wallet className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <div className="flex-shrink-0 p-2 w-8" />
+                  )
                 )}
               </div>
             ))}
