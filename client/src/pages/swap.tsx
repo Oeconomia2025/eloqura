@@ -121,6 +121,9 @@ function SwapContent() {
   const [chartKey, setChartKey] = useState(0);
   const [chartVisible, setChartVisible] = useState(false);
 
+  // Token prices derived from on-chain pool reserves (USD values)
+  const [tokenPrices, setTokenPrices] = useState<Record<string, number>>({});
+
   // Recent swaps from on-chain events
   interface RecentSwap {
     tokenIn: string;
@@ -370,6 +373,125 @@ function SwapContent() {
     fetchBalances();
   }, [publicClient, address]);
 
+  // Fetch token prices from Eloqura pool reserves
+  useEffect(() => {
+    const fetchPricesFromPools = async () => {
+      if (!publicClient) return;
+      try {
+        const pairCount = await publicClient.readContract({
+          address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+          abi: FACTORY_ABI,
+          functionName: 'allPairsLength',
+        }) as bigint;
+
+        const count = Number(pairCount);
+        if (count === 0) return;
+
+        // Build a price graph from all pairs
+        // priceInWeth maps token address (lowercase) -> price in WETH
+        const priceInWeth: Record<string, number> = {};
+        const wethAddress = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+        priceInWeth[wethAddress] = 1; // WETH = 1 WETH
+        priceInWeth["0x0000000000000000000000000000000000000000"] = 1; // ETH = 1 WETH
+
+        for (let i = 0; i < Math.min(count, 20); i++) {
+          try {
+            const pairAddr = await publicClient.readContract({
+              address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+              abi: FACTORY_ABI,
+              functionName: 'allPairs',
+              args: [BigInt(i)],
+            }) as `0x${string}`;
+
+            const [token0Addr, token1Addr, reserves] = await Promise.all([
+              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: 'token0' }) as Promise<`0x${string}`>,
+              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: 'token1' }) as Promise<`0x${string}`>,
+              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: 'getReserves' }) as Promise<[bigint, bigint, number]>,
+            ]);
+
+            const [reserve0, reserve1] = reserves;
+            if (reserve0 === 0n || reserve1 === 0n) continue;
+
+            const [decimals0, decimals1] = await Promise.all([
+              publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
+              publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
+            ]);
+
+            const r0 = parseFloat(formatUnits(reserve0, decimals0));
+            const r1 = parseFloat(formatUnits(reserve1, decimals1));
+            const t0 = token0Addr.toLowerCase();
+            const t1 = token1Addr.toLowerCase();
+
+            // price of token0 in terms of token1 = reserve1 / reserve0
+            // price of token1 in terms of token0 = reserve0 / reserve1
+            if (t0 === wethAddress && r0 > 0) {
+              // token1 priced in WETH
+              priceInWeth[t1] = r0 / r1;
+            } else if (t1 === wethAddress && r1 > 0) {
+              // token0 priced in WETH
+              priceInWeth[t0] = r1 / r0;
+            } else {
+              // Neither is WETH — we'll do a second pass
+              // For now store the ratio
+              if (priceInWeth[t0] !== undefined && r0 > 0) {
+                priceInWeth[t1] = priceInWeth[t0] * (r0 / r1);
+              } else if (priceInWeth[t1] !== undefined && r1 > 0) {
+                priceInWeth[t0] = priceInWeth[t1] * (r1 / r0);
+              }
+            }
+          } catch (e) {
+            // Skip failed pairs
+          }
+        }
+
+        // Now try to get a WETH/USD price from a stablecoin pair (USDC, DAI)
+        // Or use Uniswap quoter for WETH -> USDC
+        let wethUsdPrice = 0;
+        try {
+          const usdcAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+          const amountIn = parseUnits("1", 18); // 1 WETH
+          const result = await publicClient.simulateContract({
+            address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
+            abi: UNISWAP_QUOTER_ABI,
+            functionName: 'quoteExactInputSingle',
+            args: [{
+              tokenIn: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`,
+              tokenOut: usdcAddress as `0x${string}`,
+              amountIn,
+              fee: 3000,
+              sqrtPriceLimitX96: 0n,
+            }],
+          });
+          wethUsdPrice = parseFloat(formatUnits(result.result[0], 6));
+        } catch {
+          // Fallback: derive from Eloqura pools if a stablecoin pair exists
+          const usdcAddr = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238".toLowerCase();
+          const daiAddr = "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6".toLowerCase();
+          if (priceInWeth[usdcAddr] && priceInWeth[usdcAddr] > 0) {
+            wethUsdPrice = 1 / priceInWeth[usdcAddr];
+          } else if (priceInWeth[daiAddr] && priceInWeth[daiAddr] > 0) {
+            wethUsdPrice = 1 / priceInWeth[daiAddr];
+          }
+        }
+
+        // Convert all WETH-denominated prices to USD
+        if (wethUsdPrice > 0) {
+          const prices: Record<string, number> = {};
+          for (const [addr, wethPrice] of Object.entries(priceInWeth)) {
+            prices[addr] = wethPrice * wethUsdPrice;
+          }
+          setTokenPrices(prices);
+        }
+      } catch (e) {
+        console.error('Error fetching token prices:', e);
+      }
+    };
+
+    fetchPricesFromPools();
+    const interval = setInterval(fetchPricesFromPools, 60000);
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
   // Fetch recent swap events from Eloqura pair contracts
   useEffect(() => {
     const fetchRecentSwaps = async () => {
@@ -492,10 +614,11 @@ function SwapContent() {
     return () => clearInterval(interval);
   }, [publicClient]);
 
-  // Update token balances dynamically
+  // Update token balances and prices dynamically
   const tokensWithBalances = tokens.map(token => {
     const balance = tokenBalances[token.address] ?? 0n;
-    return { ...token, balance: parseFloat(formatUnits(balance, token.decimals)) };
+    const price = tokenPrices[token.address.toLowerCase()] ?? token.price;
+    return { ...token, balance: parseFloat(formatUnits(balance, token.decimals)), price };
   });
 
   // Set and sync tokens with balances
@@ -2303,9 +2426,11 @@ function SwapContent() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm text-white">${formatNumber(token.price, 6)}</div>
+                      <div className="text-sm text-white">{formatNumber(token.balance || 0, 4)}</div>
                       <div className="text-xs text-gray-400">
-                        Balance: {formatNumber(token.balance || 0, 2)}
+                        {token.price > 0
+                          ? `$${formatNumber((token.balance || 0) * token.price, 2)}`
+                          : '\u00A0'}
                       </div>
                     </div>
                   </div>
