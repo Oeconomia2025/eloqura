@@ -266,7 +266,7 @@ export default function Dashboard() {
   const oecPrice = tokenPrices["OEC"] || 0;
   const ethPrice = tokenPrices["ETH"] || 0;
 
-  // Fetch token balances
+  // Fetch token balances (batched with multicall)
   useEffect(() => {
     const fetchBalances = async () => {
       if (!publicClient || !address) {
@@ -275,32 +275,35 @@ export default function Dashboard() {
         return;
       }
       try {
+        // Fetch ETH balance + all ERC20 balances in parallel
+        const erc20Tokens = TOKENS.filter(t => t.symbol !== "ETH");
+        const multicallContracts = erc20Tokens.map(token => ({
+          address: token.address as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "balanceOf" as const,
+          args: [address],
+        }));
+
+        const [ethBalance, erc20Results] = await Promise.all([
+          publicClient.getBalance({ address }),
+          publicClient.multicall({ contracts: multicallContracts }),
+        ]);
+
         const balances: TokenBalance[] = [];
 
-        for (const token of TOKENS) {
-          let balance = 0n;
-          if (token.symbol === "ETH") {
-            balance = await publicClient.getBalance({ address });
-          } else {
-            balance = await publicClient.readContract({
-              address: token.address as `0x${string}`,
-              abi: ERC20_ABI,
-              functionName: "balanceOf",
-              args: [address],
-            }) as bigint;
-          }
+        // Add ETH
+        const ethToken = TOKENS.find(t => t.symbol === "ETH")!;
+        const ethBal = parseFloat(formatUnits(ethBalance, 18));
+        balances.push({ ...ethToken, balance: ethBal, usdValue: ethBal * getTokenPrice("ETH") });
 
-          const numBalance = parseFloat(formatUnits(balance, token.decimals));
-          const price = getTokenPrice(token.symbol);
+        // Add ERC20 tokens
+        erc20Tokens.forEach((token, i) => {
+          const result = erc20Results[i];
+          const rawBalance = result.status === "success" ? (result.result as bigint) : 0n;
+          const numBalance = parseFloat(formatUnits(rawBalance, token.decimals));
+          balances.push({ ...token, balance: numBalance, usdValue: numBalance * getTokenPrice(token.symbol) });
+        });
 
-          balances.push({
-            ...token,
-            balance: numBalance,
-            usdValue: numBalance * price,
-          });
-        }
-
-        // Sort by USD value descending, then by balance
         balances.sort((a, b) => b.usdValue - a.usdValue || b.balance - a.balance);
         setTokenBalances(balances);
       } catch (error) {
@@ -314,7 +317,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [publicClient, address, tokenPrices]);
 
-  // Fetch LP positions
+  // Fetch LP positions (batched with multicall)
   useEffect(() => {
     const fetchPositions = async () => {
       if (!publicClient || !address) { setLPPositions([]); return; }
@@ -325,60 +328,103 @@ export default function Dashboard() {
           functionName: "allPairsLength",
         }) as bigint;
 
-        const positions: LPPosition[] = [];
-        for (let i = 0; i < Math.min(Number(pairCount), 20); i++) {
-          const pairAddress = await publicClient.readContract({
+        const count = Math.min(Number(pairCount), 20);
+        if (count === 0) { setLPPositions([]); return; }
+
+        // Batch: get all pair addresses in one multicall
+        const pairAddressResults = await publicClient.multicall({
+          contracts: Array.from({ length: count }, (_, i) => ({
             address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
             abi: FACTORY_ABI,
-            functionName: "allPairs",
+            functionName: "allPairs" as const,
             args: [BigInt(i)],
-          }) as `0x${string}`;
+          })),
+        });
+        const pairAddresses = pairAddressResults
+          .filter(r => r.status === "success")
+          .map(r => r.result as `0x${string}`);
 
-          const lpBalance = await publicClient.readContract({
-            address: pairAddress,
+        // Batch: get LP balances for all pairs in one multicall
+        const lpBalanceResults = await publicClient.multicall({
+          contracts: pairAddresses.map(addr => ({
+            address: addr,
             abi: ERC20_ABI,
-            functionName: "balanceOf",
+            functionName: "balanceOf" as const,
             args: [address],
-          }) as bigint;
+          })),
+        });
 
-          if (lpBalance === 0n) continue;
+        // Filter to only pairs where user has LP tokens
+        const activePairs: { address: `0x${string}`; lpBalance: bigint }[] = [];
+        pairAddresses.forEach((addr, i) => {
+          const bal = lpBalanceResults[i].status === "success" ? (lpBalanceResults[i].result as bigint) : 0n;
+          if (bal > 0n) activePairs.push({ address: addr, lpBalance: bal });
+        });
 
-          const [token0Addr, token1Addr, reserves, totalSupply] = await Promise.all([
-            publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
-            publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token1" }) as Promise<`0x${string}`>,
-            publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "getReserves" }) as Promise<[bigint, bigint, number]>,
-            publicClient.readContract({ address: pairAddress, abi: ERC20_ABI, functionName: "totalSupply" }) as Promise<bigint>,
-          ]);
+        if (activePairs.length === 0) { setLPPositions([]); return; }
 
-          const [symbol0, symbol1, decimals0, decimals1] = await Promise.all([
-            publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: "symbol" }) as Promise<string>,
-            publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: "symbol" }) as Promise<string>,
-            publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: "decimals" }) as Promise<number>,
-            publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: "decimals" }) as Promise<number>,
-          ]);
+        // Batch: get token0, token1, reserves, totalSupply for active pairs
+        const detailCalls = activePairs.flatMap(pair => [
+          { address: pair.address, abi: PAIR_ABI, functionName: "token0" as const, args: [] as const },
+          { address: pair.address, abi: PAIR_ABI, functionName: "token1" as const, args: [] as const },
+          { address: pair.address, abi: PAIR_ABI, functionName: "getReserves" as const, args: [] as const },
+          { address: pair.address, abi: ERC20_ABI, functionName: "totalSupply" as const, args: [] as const },
+        ]);
+        const detailResults = await publicClient.multicall({ contracts: detailCalls });
 
-          const share = Number(lpBalance) / Number(totalSupply);
-          const r0 = parseFloat(formatUnits(reserves[0], decimals0)) * share;
-          const r1 = parseFloat(formatUnits(reserves[1], decimals1)) * share;
-          const price0 = getTokenPrice(symbol0);
-          const price1 = getTokenPrice(symbol1);
-          let usd0 = r0 * price0;
-          let usd1 = r1 * price1;
-          // V2 AMM: both sides equal value
+        // Batch: get symbol and decimals for all unique token addresses
+        const tokenAddrs: `0x${string}`[] = [];
+        activePairs.forEach((_, i) => {
+          const t0 = detailResults[i * 4].status === "success" ? detailResults[i * 4].result as `0x${string}` : null;
+          const t1 = detailResults[i * 4 + 1].status === "success" ? detailResults[i * 4 + 1].result as `0x${string}` : null;
+          if (t0) tokenAddrs.push(t0);
+          if (t1) tokenAddrs.push(t1);
+        });
+        const uniqueTokenAddrs = [...new Set(tokenAddrs.map(a => a.toLowerCase()))].map(a => a as `0x${string}`);
+
+        const tokenInfoCalls = uniqueTokenAddrs.flatMap(addr => [
+          { address: addr, abi: ERC20_ABI, functionName: "symbol" as const, args: [] as const },
+          { address: addr, abi: ERC20_ABI, functionName: "decimals" as const, args: [] as const },
+        ]);
+        const tokenInfoResults = await publicClient.multicall({ contracts: tokenInfoCalls });
+        const tokenInfoMap: Record<string, { symbol: string; decimals: number }> = {};
+        uniqueTokenAddrs.forEach((addr, i) => {
+          const symbol = tokenInfoResults[i * 2].status === "success" ? tokenInfoResults[i * 2].result as string : "???";
+          const decimals = tokenInfoResults[i * 2 + 1].status === "success" ? Number(tokenInfoResults[i * 2 + 1].result) : 18;
+          tokenInfoMap[addr.toLowerCase()] = { symbol, decimals };
+        });
+
+        const positions: LPPosition[] = [];
+        activePairs.forEach((pair, i) => {
+          const token0Addr = detailResults[i * 4].status === "success" ? (detailResults[i * 4].result as string).toLowerCase() : null;
+          const token1Addr = detailResults[i * 4 + 1].status === "success" ? (detailResults[i * 4 + 1].result as string).toLowerCase() : null;
+          const reserves = detailResults[i * 4 + 2].status === "success" ? detailResults[i * 4 + 2].result as [bigint, bigint, number] : null;
+          const totalSupply = detailResults[i * 4 + 3].status === "success" ? detailResults[i * 4 + 3].result as bigint : 0n;
+
+          if (!token0Addr || !token1Addr || !reserves || totalSupply === 0n) return;
+
+          const info0 = tokenInfoMap[token0Addr] || { symbol: "???", decimals: 18 };
+          const info1 = tokenInfoMap[token1Addr] || { symbol: "???", decimals: 18 };
+
+          const share = Number(pair.lpBalance) / Number(totalSupply);
+          const r0 = parseFloat(formatUnits(reserves[0], info0.decimals)) * share;
+          const r1 = parseFloat(formatUnits(reserves[1], info1.decimals)) * share;
+          let usd0 = r0 * getTokenPrice(info0.symbol);
+          let usd1 = r1 * getTokenPrice(info1.symbol);
           if (usd0 > 0 && usd1 === 0) usd1 = usd0;
           else if (usd1 > 0 && usd0 === 0) usd0 = usd1;
 
           positions.push({
-            pairAddress,
-            token0Symbol: symbol0,
-            token1Symbol: symbol1,
-            lpBalance: parseFloat(formatEther(lpBalance)),
+            pairAddress: pair.address,
+            token0Symbol: info0.symbol,
+            token1Symbol: info1.symbol,
+            lpBalance: parseFloat(formatEther(pair.lpBalance)),
             reserve0: r0,
             reserve1: r1,
             totalSupply: parseFloat(formatEther(totalSupply)),
             usdValue: usd0 + usd1,
           });
-        }
+        });
         setLPPositions(positions);
       } catch (error) {
         console.error("Error fetching LP positions:", error);
@@ -389,7 +435,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [publicClient, address, tokenPrices]);
 
-  // Fetch recent swaps
+  // Fetch recent swaps (optimized with multicall + reduced range for dashboard)
   useEffect(() => {
     const fetchRecentSwaps = async () => {
       if (!publicClient) return;
@@ -400,92 +446,118 @@ export default function Dashboard() {
           functionName: "allPairsLength",
         }) as bigint;
 
-        const count = Number(pairCount);
+        const count = Math.min(Number(pairCount), 10);
         if (count === 0) return;
 
-        const allSwaps: RecentSwap[] = [];
-        const currentBlock = await publicClient.getBlockNumber();
-        // Look back ~50000 blocks (~7 days on Sepolia) to catch older swaps
-        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
-
-        for (let i = 0; i < Math.min(count, 10); i++) {
-          const pairAddr = await publicClient.readContract({
+        // Batch: get all pair addresses
+        const pairAddrResults = await publicClient.multicall({
+          contracts: Array.from({ length: count }, (_, i) => ({
             address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
             abi: FACTORY_ABI,
-            functionName: "allPairs",
+            functionName: "allPairs" as const,
             args: [BigInt(i)],
-          }) as `0x${string}`;
+          })),
+        });
+        const pairAddrs = pairAddrResults
+          .filter(r => r.status === "success")
+          .map(r => r.result as `0x${string}`);
 
-          try {
-            const [token0Addr, token1Addr] = await Promise.all([
-              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
-              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: "token1" }) as Promise<`0x${string}`>,
-            ]);
+        // Batch: get token0/token1 for all pairs
+        const tokenCalls = pairAddrs.flatMap(addr => [
+          { address: addr, abi: PAIR_ABI, functionName: "token0" as const, args: [] as const },
+          { address: addr, abi: PAIR_ABI, functionName: "token1" as const, args: [] as const },
+        ]);
+        const tokenResults = await publicClient.multicall({ contracts: tokenCalls });
 
-            const [symbol0, symbol1, decimals0, decimals1] = await Promise.all([
-              publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: "symbol" }) as Promise<string>,
-              publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: "symbol" }) as Promise<string>,
-              publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: "decimals" }) as Promise<number>,
-              publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: "decimals" }) as Promise<number>,
-            ]);
+        // Collect unique token addresses for symbol/decimals lookup
+        const allTokenAddrs: `0x${string}`[] = [];
+        const pairTokenMap: { t0: `0x${string}`; t1: `0x${string}` }[] = [];
+        pairAddrs.forEach((_, i) => {
+          const t0 = tokenResults[i * 2].status === "success" ? tokenResults[i * 2].result as `0x${string}` : null;
+          const t1 = tokenResults[i * 2 + 1].status === "success" ? tokenResults[i * 2 + 1].result as `0x${string}` : null;
+          if (t0 && t1) {
+            pairTokenMap.push({ t0, t1 });
+            allTokenAddrs.push(t0, t1);
+          } else {
+            pairTokenMap.push({ t0: "0x0" as `0x${string}`, t1: "0x0" as `0x${string}` });
+          }
+        });
 
-            const swapEvent = {
-              type: "event" as const,
-              name: "Swap" as const,
-              inputs: [
-                { name: "sender", type: "address" as const, indexed: true },
-                { name: "amount0In", type: "uint256" as const, indexed: false },
-                { name: "amount1In", type: "uint256" as const, indexed: false },
-                { name: "amount0Out", type: "uint256" as const, indexed: false },
-                { name: "amount1Out", type: "uint256" as const, indexed: false },
-                { name: "to", type: "address" as const, indexed: true },
-              ],
-            };
+        const uniqueAddrs = [...new Set(allTokenAddrs.map(a => a.toLowerCase()))].map(a => a as `0x${string}`);
+        const infoCalls = uniqueAddrs.flatMap(addr => [
+          { address: addr, abi: ERC20_ABI, functionName: "symbol" as const, args: [] as const },
+          { address: addr, abi: ERC20_ABI, functionName: "decimals" as const, args: [] as const },
+        ]);
+        const infoResults = await publicClient.multicall({ contracts: infoCalls });
+        const tokenInfo: Record<string, { symbol: string; decimals: number }> = {};
+        uniqueAddrs.forEach((addr, i) => {
+          tokenInfo[addr.toLowerCase()] = {
+            symbol: infoResults[i * 2].status === "success" ? infoResults[i * 2].result as string : "???",
+            decimals: infoResults[i * 2 + 1].status === "success" ? Number(infoResults[i * 2 + 1].result) : 18,
+          };
+        });
 
-            // Fetch logs in chunks to handle RPC block range limits
-            let logs: any[] = [];
-            const chunkSize = 5000n;
-            for (let start = fromBlock; start <= currentBlock; start += chunkSize) {
-              const end = start + chunkSize - 1n > currentBlock ? currentBlock : start + chunkSize - 1n;
-              try {
-                const chunk = await publicClient.getLogs({
-                  address: pairAddr,
-                  event: swapEvent,
-                  fromBlock: start,
-                  toBlock: end,
-                });
-                logs = logs.concat(chunk);
-              } catch {
-                // If chunk fails, skip it and continue
-              }
-            }
+        // Fetch swap logs - use 10000 blocks (~1.5 days) for dashboard to keep it fast
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = currentBlock > 10000n ? currentBlock - 10000n : 0n;
+        const allSwaps: RecentSwap[] = [];
 
-            for (const log of logs.slice(-10)) {
-              const args = log.args as any;
-              const a0In = args.amount0In ?? 0n;
-              const a1In = args.amount1In ?? 0n;
-              const a0Out = args.amount0Out ?? 0n;
-              const a1Out = args.amount1Out ?? 0n;
-              const isToken0In = a0In > 0n;
+        const swapEvent = {
+          type: "event" as const,
+          name: "Swap" as const,
+          inputs: [
+            { name: "sender", type: "address" as const, indexed: true },
+            { name: "amount0In", type: "uint256" as const, indexed: false },
+            { name: "amount1In", type: "uint256" as const, indexed: false },
+            { name: "amount0Out", type: "uint256" as const, indexed: false },
+            { name: "amount1Out", type: "uint256" as const, indexed: false },
+            { name: "to", type: "address" as const, indexed: true },
+          ],
+        };
 
-              let timestamp = Date.now() / 1000;
-              try {
-                const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
-                timestamp = Number(block.timestamp);
-              } catch {}
+        // Fetch logs for all pairs in parallel (2 chunks each for 10000 blocks)
+        const logPromises = pairAddrs.map(async (pairAddr, pairIdx) => {
+          const { t0, t1 } = pairTokenMap[pairIdx];
+          if (t0 === "0x0") return [];
+          const info0 = tokenInfo[t0.toLowerCase()];
+          const info1 = tokenInfo[t1.toLowerCase()];
+          if (!info0 || !info1) return [];
 
-              allSwaps.push({
-                tokenIn: isToken0In ? symbol0 : symbol1,
-                tokenOut: isToken0In ? symbol1 : symbol0,
-                amountIn: parseFloat(formatUnits(isToken0In ? a0In : a1In, isToken0In ? decimals0 : decimals1)).toFixed(4),
-                amountOut: parseFloat(formatUnits(isToken0In ? a1Out : a0Out, isToken0In ? decimals1 : decimals0)).toFixed(4),
-                timestamp,
-                txHash: log.transactionHash,
+          let logs: any[] = [];
+          const chunkSize = 5000n;
+          for (let start = fromBlock; start <= currentBlock; start += chunkSize) {
+            const end = start + chunkSize - 1n > currentBlock ? currentBlock : start + chunkSize - 1n;
+            try {
+              const chunk = await publicClient.getLogs({
+                address: pairAddr,
+                event: swapEvent,
+                fromBlock: start,
+                toBlock: end,
               });
-            }
-          } catch {}
-        }
+              logs = logs.concat(chunk);
+            } catch {}
+          }
 
+          return logs.slice(-5).map(log => {
+            const args = log.args as any;
+            const a0In = args.amount0In ?? 0n;
+            const a1In = args.amount1In ?? 0n;
+            const a0Out = args.amount0Out ?? 0n;
+            const a1Out = args.amount1Out ?? 0n;
+            const isToken0In = a0In > 0n;
+            return {
+              tokenIn: isToken0In ? info0.symbol : info1.symbol,
+              tokenOut: isToken0In ? info1.symbol : info0.symbol,
+              amountIn: parseFloat(formatUnits(isToken0In ? a0In : a1In, isToken0In ? info0.decimals : info1.decimals)).toFixed(4),
+              amountOut: parseFloat(formatUnits(isToken0In ? a1Out : a0Out, isToken0In ? info1.decimals : info0.decimals)).toFixed(4),
+              timestamp: Number(log.blockNumber),
+              txHash: log.transactionHash,
+            };
+          });
+        });
+
+        const swapArrays = await Promise.all(logPromises);
+        swapArrays.forEach(swaps => allSwaps.push(...swaps));
         allSwaps.sort((a, b) => b.timestamp - a.timestamp);
         setRecentSwaps(allSwaps.slice(0, 10));
       } catch (error) {

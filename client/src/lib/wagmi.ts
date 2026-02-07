@@ -1,4 +1,4 @@
-import { http, createConfig, createStorage } from 'wagmi'
+import { http, fallback, createConfig, createStorage } from 'wagmi'
 import { bsc, bscTestnet, sepolia } from 'wagmi/chains'
 import { coinbaseWallet, metaMask, walletConnect, injected } from 'wagmi/connectors'
 
@@ -92,7 +92,11 @@ export const config = createConfig({
     }),
   ],
   transports: {
-    [sepolia.id]: http(),
+    [sepolia.id]: fallback([
+      http('https://ethereum-sepolia-rpc.publicnode.com'),
+      http('https://rpc2.sepolia.org'),
+      http(), // default chain RPC as last resort
+    ]),
     [bsc.id]: http(),
     [bscTestnet.id]: http(),
   },
