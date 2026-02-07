@@ -10,7 +10,7 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 import { usePriceHistory, useTokenData } from "@/hooks/use-token-data";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits, parseUnits, parseEther } from "viem";
-import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI } from "@/lib/contracts";
+import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI } from "@/lib/contracts";
 
 // WETH ABI for deposit/withdraw
 const WETH_ABI = [
@@ -121,6 +121,17 @@ function SwapContent() {
   const [chartKey, setChartKey] = useState(0);
   const [chartVisible, setChartVisible] = useState(false);
 
+  // Recent swaps from on-chain events
+  interface RecentSwap {
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: string;
+    amountOut: string;
+    timestamp: number;
+    txHash: string;
+  }
+  const [recentSwaps, setRecentSwaps] = useState<RecentSwap[]>([]);
+  const [recentSwapsLoading, setRecentSwapsLoading] = useState(false);
 
   // Helper functions for token selection
   const openTokenModal = (type?: 'from' | 'to' | 'priceCondition') => {
@@ -358,6 +369,128 @@ function SwapContent() {
   useEffect(() => {
     fetchBalances();
   }, [publicClient, address]);
+
+  // Fetch recent swap events from Eloqura pair contracts
+  useEffect(() => {
+    const fetchRecentSwaps = async () => {
+      if (!publicClient) return;
+      setRecentSwapsLoading(true);
+      try {
+        // Get all pairs from factory
+        const pairCount = await publicClient.readContract({
+          address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+          abi: FACTORY_ABI,
+          functionName: 'allPairsLength',
+        }) as bigint;
+
+        const count = Number(pairCount);
+        if (count === 0) { setRecentSwapsLoading(false); return; }
+
+        // Fetch pair addresses (up to 10)
+        const pairAddresses: `0x${string}`[] = [];
+        for (let i = 0; i < Math.min(count, 10); i++) {
+          const addr = await publicClient.readContract({
+            address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+            abi: FACTORY_ABI,
+            functionName: 'allPairs',
+            args: [BigInt(i)],
+          }) as `0x${string}`;
+          pairAddresses.push(addr);
+        }
+
+        // For each pair, get token0/token1 and fetch Swap logs
+        const allSwaps: RecentSwap[] = [];
+        const currentBlock = await publicClient.getBlockNumber();
+        // Look back ~2000 blocks (~7 hours on Sepolia)
+        const fromBlock = currentBlock > 2000n ? currentBlock - 2000n : 0n;
+
+        for (const pairAddr of pairAddresses) {
+          try {
+            const [token0Addr, token1Addr] = await Promise.all([
+              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: 'token0' }) as Promise<`0x${string}`>,
+              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: 'token1' }) as Promise<`0x${string}`>,
+            ]);
+
+            // Get token symbols
+            const [symbol0, symbol1, decimals0, decimals1] = await Promise.all([
+              publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'symbol' }) as Promise<string>,
+              publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'symbol' }) as Promise<string>,
+              publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
+              publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
+            ]);
+
+            // Fetch Swap event logs
+            const logs = await publicClient.getLogs({
+              address: pairAddr,
+              event: {
+                type: 'event',
+                name: 'Swap',
+                inputs: [
+                  { name: 'sender', type: 'address', indexed: true },
+                  { name: 'amount0In', type: 'uint256', indexed: false },
+                  { name: 'amount1In', type: 'uint256', indexed: false },
+                  { name: 'amount0Out', type: 'uint256', indexed: false },
+                  { name: 'amount1Out', type: 'uint256', indexed: false },
+                  { name: 'to', type: 'address', indexed: true },
+                ],
+              },
+              fromBlock,
+              toBlock: 'latest',
+            });
+
+            for (const log of logs) {
+              const args = log.args as any;
+              const a0In = args.amount0In ?? 0n;
+              const a1In = args.amount1In ?? 0n;
+              const a0Out = args.amount0Out ?? 0n;
+              const a1Out = args.amount1Out ?? 0n;
+
+              // Determine swap direction
+              const isToken0In = a0In > 0n;
+              const tokenIn = isToken0In ? symbol0 : symbol1;
+              const tokenOut = isToken0In ? symbol1 : symbol0;
+              const amountIn = isToken0In
+                ? formatUnits(a0In, decimals0)
+                : formatUnits(a1In, decimals1);
+              const amountOut = isToken0In
+                ? formatUnits(a1Out, decimals1)
+                : formatUnits(a0Out, decimals0);
+
+              // Get block timestamp
+              let timestamp = Date.now() / 1000;
+              try {
+                const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
+                timestamp = Number(block.timestamp);
+              } catch {}
+
+              allSwaps.push({
+                tokenIn,
+                tokenOut,
+                amountIn: parseFloat(amountIn).toFixed(4),
+                amountOut: parseFloat(amountOut).toFixed(4),
+                timestamp,
+                txHash: log.transactionHash,
+              });
+            }
+          } catch (e) {
+            console.error('Error fetching swaps for pair:', pairAddr, e);
+          }
+        }
+
+        // Sort by timestamp descending, take most recent 10
+        allSwaps.sort((a, b) => b.timestamp - a.timestamp);
+        setRecentSwaps(allSwaps.slice(0, 10));
+      } catch (e) {
+        console.error('Error fetching recent swaps:', e);
+      }
+      setRecentSwapsLoading(false);
+    };
+
+    fetchRecentSwaps();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchRecentSwaps, 30000);
+    return () => clearInterval(interval);
+  }, [publicClient]);
 
   // Update token balances dynamically
   const tokensWithBalances = tokens.map(token => {
@@ -2068,27 +2201,34 @@ function SwapContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-300">USDT → OEC</span>
-                  </div>
-                  <span className="text-green-400">+125.50 OEC</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-300">BNB → USDT</span>
-                  </div>
-                  <span className="text-green-400">+645.00 USDT</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                    <span className="text-gray-300">OEC → WETH</span>
-                  </div>
-                  <span className="text-green-400">+0.085 WETH</span>
-                </div>
+                {recentSwapsLoading ? (
+                  <div className="text-sm text-gray-400 text-center py-2">Loading swaps...</div>
+                ) : recentSwaps.length === 0 ? (
+                  <div className="text-sm text-gray-400 text-center py-2">No recent swaps found</div>
+                ) : (
+                  recentSwaps.map((swap, i) => {
+                    const timeAgo = Math.floor((Date.now() / 1000 - swap.timestamp) / 60);
+                    const timeLabel = timeAgo < 1 ? 'just now' : timeAgo < 60 ? `${timeAgo}m ago` : `${Math.floor(timeAgo / 60)}h ago`;
+                    return (
+                      <a
+                        key={`${swap.txHash}-${i}`}
+                        href={`https://sepolia.etherscan.io/tx/${swap.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between text-sm hover:bg-[var(--crypto-dark)] rounded-lg px-2 py-1 -mx-2 transition-colors"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <ArrowUpDown className="w-3 h-3 text-gray-400" />
+                          <span className="text-gray-300">{swap.tokenIn} → {swap.tokenOut}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-green-400">+{swap.amountOut} {swap.tokenOut}</div>
+                          <div className="text-xs text-gray-500">{timeLabel}</div>
+                        </div>
+                      </a>
+                    );
+                  })
+                )}
               </div>
             </CardContent>
           </Card>

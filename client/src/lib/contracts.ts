@@ -437,6 +437,18 @@ export const PAIR_ABI = [
     outputs: [{ name: "", type: "bool" }],
     stateMutability: "nonpayable",
   },
+  {
+    name: "Swap",
+    type: "event",
+    inputs: [
+      { name: "sender", type: "address", indexed: true },
+      { name: "amount0In", type: "uint256", indexed: false },
+      { name: "amount1In", type: "uint256", indexed: false },
+      { name: "amount0Out", type: "uint256", indexed: false },
+      { name: "amount1Out", type: "uint256", indexed: false },
+      { name: "to", type: "address", indexed: true },
+    ],
+  },
 ] as const;
 
 // ERC20 ABI for token interactions
