@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { usePriceHistory, useTokenData } from "@/hooks/use-token-data";
-import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits, parseUnits, parseEther } from "viem";
 import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI } from "@/lib/contracts";
 
@@ -40,7 +40,8 @@ import {
   Zap,
   Shield,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  Wallet
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -226,6 +227,31 @@ function SwapContent() {
 
   // Get wallet connection status
   const { address, isConnected, chainId } = useAccount();
+  const { data: walletClient } = useWalletClient();
+
+  // Add token to wallet (MetaMask wallet_watchAsset)
+  const addTokenToWallet = async (token: Token, e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't trigger token selection
+    if (!walletClient) return;
+    // Skip native ETH - can't add it via wallet_watchAsset
+    if (token.address === "0x0000000000000000000000000000000000000000") return;
+    try {
+      await walletClient.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: {
+            address: token.address as `0x${string}`,
+            symbol: token.symbol,
+            decimals: token.decimals,
+            image: token.logo,
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Failed to add token to wallet:', err);
+    }
+  };
 
   // Sepolia testnet tokens - official testnet contract addresses
   const sepoliaTokens: Token[] = [
@@ -2114,28 +2140,38 @@ function SwapContent() {
 
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {filteredTokens.map((token) => (
-              <Button
-                key={token.symbol}
-                variant="ghost"
-                onClick={() => selectToken(token)}
-                className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center space-x-3">
-                    <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
-                    <div className="text-left">
-                      <div className="font-medium">{token.symbol}</div>
-                      <div className="text-sm text-gray-400">{token.name}</div>
+              <div key={token.symbol} className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  onClick={() => selectToken(token)}
+                  className="flex-1 justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-3">
+                      <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                      <div className="text-left">
+                        <div className="font-medium">{token.symbol}</div>
+                        <div className="text-sm text-gray-400">{token.name}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-white">${formatNumber(token.price, 6)}</div>
+                      <div className="text-xs text-gray-400">
+                        Balance: {formatNumber(token.balance || 0, 2)}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-white">${formatNumber(token.price, 6)}</div>
-                    <div className="text-xs text-gray-400">
-                      Balance: {formatNumber(token.balance || 0, 2)}
-                    </div>
-                  </div>
-                </div>
-              </Button>
+                </Button>
+                {token.address !== "0x0000000000000000000000000000000000000000" && isConnected && (
+                  <button
+                    onClick={(e) => addTokenToWallet(token, e)}
+                    className="flex-shrink-0 p-2 rounded-lg hover:bg-[var(--crypto-dark)] text-gray-400 hover:text-cyan-400 transition-colors"
+                    title={`Add ${token.symbol} to wallet`}
+                  >
+                    <Wallet className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </DialogContent>
