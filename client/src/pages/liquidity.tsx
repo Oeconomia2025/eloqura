@@ -348,6 +348,147 @@ function LiquidityContent() {
 
   // Track if we're adding liquidity (not approving)
   const [isAddingLiquidity, setIsAddingLiquidity] = useState(false);
+  const [isAddingToExisting, setIsAddingToExisting] = useState(false);
+
+  // Approval states for add-to-existing modal
+  const [addNeedsApproval0, setAddNeedsApproval0] = useState(false);
+  const [addNeedsApproval1, setAddNeedsApproval1] = useState(false);
+  const [isApprovingAdd, setIsApprovingAdd] = useState(false);
+
+  // Check approvals for add-to-existing modal
+  const checkAddApprovals = async () => {
+    if (!publicClient || !address || !selectedPositionForAddition) return;
+    const t0 = selectedPositionForAddition.token0;
+    const t1 = selectedPositionForAddition.token1;
+
+    // ETH / WETH used as ETH doesn't need approval (we'll use addLiquidityETH)
+    const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+    const isT0Eth = t0.symbol === 'ETH' || t0.address.toLowerCase() === wethAddr;
+    const isT1Eth = t1.symbol === 'ETH' || t1.address.toLowerCase() === wethAddr;
+
+    if (!isT0Eth && addAmount0) {
+      try {
+        const allowance = await publicClient.readContract({
+          address: t0.address as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [address, ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`],
+        }) as bigint;
+        const needed = parseUnits(parseFloat(addAmount0).toFixed(t0.decimals), t0.decimals);
+        setAddNeedsApproval0(allowance < needed);
+      } catch {
+        setAddNeedsApproval0(false);
+      }
+    } else {
+      setAddNeedsApproval0(false);
+    }
+
+    if (!isT1Eth && addAmount1) {
+      try {
+        const allowance = await publicClient.readContract({
+          address: t1.address as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [address, ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`],
+        }) as bigint;
+        const needed = parseUnits(parseFloat(addAmount1).toFixed(t1.decimals), t1.decimals);
+        setAddNeedsApproval1(allowance < needed);
+      } catch {
+        setAddNeedsApproval1(false);
+      }
+    } else {
+      setAddNeedsApproval1(false);
+    }
+  };
+
+  // Check add approvals when amounts change
+  useEffect(() => {
+    checkAddApprovals();
+  }, [selectedPositionForAddition, addAmount0, addAmount1, address]);
+
+  // Handle approval for add-to-existing tokens
+  const handleApproveAddToken = async (tokenIndex: 0 | 1) => {
+    if (!selectedPositionForAddition) return;
+    const token = tokenIndex === 0 ? selectedPositionForAddition.token0 : selectedPositionForAddition.token1;
+    setIsApprovingAdd(true);
+    writeContract({
+      address: token.address as `0x${string}`,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`, parseUnits('1000000000', token.decimals)],
+    });
+  };
+
+  // Handle adding liquidity to existing position
+  const handleAddToExistingPosition = async () => {
+    if (!selectedPositionForAddition || !addAmount0 || !addAmount1 || !address) return;
+
+    const t0 = selectedPositionForAddition.token0;
+    const t1 = selectedPositionForAddition.token1;
+    const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+    const isT0Weth = t0.address.toLowerCase() === wethAddr;
+    const isT1Weth = t1.address.toLowerCase() === wethAddr;
+
+    try {
+      const amount0Wei = parseUnits(parseFloat(addAmount0).toFixed(t0.decimals), t0.decimals);
+      const amount1Wei = parseUnits(parseFloat(addAmount1).toFixed(t1.decimals), t1.decimals);
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+
+      toast({
+        title: "Adding Liquidity",
+        description: "Please confirm the transaction in your wallet",
+      });
+
+      setIsAddingToExisting(true);
+
+      if (isT0Weth || isT1Weth) {
+        // Use addLiquidityETH - user sends ETH for the WETH side
+        const tokenAddress = isT0Weth ? t1.address : t0.address;
+        const tokenAmount = isT0Weth ? amount1Wei : amount0Wei;
+        const ethAmount = isT0Weth ? amount0Wei : amount1Wei;
+
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+          abi: ROUTER_ABI,
+          functionName: 'addLiquidityETH',
+          args: [
+            tokenAddress as `0x${string}`,
+            tokenAmount,
+            0n,
+            0n,
+            address,
+            deadline,
+          ],
+          value: ethAmount,
+        });
+      } else {
+        // Token-token pair
+        writeContract({
+          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+          abi: ROUTER_ABI,
+          functionName: 'addLiquidity',
+          args: [
+            t0.address as `0x${string}`,
+            t1.address as `0x${string}`,
+            amount0Wei,
+            amount1Wei,
+            0n,
+            0n,
+            address,
+            deadline,
+          ],
+        });
+      }
+    } catch (error: any) {
+      console.error('Add to existing position error:', error);
+      setIsAddingToExisting(false);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to add liquidity",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Show success toast when transaction confirms
   useEffect(() => {
@@ -365,6 +506,24 @@ function LiquidityContent() {
           description: "You can now add liquidity",
         });
         setIsApproving(false);
+      } else if (isApprovingAdd) {
+        toast({
+          title: "Token Approved!",
+          description: "You can now add liquidity",
+        });
+        setIsApprovingAdd(false);
+        setTimeout(checkAddApprovals, 1000);
+      } else if (isAddingToExisting) {
+        toast({
+          title: "Liquidity Added!",
+          description: `Successfully added liquidity to ${selectedPositionForAddition?.token0.symbol}/${selectedPositionForAddition?.token1.symbol} pool`,
+        });
+        setIsAddingToExisting(false);
+        setShowAddModal(false);
+        setSelectedPositionForAddition(null);
+        setAddAmount0("");
+        setAddAmount1("");
+        fetchEloquraPairs();
       } else if (isAddingLiquidity) {
         toast({
           title: "Liquidity Added!",
@@ -687,6 +846,7 @@ function LiquidityContent() {
 
       // Fetch ERC20 balances
       const tokenAddresses = [
+        "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba", // OEC
         ELOQURA_CONTRACTS.sepolia.WETH,
         "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
         "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
@@ -731,6 +891,14 @@ function LiquidityContent() {
 
   // Sepolia testnet tokens for liquidity
   const sepoliaTokens: Token[] = [
+    {
+      symbol: "OEC",
+      name: "Oeconomia",
+      address: "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba",
+      decimals: 18,
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
+      price: 0,
+    },
     {
       symbol: "ETH",
       name: "Ethereum",
@@ -781,9 +949,71 @@ function LiquidityContent() {
     },
   ];
 
-  // Helper to get token info from address
+  // Custom token resolved from pasted address
+  const [customToken, setCustomToken] = useState<Token | null>(null);
+  const [isResolvingToken, setIsResolvingToken] = useState(false);
+
+  // Resolve custom token when user pastes an address
+  useEffect(() => {
+    const query = tokenSearchQuery.trim();
+    if (!query.match(/^0x[a-fA-F0-9]{40}$/) || !publicClient) {
+      setCustomToken(null);
+      return;
+    }
+    // Check if address already in list
+    const existing = sepoliaTokens.find(t => t.address.toLowerCase() === query.toLowerCase());
+    if (existing) {
+      setCustomToken(null);
+      return;
+    }
+    // Resolve on-chain
+    setIsResolvingToken(true);
+    (async () => {
+      try {
+        const [symbol, name, decimals] = await Promise.all([
+          publicClient.readContract({ address: query as `0x${string}`, abi: ERC20_ABI, functionName: 'symbol' }) as Promise<string>,
+          publicClient.readContract({ address: query as `0x${string}`, abi: ERC20_ABI, functionName: 'name' }) as Promise<string>,
+          publicClient.readContract({ address: query as `0x${string}`, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
+        ]);
+        let balance = 0;
+        if (address) {
+          const raw = await publicClient.readContract({
+            address: query as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }) as bigint;
+          balance = parseFloat(formatUnits(raw, Number(decimals)));
+        }
+        setCustomToken({
+          symbol,
+          name,
+          address: query,
+          decimals: Number(decimals),
+          logo: "",
+          price: 0,
+          balance,
+        });
+      } catch {
+        setCustomToken(null);
+      } finally {
+        setIsResolvingToken(false);
+      }
+    })();
+  }, [tokenSearchQuery, publicClient, address]);
+
+  // Add balances to tokens (computed early so getTokenInfo can use it)
+  const availableTokens = sepoliaTokens.map(token => {
+    const balance = tokenBalances[token.address] ?? 0n;
+    return {
+      ...token,
+      balance: parseFloat(formatUnits(balance, token.decimals)),
+    };
+  });
+
+  // Helper to get token info from address (uses availableTokens which includes balances)
   const getTokenInfo = (tokenAddress: string): Token => {
-    const found = sepoliaTokens.find(t => t.address.toLowerCase() === tokenAddress.toLowerCase());
+    const found = availableTokens.find(t => t.address.toLowerCase() === tokenAddress.toLowerCase());
     if (found) return found;
     // Return placeholder for unknown tokens
     return {
@@ -796,42 +1026,97 @@ function LiquidityContent() {
     };
   };
 
+  // Helper: estimate USD value for a token amount using known stablecoin prices
+  const estimateTokenUsd = (token: Token, amount: number, allPairs: typeof eloquraPairs): number => {
+    const addr = token.address.toLowerCase();
+    const stablecoins = [
+      "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", // USDC
+      "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6", // DAI
+    ];
+    // If token is a stablecoin, 1:1 with USD
+    if (stablecoins.includes(addr)) return amount;
+    // Try to find a pair with a stablecoin to derive price
+    for (const pair of allPairs) {
+      const t0 = pair.token0.toLowerCase();
+      const t1 = pair.token1.toLowerCase();
+      if ((t0 === addr && stablecoins.includes(t1)) || (t1 === addr && stablecoins.includes(t0))) {
+        const isToken0 = t0 === addr;
+        const stableInfo = getTokenInfo(isToken0 ? pair.token1 : pair.token0);
+        const tokenReserve = parseFloat(formatUnits(isToken0 ? pair.reserve0 : pair.reserve1, token.decimals));
+        const stableReserve = parseFloat(formatUnits(isToken0 ? pair.reserve1 : pair.reserve0, stableInfo.decimals));
+        if (tokenReserve > 0) {
+          return amount * (stableReserve / tokenReserve);
+        }
+      }
+    }
+    // Try WETH path: token -> WETH pair, then WETH -> stablecoin pair
+    const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+    for (const pair of allPairs) {
+      const t0 = pair.token0.toLowerCase();
+      const t1 = pair.token1.toLowerCase();
+      if ((t0 === addr && t1 === wethAddr) || (t1 === addr && t0 === wethAddr)) {
+        const isToken0 = t0 === addr;
+        const tokenReserve = parseFloat(formatUnits(isToken0 ? pair.reserve0 : pair.reserve1, token.decimals));
+        const wethReserve = parseFloat(formatUnits(isToken0 ? pair.reserve1 : pair.reserve0, 18));
+        if (tokenReserve > 0) {
+          const amountInWeth = amount * (wethReserve / tokenReserve);
+          const wethToken = getTokenInfo(ELOQURA_CONTRACTS.sepolia.WETH);
+          const wethUsd = estimateTokenUsd(wethToken, amountInWeth, allPairs);
+          if (wethUsd > 0) return wethUsd;
+        }
+      }
+    }
+    return 0;
+  };
+
   // Convert Eloqura pairs to Position format for display
   const positions: Position[] = eloquraPairs
     .filter(pair => pair.lpBalance > 0n) // Only show pairs where user has LP tokens
-    .map((pair, index) => {
+    .map((pair) => {
       const token0Info = getTokenInfo(pair.token0);
       const token1Info = getTokenInfo(pair.token1);
       const lpBalanceFormatted = parseFloat(formatUnits(pair.lpBalance, 18));
       const totalSupply = parseFloat(formatUnits(pair.totalSupply, 18));
-      const sharePercent = totalSupply > 0 ? (lpBalanceFormatted / totalSupply) * 100 : 0;
+      const sharePercent = totalSupply > 0 ? lpBalanceFormatted / totalSupply : 0;
       const reserve0 = parseFloat(formatUnits(pair.reserve0, token0Info.decimals));
       const reserve1 = parseFloat(formatUnits(pair.reserve1, token1Info.decimals));
+
+      // User's share of each token in the pool
+      const userToken0 = reserve0 * sharePercent;
+      const userToken1 = reserve1 * sharePercent;
+
+      // Calculate USD value of user's share
+      // First try to price each token independently
+      let usd0 = estimateTokenUsd(token0Info, userToken0, eloquraPairs);
+      let usd1 = estimateTokenUsd(token1Info, userToken1, eloquraPairs);
+
+      // If only one side is priced, derive the other from the pair's reserves
+      // In a V2 AMM, both sides are always equal USD value, so the unpriced side = priced side
+      if (usd0 > 0 && usd1 === 0) {
+        usd1 = usd0; // Equal value on both sides
+      } else if (usd1 > 0 && usd0 === 0) {
+        usd0 = usd1; // Equal value on both sides
+      }
+      const totalValue = usd0 + usd1;
+
+      // Current price: price of token0 in terms of token1
+      const currentPrice = reserve0 > 0 ? reserve1 / reserve0 : 0;
 
       return {
         id: pair.address,
         token0: token0Info,
         token1: token1Info,
-        liquidity: lpBalanceFormatted.toFixed(6),
-        fee: 0.3, // Eloqura uses 0.3% fee
-        minPrice: 0,
-        maxPrice: 0,
-        currentPrice: reserve0 > 0 ? reserve1 / reserve0 : 0,
+        liquidity: `${userToken0}|${userToken1}|${token0Info.symbol}|${token1Info.symbol}`,
+        fee: 0.3,
+        minPrice: 0, // V2 = full range
+        maxPrice: 0, // V2 = full range (displayed as "Full Range")
+        currentPrice,
         uncollectedFees0: "0",
         uncollectedFees1: "0",
-        value: 0, // Would need price oracle for real value
-        status: 'in-range' as const,
+        value: totalValue,
+        status: 'in-range' as const, // V2 pools are always in range
       };
     });
-
-  // Add balances to tokens
-  const availableTokens = sepoliaTokens.map(token => {
-    const balance = tokenBalances[token.address] ?? 0n;
-    return {
-      ...token,
-      balance: parseFloat(formatUnits(balance, token.decimals)),
-    };
-  });
 
   const feeOptions = [
     { value: 0.05, label: "0.05%", description: "Best for stablecoin pairs" },
@@ -1107,10 +1392,11 @@ function LiquidityContent() {
     setTokenSearchQuery("");
   };
 
-  // Filter tokens based on search query
-  const filteredAvailableTokens = availableTokens.filter(token => 
+  // Filter tokens based on search query (symbol, name, or address)
+  const filteredAvailableTokens = availableTokens.filter(token =>
     token.symbol.toLowerCase().includes(tokenSearchQuery.toLowerCase()) ||
-    token.name.toLowerCase().includes(tokenSearchQuery.toLowerCase())
+    token.name.toLowerCase().includes(tokenSearchQuery.toLowerCase()) ||
+    token.address.toLowerCase().includes(tokenSearchQuery.toLowerCase())
   );
 
   return (
@@ -1277,19 +1563,34 @@ function LiquidityContent() {
                                 </div>
                                 <div className="text-center min-w-[120px]">
                                   <p className="text-white font-semibold">{formatPrice(position.value)}</p>
-                                  <p className="text-xs text-gray-400">{position.liquidity} Liquidity</p>
+                                  <p className="text-xs text-gray-400">
+                                    {(() => {
+                                      const parts = position.liquidity.split('|');
+                                      if (parts.length === 4) {
+                                        return `${formatNumber(parseFloat(parts[0]), 2)} ${parts[2]} + ${formatNumber(parseFloat(parts[1]), 2)} ${parts[3]}`;
+                                      }
+                                      return position.liquidity;
+                                    })()}
+                                  </p>
                                 </div>
                                 <div className="flex justify-center min-w-[48px]">
-                                  <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-gray-400 hover:text-white"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(`https://sepolia.etherscan.io/address/${position.id}`, '_blank');
+                                    }}
+                                  >
                                     <ExternalLink className="w-4 h-4" />
                                   </Button>
                                 </div>
                                 <div className="text-center min-w-[80px]">
                                   <p className="text-cyan-400 font-semibold">
-                                    {position.id === "3" ? "6.00%" : position.id === "4" ? "3.00%" : 
-                                     position.id === "1" ? "40.53%" : "43.15%"}
+                                    {position.fee}%
                                   </p>
-                                  <p className="text-xs text-gray-400">APR</p>
+                                  <p className="text-xs text-gray-400">Fee Tier</p>
                                 </div>
                               </div>
 
@@ -1319,16 +1620,32 @@ function LiquidityContent() {
                             <div className="border-t border-[var(--crypto-border)] p-4 bg-gray-900/20">
                               <div className="grid grid-cols-3 gap-6 mb-4">
                                 <div>
-                                  <p className="text-xs text-gray-400 mb-1">Min Price</p>
-                                  <p className="text-lg font-bold text-white">{formatNumber(position.minPrice, 6)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-400 mb-1">Max Price</p>
-                                  <p className="text-lg font-bold text-white">{formatNumber(position.maxPrice, 6)}</p>
+                                  <p className="text-xs text-gray-400 mb-1">Price Range</p>
+                                  <p className="text-lg font-bold text-white">Full Range</p>
+                                  <p className="text-xs text-gray-500">0 ↔ ∞</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-400 mb-1">Current Price</p>
-                                  <p className="text-lg font-bold text-white">{formatNumber(position.currentPrice, 6)}</p>
+                                  <p className="text-lg font-bold text-white">
+                                    {position.currentPrice < 0.001
+                                      ? position.currentPrice.toExponential(4)
+                                      : formatNumber(position.currentPrice, 6)}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {position.token1.symbol} per {position.token0.symbol}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-400 mb-1">Your Pool Share</p>
+                                  <p className="text-lg font-bold text-white">
+                                    {(() => {
+                                      const pair = eloquraPairs.find(p => p.address === position.id);
+                                      if (!pair) return "0%";
+                                      const lp = parseFloat(formatUnits(pair.lpBalance, 18));
+                                      const total = parseFloat(formatUnits(pair.totalSupply, 18));
+                                      return total > 0 ? `${formatNumber((lp / total) * 100, 2)}%` : "0%";
+                                    })()}
+                                  </p>
                                 </div>
                               </div>
 
@@ -2323,9 +2640,7 @@ function LiquidityContent() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Price Range</span>
-                    <span className="text-white">
-                      {formatNumber(selectedPositionForAddition.minPrice, 6)} - {formatNumber(selectedPositionForAddition.maxPrice, 6)}
-                    </span>
+                    <span className="text-white">Full Range</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Current Price</span>
@@ -2432,7 +2747,7 @@ function LiquidityContent() {
                   <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
                   <div className="text-xs text-blue-400">
                     <p className="font-medium mb-1">Adding to Existing Position</p>
-                    <p>Your liquidity will be added to the same price range as your existing position ({formatNumber(selectedPositionForAddition.minPrice, 6)} - {formatNumber(selectedPositionForAddition.maxPrice, 6)}).</p>
+                    <p>Your liquidity will be added to the full price range of your existing position.</p>
                   </div>
                 </div>
               </div>
@@ -2450,31 +2765,54 @@ function LiquidityContent() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => {
-                    setIsLoading(true);
-                    // Simulate transaction
-                    setTimeout(() => {
-                      setIsLoading(false);
-                      setShowAddModal(false);
-                      setSelectedPositionForAddition(null);
-                      setAddAmount0("");
-                      setAddAmount1("");
-                      // Here you would typically update the positions list
-                    }, 2000);
-                  }}
-                  disabled={isLoading || !addAmount0 || !addAmount1}
-                  className="flex-1 bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Adding...</span>
-                    </div>
-                  ) : (
-                    "Add Liquidity"
-                  )}
-                </Button>
+                {addNeedsApproval0 && (
+                  <Button
+                    onClick={() => handleApproveAddToken(0)}
+                    disabled={isWritePending || isConfirming || isApprovingAdd}
+                    className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:opacity-90 disabled:opacity-50"
+                  >
+                    {isWritePending && isApprovingAdd ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Approving...</span>
+                      </div>
+                    ) : (
+                      `Approve ${selectedPositionForAddition?.token0.symbol}`
+                    )}
+                  </Button>
+                )}
+                {!addNeedsApproval0 && addNeedsApproval1 && (
+                  <Button
+                    onClick={() => handleApproveAddToken(1)}
+                    disabled={isWritePending || isConfirming || isApprovingAdd}
+                    className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:opacity-90 disabled:opacity-50"
+                  >
+                    {isWritePending && isApprovingAdd ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Approving...</span>
+                      </div>
+                    ) : (
+                      `Approve ${selectedPositionForAddition?.token1.symbol}`
+                    )}
+                  </Button>
+                )}
+                {!addNeedsApproval0 && !addNeedsApproval1 && (
+                  <Button
+                    onClick={handleAddToExistingPosition}
+                    disabled={isWritePending || isConfirming || isAddingToExisting || !addAmount0 || !addAmount1}
+                    className="flex-1 bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50"
+                  >
+                    {(isWritePending || isAddingToExisting) ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Adding...</span>
+                      </div>
+                    ) : (
+                      "Add Liquidity"
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -2494,14 +2832,14 @@ function LiquidityContent() {
           <div className="mb-4">
             <Input
               type="text"
-              placeholder="Search tokens..."
+              placeholder="Search by name or paste address..."
               value={tokenSearchQuery}
               onChange={(e) => setTokenSearchQuery(e.target.value)}
               className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
             />
           </div>
 
-          <div className="space-y-2 max-h-80 overflow-y-auto">
+          <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide">
             {filteredAvailableTokens.map((token) => (
               <Button
                 key={token.symbol}
@@ -2526,6 +2864,49 @@ function LiquidityContent() {
                 </div>
               </Button>
             ))}
+
+            {/* Loading state for custom token resolution */}
+            {isResolvingToken && (
+              <div className="flex items-center justify-center p-3 text-gray-400 text-sm">
+                Resolving token...
+              </div>
+            )}
+
+            {/* Custom token resolved from pasted address */}
+            {customToken && !isResolvingToken && (
+              <div>
+                <div className="text-xs text-gray-500 px-3 py-1">Imported Token</div>
+                <Button
+                  variant="ghost"
+                  onClick={() => selectToken(customToken)}
+                  className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold">
+                        {customToken.symbol.slice(0, 3)}
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">{customToken.symbol}</div>
+                        <div className="text-sm text-gray-400">{customToken.name}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-400">
+                        Balance: {formatNumber(customToken.balance || 0, 4)}
+                      </div>
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            )}
+
+            {/* No results message */}
+            {filteredAvailableTokens.length === 0 && !customToken && !isResolvingToken && (
+              <div className="text-center p-4 text-gray-400 text-sm">
+                No tokens found. Paste a token address to import.
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

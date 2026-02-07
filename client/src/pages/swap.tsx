@@ -10,7 +10,7 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 import { usePriceHistory, useTokenData } from "@/hooks/use-token-data";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits, parseUnits, parseEther } from "viem";
-import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI } from "@/lib/contracts";
+import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI, ROUTER_ABI } from "@/lib/contracts";
 
 // WETH ABI for deposit/withdraw
 const WETH_ABI = [
@@ -63,6 +63,7 @@ interface SwapQuote {
   minimumReceived: string;
   fee: number;
   route: string[];
+  feeTier?: number;
 }
 
 interface LimitOrder {
@@ -91,6 +92,14 @@ function SwapContent() {
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
   const [tokenSelectionFor, setTokenSelectionFor] = useState<'from' | 'to' | 'priceCondition'>('from');
   const [tokenSearchQuery, setTokenSearchQuery] = useState("");
+  const [customTokens, setCustomTokens] = useState<Token[]>(() => {
+    try {
+      const saved = localStorage.getItem("eloqura-custom-tokens");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupResult, setLookupResult] = useState<Token | null>(null);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
   const [networkSelectionFor, setNetworkSelectionFor] = useState<'from' | 'to'>('from');
 
@@ -121,7 +130,7 @@ function SwapContent() {
   const [chartKey, setChartKey] = useState(0);
   const [chartVisible, setChartVisible] = useState(false);
 
-  // Token prices derived from on-chain pool reserves (USD values)
+  // Per-unit token prices in USD (via Uniswap quoter)
   const [tokenPrices, setTokenPrices] = useState<Record<string, number>>({});
 
   // Recent swaps from on-chain events
@@ -327,7 +336,7 @@ function SwapContent() {
     },
   ];
 
-  const tokens = sepoliaTokens;
+  const tokens = [...sepoliaTokens, ...customTokens];
   const publicClient = usePublicClient();
 
   // Store all token balances in a single state object (address -> balance)
@@ -373,7 +382,7 @@ function SwapContent() {
     fetchBalances();
   }, [publicClient, address]);
 
-  // Fetch token prices via Uniswap quoter (same source the swap uses)
+  // Fetch per-unit token prices via Uniswap quoter (quote 1 token -> USDC)
   useEffect(() => {
     const fetchPrices = async () => {
       if (!publicClient) return;
@@ -383,18 +392,16 @@ function SwapContent() {
       const feeTiers = [UNISWAP_FEE_TIERS.MEDIUM, UNISWAP_FEE_TIERS.LOW, UNISWAP_FEE_TIERS.HIGH];
 
       for (const token of tokens) {
-        // USDC is $1
         if (token.address.toLowerCase() === usdcAddress.toLowerCase()) {
           prices[token.address.toLowerCase()] = 1;
           continue;
         }
 
-        // For quoting, use Uniswap WETH address for ETH
-        const quoterAddress = token.symbol === 'ETH'
+        // For ETH and Eloqura WETH, use Uniswap's WETH address for the quoter
+        const quoterAddress = (token.symbol === 'ETH' || token.symbol === 'WETH')
           ? UNISWAP_CONTRACTS.sepolia.WETH
           : token.address;
 
-        // Try to get a quote: 1 token -> USDC via Uniswap quoter
         let priceFound = false;
         for (const fee of feeTiers) {
           try {
@@ -417,12 +424,10 @@ function SwapContent() {
               priceFound = true;
               break;
             }
-          } catch {
-            continue;
-          }
+          } catch { continue; }
         }
 
-        // If no direct USDC pair, try token -> WETH -> USDC
+        // Fallback: token -> WETH -> USDC
         if (!priceFound && token.symbol !== 'WETH' && token.symbol !== 'ETH') {
           for (const fee of feeTiers) {
             try {
@@ -440,15 +445,10 @@ function SwapContent() {
                 }],
               });
               const wethAmount = parseFloat(formatUnits(result.result[0], 18));
-              if (wethAmount > 0 && prices[UNISWAP_CONTRACTS.sepolia.WETH.toLowerCase()]) {
-                prices[token.address.toLowerCase()] = wethAmount * prices[UNISWAP_CONTRACTS.sepolia.WETH.toLowerCase()];
-                priceFound = true;
-                break;
-              } else if (wethAmount > 0) {
-                // WETH price not fetched yet, try WETH->USDC first
+              if (wethAmount > 0) {
+                // Get WETH -> USDC price
                 for (const wethFee of feeTiers) {
                   try {
-                    const wethIn = parseUnits("1", 18);
                     const wethResult = await publicClient.simulateContract({
                       address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
                       abi: UNISWAP_QUOTER_ABI,
@@ -456,7 +456,7 @@ function SwapContent() {
                       args: [{
                         tokenIn: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`,
                         tokenOut: usdcAddress,
-                        amountIn: wethIn,
+                        amountIn: parseUnits("1", 18),
                         fee: wethFee,
                         sqrtPriceLimitX96: 0n,
                       }],
@@ -471,19 +471,59 @@ function SwapContent() {
                 }
                 if (priceFound) break;
               }
-            } catch {
-              continue;
-            }
+            } catch { continue; }
           }
         }
 
-        // ETH and WETH share the same price
+        // ETH and WETH share the same price (bidirectional)
         if (token.symbol === 'WETH' && prices[token.address.toLowerCase()]) {
           prices["0x0000000000000000000000000000000000000000"] = prices[token.address.toLowerCase()];
         }
         if (token.symbol === 'ETH' && prices["0x0000000000000000000000000000000000000000"]) {
-          const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
-          if (!prices[wethAddr]) prices[wethAddr] = prices["0x0000000000000000000000000000000000000000"];
+          const wethToken = tokens.find(t => t.symbol === 'WETH');
+          if (wethToken) {
+            prices[wethToken.address.toLowerCase()] = prices["0x0000000000000000000000000000000000000000"];
+          }
+        }
+
+        // Fallback: try Eloqura DEX pairs for tokens not priced via Uniswap (e.g. OEC)
+        if (!priceFound) {
+          try {
+            const factory = ELOQURA_CONTRACTS.sepolia.Factory;
+            const eloquraWeth = ELOQURA_CONTRACTS.sepolia.WETH;
+            const pairAddress = await publicClient.readContract({
+              address: factory as `0x${string}`,
+              abi: FACTORY_ABI,
+              functionName: 'getPair',
+              args: [token.address as `0x${string}`, eloquraWeth as `0x${string}`],
+            }) as `0x${string}`;
+            if (pairAddress && pairAddress !== '0x0000000000000000000000000000000000000000') {
+              const [reserves, token0] = await Promise.all([
+                publicClient.readContract({
+                  address: pairAddress,
+                  abi: PAIR_ABI,
+                  functionName: 'getReserves',
+                }) as Promise<[bigint, bigint, number]>,
+                publicClient.readContract({
+                  address: pairAddress,
+                  abi: PAIR_ABI,
+                  functionName: 'token0',
+                }) as Promise<`0x${string}`>,
+              ]);
+              const isToken0 = token0.toLowerCase() === token.address.toLowerCase();
+              const tokenReserve = parseFloat(formatUnits(isToken0 ? reserves[0] : reserves[1], token.decimals));
+              const wethReserve = parseFloat(formatUnits(isToken0 ? reserves[1] : reserves[0], 18));
+              if (tokenReserve > 0 && wethReserve > 0) {
+                const tokenPriceInWeth = wethReserve / tokenReserve;
+                // Get ETH/WETH USD price (already fetched)
+                const ethPrice = prices["0x0000000000000000000000000000000000000000"] || 0;
+                if (ethPrice > 0) {
+                  prices[token.address.toLowerCase()] = tokenPriceInWeth * ethPrice;
+                  priceFound = true;
+                }
+              }
+            }
+          } catch { /* no Eloqura pair exists */ }
         }
       }
 
@@ -526,8 +566,8 @@ function SwapContent() {
         // For each pair, get token0/token1 and fetch Swap logs
         const allSwaps: RecentSwap[] = [];
         const currentBlock = await publicClient.getBlockNumber();
-        // Look back ~2000 blocks (~7 hours on Sepolia)
-        const fromBlock = currentBlock > 2000n ? currentBlock - 2000n : 0n;
+        // Look back ~50000 blocks (~7 days on Sepolia)
+        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
 
         for (const pairAddr of pairAddresses) {
           try {
@@ -544,24 +584,36 @@ function SwapContent() {
               publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
             ]);
 
-            // Fetch Swap event logs
-            const logs = await publicClient.getLogs({
-              address: pairAddr,
-              event: {
-                type: 'event',
-                name: 'Swap',
-                inputs: [
-                  { name: 'sender', type: 'address', indexed: true },
-                  { name: 'amount0In', type: 'uint256', indexed: false },
-                  { name: 'amount1In', type: 'uint256', indexed: false },
-                  { name: 'amount0Out', type: 'uint256', indexed: false },
-                  { name: 'amount1Out', type: 'uint256', indexed: false },
-                  { name: 'to', type: 'address', indexed: true },
-                ],
-              },
-              fromBlock,
-              toBlock: 'latest',
-            });
+            // Fetch Swap event logs in chunks to handle RPC block range limits
+            const swapEvent = {
+              type: 'event' as const,
+              name: 'Swap' as const,
+              inputs: [
+                { name: 'sender', type: 'address' as const, indexed: true },
+                { name: 'amount0In', type: 'uint256' as const, indexed: false },
+                { name: 'amount1In', type: 'uint256' as const, indexed: false },
+                { name: 'amount0Out', type: 'uint256' as const, indexed: false },
+                { name: 'amount1Out', type: 'uint256' as const, indexed: false },
+                { name: 'to', type: 'address' as const, indexed: true },
+              ],
+            };
+
+            let logs: any[] = [];
+            const chunkSize = 5000n;
+            for (let start = fromBlock; start <= currentBlock; start += chunkSize) {
+              const end = start + chunkSize - 1n > currentBlock ? currentBlock : start + chunkSize - 1n;
+              try {
+                const chunk = await publicClient.getLogs({
+                  address: pairAddr,
+                  event: swapEvent,
+                  fromBlock: start,
+                  toBlock: end,
+                });
+                logs = logs.concat(chunk);
+              } catch {
+                // If chunk fails, skip it and continue
+              }
+            }
 
             for (const log of logs) {
               const args = log.args as any;
@@ -617,7 +669,7 @@ function SwapContent() {
     return () => clearInterval(interval);
   }, [publicClient]);
 
-  // Update token balances and prices dynamically
+  // Update token balances dynamically
   const tokensWithBalances = tokens.map(token => {
     const balance = tokenBalances[token.address] ?? 0n;
     const price = tokenPrices[token.address.toLowerCase()] ?? token.price;
@@ -686,6 +738,71 @@ function SwapContent() {
     token.address.toLowerCase().includes(tokenSearchQuery.toLowerCase())
   );
 
+  // Look up unknown token by contract address
+  const isAddress = (s: string) => /^0x[a-fA-F0-9]{40}$/.test(s.trim());
+
+  useEffect(() => {
+    const query = tokenSearchQuery.trim();
+    if (!isAddress(query) || !publicClient) {
+      setLookupResult(null);
+      return;
+    }
+
+    // Check if token already exists in the list
+    const exists = tokens.some(t => t.address.toLowerCase() === query.toLowerCase());
+    if (exists) {
+      setLookupResult(null);
+      return;
+    }
+
+    const lookupToken = async () => {
+      setLookupLoading(true);
+      setLookupResult(null);
+      try {
+        const addr = query as `0x${string}`;
+        const [symbol, name, decimals] = await Promise.all([
+          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "symbol" }) as Promise<string>,
+          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "name" }) as Promise<string>,
+          publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "decimals" }) as Promise<number>,
+        ]);
+
+        // Fetch balance if connected
+        let balance = 0;
+        if (address) {
+          try {
+            const bal = await publicClient.readContract({ address: addr, abi: ERC20_ABI, functionName: "balanceOf", args: [address] }) as bigint;
+            balance = parseFloat(formatUnits(bal, Number(decimals)));
+          } catch {}
+        }
+
+        setLookupResult({
+          symbol,
+          name,
+          address: query,
+          decimals: Number(decimals),
+          logo: "",
+          price: 0,
+          balance,
+        });
+      } catch {
+        setLookupResult(null);
+      }
+      setLookupLoading(false);
+    };
+
+    lookupToken();
+  }, [tokenSearchQuery, publicClient, address]);
+
+  const importCustomToken = (token: Token) => {
+    const newCustomTokens = [...customTokens, { ...token, balance: undefined }];
+    setCustomTokens(newCustomTokens);
+    localStorage.setItem("eloqura-custom-tokens", JSON.stringify(newCustomTokens));
+    setLookupResult(null);
+    setTokenSearchQuery("");
+    // Refresh balances to pick up the new token
+    setTimeout(() => fetchBalances(), 500);
+  };
+
   // Format number with commas and smart decimals
   const formatNumber = (num: number, decimals = 2): string => {
     if (num === 0) return '0';
@@ -709,6 +826,7 @@ function SwapContent() {
     let exchangeRate: number;
     let priceImpact: number = 0;
     let routeSource: string = 'direct';
+    let bestFeeTier: number = UNISWAP_FEE_TIERS.MEDIUM;
 
     // ETH <-> WETH is always 1:1 (wrapping/unwrapping)
     const isWrapUnwrap =
@@ -738,7 +856,6 @@ function SwapContent() {
         // Try different fee tiers (0.3% is most common)
         const feeTiers = [UNISWAP_FEE_TIERS.MEDIUM, UNISWAP_FEE_TIERS.LOW, UNISWAP_FEE_TIERS.HIGH];
         let bestQuote: bigint | null = null;
-        let bestFeeTier = UNISWAP_FEE_TIERS.MEDIUM;
 
         for (const feeTier of feeTiers) {
           try {
@@ -772,15 +889,85 @@ function SwapContent() {
           fee = inputAmount * (bestFeeTier / 1000000); // Convert fee tier to percentage
           priceImpact = 0; // Could calculate from sqrtPriceX96After
           routeSource = 'uniswap';
-        } else {
-          // No Uniswap pool found
-          outputAmount = 0;
-          exchangeRate = 0;
-          fee = 0;
-          routeSource = 'none';
         }
       } catch (error) {
         console.warn('Uniswap quote failed:', error);
+      }
+
+      // Fallback: try Eloqura DEX router if Uniswap had no result
+      if (!routeSource || routeSource === 'direct') {
+        try {
+          // For Eloqura, use WETH address for ETH (native ETH can't be in a pair)
+          const eloquraTokenIn = from.symbol === 'ETH'
+            ? ELOQURA_CONTRACTS.sepolia.WETH
+            : from.address;
+          const eloquraTokenOut = to.symbol === 'ETH'
+            ? ELOQURA_CONTRACTS.sepolia.WETH
+            : to.address;
+
+          const amountIn = parseUnits(amount, from.decimals);
+
+          // Try direct path first
+          try {
+            const result = await publicClient.readContract({
+              address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+              abi: ROUTER_ABI,
+              functionName: 'getAmountsOut',
+              args: [amountIn, [eloquraTokenIn as `0x${string}`, eloquraTokenOut as `0x${string}`]],
+            }) as bigint[];
+            const eloquraOutput = parseFloat(formatUnits(result[1], to.decimals));
+            if (eloquraOutput > 0 && eloquraOutput > (outputAmount || 0)) {
+              outputAmount = eloquraOutput;
+              exchangeRate = outputAmount / inputAmount;
+              fee = inputAmount * 0.003; // 0.3% Eloqura fee
+              routeSource = 'eloqura';
+              // Calculate price impact from reserves
+              const pairAddress = await publicClient.readContract({
+                address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+                abi: FACTORY_ABI,
+                functionName: 'getPair',
+                args: [eloquraTokenIn as `0x${string}`, eloquraTokenOut as `0x${string}`],
+              }) as `0x${string}`;
+              if (pairAddress && pairAddress !== '0x0000000000000000000000000000000000000000') {
+                const [reserves, token0] = await Promise.all([
+                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'getReserves' }) as Promise<[bigint, bigint, number]>,
+                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token0' }) as Promise<`0x${string}`>,
+                ]);
+                const isToken0In = token0.toLowerCase() === eloquraTokenIn.toLowerCase();
+                const reserveIn = parseFloat(formatUnits(isToken0In ? reserves[0] : reserves[1], from.decimals));
+                const reserveOut = parseFloat(formatUnits(isToken0In ? reserves[1] : reserves[0], to.decimals));
+                const spotRate = reserveOut / reserveIn;
+                priceImpact = Math.abs((exchangeRate - spotRate) / spotRate) * 100;
+              }
+            }
+          } catch { /* no direct pair */ }
+
+          // Try via WETH if direct failed and neither token is WETH/ETH
+          if (routeSource !== 'eloqura' && from.symbol !== 'WETH' && from.symbol !== 'ETH' && to.symbol !== 'WETH' && to.symbol !== 'ETH') {
+            try {
+              const weth = ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`;
+              const result = await publicClient.readContract({
+                address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+                abi: ROUTER_ABI,
+                functionName: 'getAmountsOut',
+                args: [amountIn, [eloquraTokenIn as `0x${string}`, weth, eloquraTokenOut as `0x${string}`]],
+              }) as bigint[];
+              const eloquraOutput = parseFloat(formatUnits(result[2], to.decimals));
+              if (eloquraOutput > 0 && eloquraOutput > (outputAmount || 0)) {
+                outputAmount = eloquraOutput;
+                exchangeRate = outputAmount / inputAmount;
+                fee = inputAmount * 0.006; // 0.3% x2 hops
+                routeSource = 'eloqura-bridge';
+              }
+            } catch { /* no WETH route */ }
+          }
+        } catch (error) {
+          console.warn('Eloqura quote failed:', error);
+        }
+      }
+
+      // If still no route found
+      if (!routeSource || routeSource === 'direct') {
         outputAmount = 0;
         exchangeRate = 0;
         fee = 0;
@@ -803,7 +990,11 @@ function SwapContent() {
       priceImpact,
       minimumReceived: minimumReceived.toString(),
       fee,
-      route: routeSource === 'uniswap' ? [from.symbol, 'Uniswap', to.symbol] : [from.symbol, to.symbol]
+      route: routeSource === 'uniswap' ? [from.symbol, 'Uniswap', to.symbol]
+           : routeSource === 'eloqura' ? [from.symbol, 'Eloqura', to.symbol]
+           : routeSource === 'eloqura-bridge' ? [from.symbol, 'Eloqura', 'WETH', to.symbol]
+           : [from.symbol, to.symbol],
+      feeTier: routeSource === 'uniswap' ? bestFeeTier : undefined,
     };
 
     setQuote(swapQuote);
@@ -825,7 +1016,7 @@ function SwapContent() {
   const [needsApproval, setNeedsApproval] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
-  // Check if token needs approval for Uniswap
+  // Check if token needs approval for the swap router
   const checkApproval = async () => {
     if (!fromToken || !address || !publicClient || fromToken.symbol === 'ETH') {
       setNeedsApproval(false);
@@ -833,11 +1024,16 @@ function SwapContent() {
     }
 
     try {
+      // Check approval for both routers, use the one matching the current quote route
+      const spender = quote?.route.includes('Eloqura')
+        ? ELOQURA_CONTRACTS.sepolia.Router
+        : UNISWAP_CONTRACTS.sepolia.SwapRouter02;
+
       const allowance = await publicClient.readContract({
         address: fromToken.address as `0x${string}`,
         abi: ERC20_ABI,
         functionName: 'allowance',
-        args: [address, UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`],
+        args: [address, spender as `0x${string}`],
       }) as bigint;
 
       const amount = parseUnits(fromAmount || '0', fromToken.decimals);
@@ -848,15 +1044,19 @@ function SwapContent() {
     }
   };
 
-  // Check approval when fromToken or fromAmount changes
+  // Check approval when fromToken, fromAmount, or quote changes
   useEffect(() => {
     if (fromToken && fromAmount && parseFloat(fromAmount) > 0) {
       checkApproval();
     }
-  }, [fromToken, fromAmount, address]);
+  }, [fromToken, fromAmount, address, quote]);
 
   const handleApprove = async () => {
     if (!fromToken || fromToken.symbol === 'ETH') return;
+
+    const spender = quote?.route.includes('Eloqura')
+      ? ELOQURA_CONTRACTS.sepolia.Router
+      : UNISWAP_CONTRACTS.sepolia.SwapRouter02;
 
     setIsApproving(true);
     try {
@@ -864,7 +1064,7 @@ function SwapContent() {
         address: fromToken.address as `0x${string}`,
         abi: ERC20_ABI,
         functionName: 'approve',
-        args: [UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`, parseUnits('1000000000', fromToken.decimals)],
+        args: [spender as `0x${string}`, parseUnits('1000000000', fromToken.decimals)],
       });
     } catch (error) {
       console.error('Approval error:', error);
@@ -896,11 +1096,62 @@ function SwapContent() {
           args: [amount],
         });
       }
+      // Eloqura DEX swap
+      else if (quote?.route.includes('Eloqura')) {
+        const amountIn = parseUnits(fromAmount, fromToken.decimals);
+        // Truncate minimumReceived to token's decimal precision to avoid parseUnits overflow
+        const minReceivedStr = quote ? parseFloat(quote.minimumReceived).toFixed(toToken.decimals) : '0';
+        const amountOutMin = quote
+          ? parseUnits(minReceivedStr, toToken.decimals)
+          : 0n;
+        const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+
+        const eloquraTokenIn = fromToken.symbol === 'ETH'
+          ? ELOQURA_CONTRACTS.sepolia.WETH
+          : fromToken.address;
+        const eloquraTokenOut = toToken.symbol === 'ETH'
+          ? ELOQURA_CONTRACTS.sepolia.WETH
+          : toToken.address;
+        // Use 3-hop path via WETH if the quote used bridge routing
+        const isBridge = quote.route.length === 4 && quote.route.includes('WETH');
+        const path = isBridge
+          ? [eloquraTokenIn as `0x${string}`, ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`, eloquraTokenOut as `0x${string}`]
+          : [eloquraTokenIn as `0x${string}`, eloquraTokenOut as `0x${string}`];
+
+        if (fromToken.symbol === 'ETH') {
+          // ETH -> Token via Eloqura: swapExactETHForTokens
+          writeContract({
+            address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+            abi: ROUTER_ABI,
+            functionName: 'swapExactETHForTokens',
+            args: [amountOutMin, path, address, deadline],
+            value: amountIn,
+          });
+        } else if (toToken.symbol === 'ETH') {
+          // Token -> ETH via Eloqura: swapExactTokensForETH
+          writeContract({
+            address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+            abi: ROUTER_ABI,
+            functionName: 'swapExactTokensForETH',
+            args: [amountIn, amountOutMin, path, address, deadline],
+          });
+        } else {
+          // Token -> Token via Eloqura: swapExactTokensForTokens
+          writeContract({
+            address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+            abi: ROUTER_ABI,
+            functionName: 'swapExactTokensForTokens',
+            args: [amountIn, amountOutMin, path, address, deadline],
+          });
+        }
+      }
       // Uniswap V3 swap
       else {
         const amountIn = parseUnits(fromAmount, fromToken.decimals);
+        // Truncate minimumReceived to token's decimal precision to avoid parseUnits overflow
+        const minReceivedStr = quote ? parseFloat(quote.minimumReceived).toFixed(toToken.decimals) : '0';
         const amountOutMin = quote
-          ? parseUnits(quote.minimumReceived, toToken.decimals)
+          ? parseUnits(minReceivedStr, toToken.decimals)
           : 0n;
 
         // Use Uniswap WETH for ETH swaps
@@ -911,8 +1162,8 @@ function SwapContent() {
           ? UNISWAP_CONTRACTS.sepolia.WETH
           : toToken.address;
 
-        // Deadline 20 minutes from now
-        const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+        // Use the fee tier from the quote (matched during quoting) instead of hardcoded MEDIUM
+        const swapFeeTier = quote?.feeTier ?? UNISWAP_FEE_TIERS.MEDIUM;
 
         if (fromToken.symbol === 'ETH') {
           // ETH -> Token: send ETH value with the swap
@@ -923,7 +1174,7 @@ function SwapContent() {
             args: [{
               tokenIn: tokenIn as `0x${string}`,
               tokenOut: tokenOut as `0x${string}`,
-              fee: UNISWAP_FEE_TIERS.MEDIUM,
+              fee: swapFeeTier,
               recipient: address,
               amountIn: amountIn,
               amountOutMinimum: amountOutMin,
@@ -940,7 +1191,7 @@ function SwapContent() {
             args: [{
               tokenIn: tokenIn as `0x${string}`,
               tokenOut: tokenOut as `0x${string}`,
-              fee: UNISWAP_FEE_TIERS.MEDIUM,
+              fee: swapFeeTier,
               recipient: address,
               amountIn: amountIn,
               amountOutMinimum: amountOutMin,
@@ -1083,17 +1334,21 @@ function SwapContent() {
 
 
 
-  // Set initial tokens based on active tab
+  // Set initial tokens based on active tab (use tokensWithBalances to preserve balances)
   useEffect(() => {
+    const twb = tokensWithBalances.length > 0 ? tokensWithBalances : tokens;
     if (activeTab === "Buy") {
       setFromToken(null); // No from token for buy mode
-      setToToken(tokens[0]); // OEC
+      setToToken(twb[0]); // OEC
     } else if (activeTab === "Sell") {
-      setFromToken(tokens[0]); // OEC
-      setToToken(tokens[1]); // USDT
+      setFromToken(twb[0]); // OEC
+      setToToken(twb[1]); // USDT
     } else {
-      setFromToken(tokens[1]); // USDT
-      setToToken(tokens[0]); // OEC
+      // For Trade tab, restore with balances if we have them
+      const ethToken = twb.find(t => t.symbol === "ETH");
+      const wethToken = twb.find(t => t.symbol === "WETH");
+      setFromToken(ethToken || twb[1]);
+      setToToken(wethToken || twb[0]);
     }
   }, [activeTab]);
 
@@ -1963,6 +2218,7 @@ function SwapContent() {
                     fromToken.symbol === 'WETH' && toToken.symbol === 'ETH' ? `Unwrap ${fromToken.symbol}` :
                     quote && quote.exchangeRate === 0 ? "No Liquidity" :
                     quote && quote.route.includes('Uniswap') ? `Swap via Uniswap` :
+                    quote && quote.route.includes('Eloqura') ? `Swap via Eloqura` :
                     `Swap ${fromToken.symbol}`
                   ) : activeTab === "Limit" ? (
                     !fromToken || !toToken ? "Select Tokens" :
@@ -2422,7 +2678,7 @@ function SwapContent() {
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-3">
-                      <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" />
+                      <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = "/oec-logo.png"; }} />
                       <div className="text-left">
                         <div className="font-medium">{token.symbol}</div>
                         <div className="text-sm text-gray-400">{token.name}</div>
@@ -2431,7 +2687,7 @@ function SwapContent() {
                     <div className="text-right">
                       <div className="text-sm text-white">{formatNumber(token.balance || 0, 4)}</div>
                       <div className="text-xs text-gray-400">
-                        {token.price > 0
+                        {token.price > 0 && (token.balance || 0) > 0
                           ? `$${formatNumber((token.balance || 0) * token.price, 2)}`
                           : '\u00A0'}
                       </div>
@@ -2453,6 +2709,51 @@ function SwapContent() {
                 )}
               </div>
             ))}
+
+            {/* Custom token lookup result */}
+            {lookupLoading && isAddress(tokenSearchQuery.trim()) && (
+              <div className="flex items-center justify-center p-4 text-gray-400">
+                <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mr-2" />
+                Looking up token...
+              </div>
+            )}
+
+            {lookupResult && !lookupLoading && (
+              <div className="border border-cyan-500/30 rounded-lg p-3 bg-cyan-500/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white">
+                      {lookupResult.symbol.slice(0, 2)}
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">{lookupResult.symbol}</div>
+                      <div className="text-sm text-gray-400">{lookupResult.name}</div>
+                      <div className="text-xs text-gray-500 font-mono">{lookupResult.address.slice(0, 6)}...{lookupResult.address.slice(-4)}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {lookupResult.balance !== undefined && lookupResult.balance > 0 && (
+                      <div className="text-sm text-white mb-1">{formatNumber(lookupResult.balance, 4)}</div>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => importCustomToken(lookupResult)}
+                      className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs"
+                    >
+                      Import
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {filteredTokens.length === 0 && !lookupResult && !lookupLoading && (
+              <div className="text-center text-gray-400 py-4 text-sm">
+                {isAddress(tokenSearchQuery.trim())
+                  ? "No valid ERC-20 token found at this address"
+                  : "No tokens found. Try pasting a contract address."}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
