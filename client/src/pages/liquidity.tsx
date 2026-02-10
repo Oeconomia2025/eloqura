@@ -68,6 +68,7 @@ function LiquidityContent() {
   const [selectedToken1, setSelectedToken1] = useState<Token | null>(null);
   const [amount0, setAmount0] = useState("");
   const [expandedPositions, setExpandedPositions] = useState<Set<string>>(new Set());
+  const [reversedPricePositions, setReversedPricePositions] = useState<Set<string>>(new Set());
   const [amount1, setAmount1] = useState("");
   const [selectedFee, setSelectedFee] = useState<number>(0.25);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1525,87 +1526,93 @@ function LiquidityContent() {
                             className="p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
                             onClick={() => togglePositionExpansion(position.id)}
                           >
-                            <div className="flex items-center justify-between">
-                              {/* Left: Token Pair & Status */}
+                            <div className="grid items-center gap-1" style={{ gridTemplateColumns: '1fr 110px 24px 190px 32px 70px auto 28px' }}>
+                              {/* Token Pair & Status */}
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center -space-x-2">
-                                  <img 
-                                    src={position.token0.logo} 
+                                  <img
+                                    src={position.token0.logo}
                                     alt={position.token0.symbol}
                                     className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
                                   />
-                                  <img 
-                                    src={position.token1.logo} 
+                                  <img
+                                    src={position.token1.logo}
                                     alt={position.token1.symbol}
                                     className="w-8 h-8 rounded-full border-2 border-[var(--crypto-card)]"
                                   />
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                  <h3 className="text-white font-semibold">
+                                  <h3 className="text-white font-semibold min-w-[100px]">
                                     {position.token0.symbol}/{position.token1.symbol}
                                   </h3>
                                   <Badge className={`text-xs ${position.status === 'in-range' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                                     {position.status === 'in-range' ? 'In Range' : 'Out of Range'}
                                   </Badge>
-                                  <Badge variant="outline" className="text-xs">
-                                    {position.fee}% Fee
-                                  </Badge>
                                 </div>
                               </div>
 
-                              {/* Center: Key Values */}
-                              <div className="flex items-center space-x-6">
-                                <div className="text-center min-w-[120px]">
-                                  <p className="text-green-400 font-semibold">
-                                    {formatPrice(parseFloat(position.uncollectedFees0) * position.token0.price + parseFloat(position.uncollectedFees1) * position.token1.price)}
-                                  </p>
-                                  <p className="text-xs text-gray-400">Uncollected Fees</p>
-                                </div>
-                                <div className="text-center min-w-[120px]">
-                                  <p className="text-white font-semibold">{formatPrice(position.value)}</p>
-                                  <p className="text-xs text-gray-400">
-                                    {(() => {
-                                      const parts = position.liquidity.split('|');
-                                      if (parts.length === 4) {
-                                        return `${formatNumber(parseFloat(parts[0]), 2)} ${parts[2]} + ${formatNumber(parseFloat(parts[1]), 2)} ${parts[3]}`;
-                                      }
-                                      return position.liquidity;
-                                    })()}
-                                  </p>
-                                </div>
-                                <div className="flex justify-center min-w-[48px]">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-gray-400 hover:text-white"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      window.open(`https://sepolia.etherscan.io/address/${position.id}`, '_blank');
-                                    }}
-                                  >
-                                    <ExternalLink className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                                <div className="text-center min-w-[80px]">
-                                  <p className="text-cyan-400 font-semibold">
-                                    {position.fee}%
-                                  </p>
-                                  <p className="text-xs text-gray-400">Fee Tier</p>
-                                </div>
+                              {/* Uncollected Fees */}
+                              <div className="text-center">
+                                <p className="text-green-400 font-semibold">
+                                  {formatPrice(parseFloat(position.uncollectedFees0) * position.token0.price + parseFloat(position.uncollectedFees1) * position.token1.price)}
+                                </p>
+                                <p className="text-xs text-gray-400">Uncollected Fees</p>
                               </div>
 
-                              {/* Right: Collect Fees + Expand */}
-                              <div className="flex items-center space-x-3">
-                                <Button 
-                                  size="sm" 
-                                  className="bg-green-600 hover:bg-green-700 text-white"
+                              {/* Spacer */}
+                              <div />
+
+                              {/* Value & Breakdown */}
+                              <div className="text-center">
+                                <p className="text-white font-semibold">{formatPrice(position.value)}</p>
+                                <p className="text-xs text-gray-400">
+                                  {(() => {
+                                    const parts = position.liquidity.split('|');
+                                    if (parts.length === 4) {
+                                      return `${formatNumber(parseFloat(parts[0]), 2)} ${parts[2]} + ${formatNumber(parseFloat(parts[1]), 2)} ${parts[3]}`;
+                                    }
+                                    return position.liquidity;
+                                  })()}
+                                </p>
+                              </div>
+
+                              {/* External Link */}
+                              <div className="flex justify-center">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-gray-400 hover:text-white"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // Handle collect fees
+                                    window.open(`https://sepolia.etherscan.io/address/${position.id}`, '_blank');
                                   }}
                                 >
-                                  Collect Fees
+                                  <ExternalLink className="w-4 h-4" />
                                 </Button>
+                              </div>
+
+                              {/* Fee Tier */}
+                              <div className="text-center">
+                                <p className="text-cyan-400 font-semibold">
+                                  {position.fee}%
+                                </p>
+                                <p className="text-xs text-gray-400">Fee Tier</p>
+                              </div>
+
+                              {/* Collect Fees */}
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Handle collect fees
+                                }}
+                              >
+                                Collect Fees
+                              </Button>
+
+                              {/* Expand/Collapse */}
+                              <div className="flex justify-center">
                                 {isExpanded ? (
                                   <ChevronUp className="w-5 h-5 text-gray-400" />
                                 ) : (
@@ -1626,14 +1633,41 @@ function LiquidityContent() {
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-400 mb-1">Current Price</p>
-                                  <p className="text-lg font-bold text-white">
-                                    {position.currentPrice < 0.001
-                                      ? position.currentPrice.toExponential(4)
-                                      : formatNumber(position.currentPrice, 6)}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    {position.token1.symbol} per {position.token0.symbol}
-                                  </p>
+                                  {(() => {
+                                    const isReversed = reversedPricePositions.has(position.id);
+                                    const price = isReversed && position.currentPrice > 0
+                                      ? 1 / position.currentPrice
+                                      : position.currentPrice;
+                                    const baseSymbol = isReversed ? position.token0.symbol : position.token1.symbol;
+                                    const quoteSymbol = isReversed ? position.token1.symbol : position.token0.symbol;
+                                    return (
+                                      <>
+                                        <p className="text-lg font-bold text-white">
+                                          {price < 0.001
+                                            ? price.toExponential(4)
+                                            : formatNumber(price, 6)}
+                                        </p>
+                                        <button
+                                          className="text-xs text-gray-500 hover:text-cyan-400 transition-colors cursor-pointer flex items-center gap-1"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setReversedPricePositions(prev => {
+                                              const next = new Set(prev);
+                                              if (next.has(position.id)) {
+                                                next.delete(position.id);
+                                              } else {
+                                                next.add(position.id);
+                                              }
+                                              return next;
+                                            });
+                                          }}
+                                          title="Click to toggle price direction"
+                                        >
+                                          {baseSymbol} per {quoteSymbol} <ArrowLeftRight className="w-3 h-3 inline" />
+                                        </button>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-400 mb-1">Your Pool Share</p>

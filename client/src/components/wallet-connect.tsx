@@ -103,8 +103,8 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
         }}
         className={`w-full flex items-center ${
           collapsed ? 'justify-center px-2' : 'space-x-3 px-3'
-        } py-2 rounded-lg text-left transition-all duration-200 text-white font-medium shadow-lg group relative`}
-        style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
+        } py-2 rounded-lg text-left transition-colors group relative text-white font-medium shadow-lg`}
+        style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}
         title={collapsed ? formatAddress(address) : undefined}
       >
         <Wallet className="w-5 h-5 flex-shrink-0" />
@@ -124,8 +124,8 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
         <button
           className={`w-full flex items-center ${
             collapsed ? 'justify-center px-2' : 'space-x-3 px-3'
-          } py-2 rounded-lg text-left transition-all duration-200 text-white font-medium shadow-lg group relative`}
-          style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
+          } py-2 rounded-lg text-left transition-colors group relative text-white font-medium shadow-lg`}
+          style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}
           title={collapsed ? "Connect Wallet" : undefined}
         >
           <Wallet className="w-5 h-5 flex-shrink-0" />

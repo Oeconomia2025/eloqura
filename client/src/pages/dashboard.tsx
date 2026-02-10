@@ -435,137 +435,15 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [publicClient, address, tokenPrices]);
 
-  // Fetch recent swaps (optimized with multicall + reduced range for dashboard)
+  // Load recent swaps from localStorage (saved when user completes swaps on swap page)
   useEffect(() => {
-    const fetchRecentSwaps = async () => {
-      if (!publicClient) return;
-      try {
-        const pairCount = await publicClient.readContract({
-          address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-          abi: FACTORY_ABI,
-          functionName: "allPairsLength",
-        }) as bigint;
-
-        const count = Math.min(Number(pairCount), 10);
-        if (count === 0) return;
-
-        // Batch: get all pair addresses
-        const pairAddrResults = await publicClient.multicall({
-          contracts: Array.from({ length: count }, (_, i) => ({
-            address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-            abi: FACTORY_ABI,
-            functionName: "allPairs" as const,
-            args: [BigInt(i)],
-          })),
-        });
-        const pairAddrs = pairAddrResults
-          .filter(r => r.status === "success")
-          .map(r => r.result as `0x${string}`);
-
-        // Batch: get token0/token1 for all pairs
-        const tokenCalls = pairAddrs.flatMap(addr => [
-          { address: addr, abi: PAIR_ABI, functionName: "token0" as const, args: [] as const },
-          { address: addr, abi: PAIR_ABI, functionName: "token1" as const, args: [] as const },
-        ]);
-        const tokenResults = await publicClient.multicall({ contracts: tokenCalls });
-
-        // Collect unique token addresses for symbol/decimals lookup
-        const allTokenAddrs: `0x${string}`[] = [];
-        const pairTokenMap: { t0: `0x${string}`; t1: `0x${string}` }[] = [];
-        pairAddrs.forEach((_, i) => {
-          const t0 = tokenResults[i * 2].status === "success" ? tokenResults[i * 2].result as `0x${string}` : null;
-          const t1 = tokenResults[i * 2 + 1].status === "success" ? tokenResults[i * 2 + 1].result as `0x${string}` : null;
-          if (t0 && t1) {
-            pairTokenMap.push({ t0, t1 });
-            allTokenAddrs.push(t0, t1);
-          } else {
-            pairTokenMap.push({ t0: "0x0" as `0x${string}`, t1: "0x0" as `0x${string}` });
-          }
-        });
-
-        const uniqueAddrs = [...new Set(allTokenAddrs.map(a => a.toLowerCase()))].map(a => a as `0x${string}`);
-        const infoCalls = uniqueAddrs.flatMap(addr => [
-          { address: addr, abi: ERC20_ABI, functionName: "symbol" as const, args: [] as const },
-          { address: addr, abi: ERC20_ABI, functionName: "decimals" as const, args: [] as const },
-        ]);
-        const infoResults = await publicClient.multicall({ contracts: infoCalls });
-        const tokenInfo: Record<string, { symbol: string; decimals: number }> = {};
-        uniqueAddrs.forEach((addr, i) => {
-          tokenInfo[addr.toLowerCase()] = {
-            symbol: infoResults[i * 2].status === "success" ? infoResults[i * 2].result as string : "???",
-            decimals: infoResults[i * 2 + 1].status === "success" ? Number(infoResults[i * 2 + 1].result) : 18,
-          };
-        });
-
-        // Fetch swap logs - use 10000 blocks (~1.5 days) for dashboard to keep it fast
-        const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > 10000n ? currentBlock - 10000n : 0n;
-        const allSwaps: RecentSwap[] = [];
-
-        const swapEvent = {
-          type: "event" as const,
-          name: "Swap" as const,
-          inputs: [
-            { name: "sender", type: "address" as const, indexed: true },
-            { name: "amount0In", type: "uint256" as const, indexed: false },
-            { name: "amount1In", type: "uint256" as const, indexed: false },
-            { name: "amount0Out", type: "uint256" as const, indexed: false },
-            { name: "amount1Out", type: "uint256" as const, indexed: false },
-            { name: "to", type: "address" as const, indexed: true },
-          ],
-        };
-
-        // Fetch logs for all pairs in parallel (2 chunks each for 10000 blocks)
-        const logPromises = pairAddrs.map(async (pairAddr, pairIdx) => {
-          const { t0, t1 } = pairTokenMap[pairIdx];
-          if (t0 === "0x0") return [];
-          const info0 = tokenInfo[t0.toLowerCase()];
-          const info1 = tokenInfo[t1.toLowerCase()];
-          if (!info0 || !info1) return [];
-
-          let logs: any[] = [];
-          const chunkSize = 5000n;
-          for (let start = fromBlock; start <= currentBlock; start += chunkSize) {
-            const end = start + chunkSize - 1n > currentBlock ? currentBlock : start + chunkSize - 1n;
-            try {
-              const chunk = await publicClient.getLogs({
-                address: pairAddr,
-                event: swapEvent,
-                fromBlock: start,
-                toBlock: end,
-              });
-              logs = logs.concat(chunk);
-            } catch {}
-          }
-
-          return logs.slice(-5).map(log => {
-            const args = log.args as any;
-            const a0In = args.amount0In ?? 0n;
-            const a1In = args.amount1In ?? 0n;
-            const a0Out = args.amount0Out ?? 0n;
-            const a1Out = args.amount1Out ?? 0n;
-            const isToken0In = a0In > 0n;
-            return {
-              tokenIn: isToken0In ? info0.symbol : info1.symbol,
-              tokenOut: isToken0In ? info1.symbol : info0.symbol,
-              amountIn: parseFloat(formatUnits(isToken0In ? a0In : a1In, isToken0In ? info0.decimals : info1.decimals)).toFixed(4),
-              amountOut: parseFloat(formatUnits(isToken0In ? a1Out : a0Out, isToken0In ? info1.decimals : info0.decimals)).toFixed(4),
-              timestamp: Number(log.blockNumber),
-              txHash: log.transactionHash,
-            };
-          });
-        });
-
-        const swapArrays = await Promise.all(logPromises);
-        swapArrays.forEach(swaps => allSwaps.push(...swaps));
-        allSwaps.sort((a, b) => b.timestamp - a.timestamp);
-        setRecentSwaps(allSwaps.slice(0, 10));
-      } catch (error) {
-        console.error("Error fetching recent swaps:", error);
-      }
-    };
-    fetchRecentSwaps();
-  }, [publicClient]);
+    try {
+      const saved = JSON.parse(localStorage.getItem("eloqura-recent-swaps") || "[]") as RecentSwap[];
+      setRecentSwaps(saved.slice(0, 10));
+    } catch {
+      setRecentSwaps([]);
+    }
+  }, []);
 
   // Calculate totals
   const totalTokenValue = tokenBalances.reduce((sum, t) => sum + t.usdValue, 0);
@@ -618,7 +496,7 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white/80 text-sm mb-1 font-bold">Total Portfolio Value</p>
+                    <p className="text-white/80 text-sm mb-1 font-bold">Portfolio Value</p>
                     <p className="text-2xl font-bold text-white">
                       {isConnected ? formatPrice(totalPortfolioValue) : "$0.00"}
                     </p>

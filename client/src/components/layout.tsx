@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 import { WalletConnect } from "@/components/wallet-connect";
+import { EcosystemSidebar } from "@/components/ecosystem-sidebar";
 import { useTheme } from "@/components/theme-provider";
 import {
   DropdownMenu,
@@ -280,7 +281,7 @@ export function Layout({
               <button
                 className={`w-full flex items-center ${
                   sidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'
-                } py-2 rounded-lg text-left transition-colors group relative bg-gray-800 text-white hover:bg-gray-700`}
+                } py-2 rounded-lg text-left transition-all duration-200 group relative bg-gray-800 text-white hover:bg-[#8b5cf6]/50 focus:outline-none focus:ring-0`}
                 title={sidebarCollapsed ? "Links" : undefined}
               >
                 <Globe className="w-5 h-5 flex-shrink-0 text-violet-400" />
@@ -300,7 +301,7 @@ export function Layout({
                 style={!sidebarCollapsed ? { width: 'var(--radix-dropdown-menu-trigger-width)' } : undefined}
               >
                 <DropdownMenuItem 
-                  onClick={() => window.open('https://oeconomia.io/', '_blank')}
+                  onClick={() => window.open('https://oeconomia.tech/', '_blank')}
                   className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
                 >
                   <Globe className="w-4 h-4 mr-2" />
@@ -360,7 +361,7 @@ export function Layout({
       )}
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-0 relative">
+      <div className="flex-1 lg:ml-0 mr-9 relative">
         {/* Mobile menu button for when there's no header */}
         <div className="lg:hidden fixed top-4 left-4 z-50">
           <Button
@@ -386,6 +387,9 @@ export function Layout({
         </main>
       </div>
 
+
+      {/* Ecosystem Sidebar */}
+      <EcosystemSidebar />
 
       {/* Support Modal */}
       {supportOpen && (

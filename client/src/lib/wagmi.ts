@@ -93,8 +93,9 @@ export const config = createConfig({
   ],
   transports: {
     [sepolia.id]: fallback([
-      http('https://ethereum-sepolia-rpc.publicnode.com'),
+      http('https://sepolia.gateway.tenderly.co'),
       http('https://rpc2.sepolia.org'),
+      http('https://ethereum-sepolia-rpc.publicnode.com'),
       http(), // default chain RPC as last resort
     ]),
     [bsc.id]: http(),

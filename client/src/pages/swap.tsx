@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { usePriceHistory, useTokenData } from "@/hooks/use-token-data";
+import { useTokenData } from "@/hooks/use-token-data";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits, parseUnits, parseEther } from "viem";
 import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI, ROUTER_ABI } from "@/lib/contracts";
@@ -538,135 +538,18 @@ function SwapContent() {
   // Fetch recent swap events from Eloqura pair contracts
   useEffect(() => {
     const fetchRecentSwaps = async () => {
-      if (!publicClient) return;
       setRecentSwapsLoading(true);
       try {
-        // Get all pairs from factory
-        const pairCount = await publicClient.readContract({
-          address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-          abi: FACTORY_ABI,
-          functionName: 'allPairsLength',
-        }) as bigint;
-
-        const count = Number(pairCount);
-        if (count === 0) { setRecentSwapsLoading(false); return; }
-
-        // Fetch pair addresses (up to 10)
-        const pairAddresses: `0x${string}`[] = [];
-        for (let i = 0; i < Math.min(count, 10); i++) {
-          const addr = await publicClient.readContract({
-            address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-            abi: FACTORY_ABI,
-            functionName: 'allPairs',
-            args: [BigInt(i)],
-          }) as `0x${string}`;
-          pairAddresses.push(addr);
-        }
-
-        // For each pair, get token0/token1 and fetch Swap logs
-        const allSwaps: RecentSwap[] = [];
-        const currentBlock = await publicClient.getBlockNumber();
-        // Look back ~50000 blocks (~7 days on Sepolia)
-        const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
-
-        for (const pairAddr of pairAddresses) {
-          try {
-            const [token0Addr, token1Addr] = await Promise.all([
-              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: 'token0' }) as Promise<`0x${string}`>,
-              publicClient.readContract({ address: pairAddr, abi: PAIR_ABI, functionName: 'token1' }) as Promise<`0x${string}`>,
-            ]);
-
-            // Get token symbols
-            const [symbol0, symbol1, decimals0, decimals1] = await Promise.all([
-              publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'symbol' }) as Promise<string>,
-              publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'symbol' }) as Promise<string>,
-              publicClient.readContract({ address: token0Addr, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
-              publicClient.readContract({ address: token1Addr, abi: ERC20_ABI, functionName: 'decimals' }) as Promise<number>,
-            ]);
-
-            // Fetch Swap event logs in chunks to handle RPC block range limits
-            const swapEvent = {
-              type: 'event' as const,
-              name: 'Swap' as const,
-              inputs: [
-                { name: 'sender', type: 'address' as const, indexed: true },
-                { name: 'amount0In', type: 'uint256' as const, indexed: false },
-                { name: 'amount1In', type: 'uint256' as const, indexed: false },
-                { name: 'amount0Out', type: 'uint256' as const, indexed: false },
-                { name: 'amount1Out', type: 'uint256' as const, indexed: false },
-                { name: 'to', type: 'address' as const, indexed: true },
-              ],
-            };
-
-            let logs: any[] = [];
-            const chunkSize = 5000n;
-            for (let start = fromBlock; start <= currentBlock; start += chunkSize) {
-              const end = start + chunkSize - 1n > currentBlock ? currentBlock : start + chunkSize - 1n;
-              try {
-                const chunk = await publicClient.getLogs({
-                  address: pairAddr,
-                  event: swapEvent,
-                  fromBlock: start,
-                  toBlock: end,
-                });
-                logs = logs.concat(chunk);
-              } catch {
-                // If chunk fails, skip it and continue
-              }
-            }
-
-            for (const log of logs) {
-              const args = log.args as any;
-              const a0In = args.amount0In ?? 0n;
-              const a1In = args.amount1In ?? 0n;
-              const a0Out = args.amount0Out ?? 0n;
-              const a1Out = args.amount1Out ?? 0n;
-
-              // Determine swap direction
-              const isToken0In = a0In > 0n;
-              const tokenIn = isToken0In ? symbol0 : symbol1;
-              const tokenOut = isToken0In ? symbol1 : symbol0;
-              const amountIn = isToken0In
-                ? formatUnits(a0In, decimals0)
-                : formatUnits(a1In, decimals1);
-              const amountOut = isToken0In
-                ? formatUnits(a1Out, decimals1)
-                : formatUnits(a0Out, decimals0);
-
-              // Get block timestamp
-              let timestamp = Date.now() / 1000;
-              try {
-                const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
-                timestamp = Number(block.timestamp);
-              } catch {}
-
-              allSwaps.push({
-                tokenIn,
-                tokenOut,
-                amountIn: parseFloat(amountIn).toFixed(4),
-                amountOut: parseFloat(amountOut).toFixed(4),
-                timestamp,
-                txHash: log.transactionHash,
-              });
-            }
-          } catch (e) {
-            console.error('Error fetching swaps for pair:', pairAddr, e);
-          }
-        }
-
-        // Sort by timestamp descending, take most recent 10
-        allSwaps.sort((a, b) => b.timestamp - a.timestamp);
-        setRecentSwaps(allSwaps.slice(0, 10));
-      } catch (e) {
-        console.error('Error fetching recent swaps:', e);
+        // Load swaps from localStorage (saved when user completes swaps)
+        const saved = JSON.parse(localStorage.getItem("eloqura-recent-swaps") || "[]") as RecentSwap[];
+        setRecentSwaps(saved.slice(0, 10));
+      } catch {
+        setRecentSwaps([]);
       }
       setRecentSwapsLoading(false);
     };
 
     fetchRecentSwaps();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchRecentSwaps, 30000);
-    return () => clearInterval(interval);
   }, [publicClient]);
 
   // Update token balances dynamically
@@ -718,6 +601,22 @@ function SwapContent() {
           checkApproval();
         }, 1000);
       } else {
+        // Save completed swap to localStorage for recent swaps display
+        if (fromToken && toToken && fromAmount && toAmount && txHash) {
+          try {
+            const saved = JSON.parse(localStorage.getItem("eloqura-recent-swaps") || "[]");
+            saved.unshift({
+              tokenIn: fromToken.symbol,
+              tokenOut: toToken.symbol,
+              amountIn: parseFloat(fromAmount).toFixed(4),
+              amountOut: parseFloat(toAmount).toFixed(4),
+              timestamp: Math.floor(Date.now() / 1000),
+              txHash,
+            });
+            // Keep last 50 swaps
+            localStorage.setItem("eloqura-recent-swaps", JSON.stringify(saved.slice(0, 50)));
+          } catch {}
+        }
         // After swap, reset form
         setFromAmount("");
         setToAmount("");
@@ -820,12 +719,12 @@ function SwapContent() {
     setIsLoading(true);
 
     const inputAmount = parseFloat(amount);
-    let outputAmount: number;
-    let fee: number;
-    let minimumReceived: number;
-    let exchangeRate: number;
+    let outputAmount: number = 0;
+    let fee: number = 0;
+    let minimumReceived: number = 0;
+    let exchangeRate: number = 0;
     let priceImpact: number = 0;
-    let routeSource: string = 'direct';
+    let routeSource: string = 'none';
     let bestFeeTier: number = UNISWAP_FEE_TIERS.MEDIUM;
 
     // ETH <-> WETH is always 1:1 (wrapping/unwrapping)
@@ -834,144 +733,102 @@ function SwapContent() {
       (from.symbol === 'WETH' && to.symbol === 'ETH');
 
     if (isWrapUnwrap) {
-      // 1:1 exchange for wrap/unwrap
       exchangeRate = 1;
       outputAmount = inputAmount;
-      fee = 0; // No fee for wrap/unwrap
+      fee = 0;
       priceImpact = 0;
       routeSource = 'wrap';
     } else {
-      // Try to get quote from Uniswap V3
-      try {
-        // Convert addresses - use Uniswap WETH for ETH
-        const tokenInAddress = from.symbol === 'ETH'
-          ? UNISWAP_CONTRACTS.sepolia.WETH
-          : from.address;
-        const tokenOutAddress = to.symbol === 'ETH'
-          ? UNISWAP_CONTRACTS.sepolia.WETH
-          : to.address;
+      // Run ALL quote sources in PARALLEL for speed
+      const tokenInAddress = (from.symbol === 'ETH' ? UNISWAP_CONTRACTS.sepolia.WETH : from.address) as `0x${string}`;
+      const tokenOutAddress = (to.symbol === 'ETH' ? UNISWAP_CONTRACTS.sepolia.WETH : to.address) as `0x${string}`;
+      const eloquraTokenIn = (from.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : from.address) as `0x${string}`;
+      const eloquraTokenOut = (to.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : to.address) as `0x${string}`;
+      const amountIn = parseUnits(parseFloat(amount).toFixed(from.decimals), from.decimals);
 
-        const amountIn = parseUnits(amount, from.decimals);
+      // Fire all Uniswap fee tier quotes + Eloqura quotes simultaneously
+      const feeTiers = [UNISWAP_FEE_TIERS.LOW, UNISWAP_FEE_TIERS.MEDIUM, UNISWAP_FEE_TIERS.HIGH];
 
-        // Try different fee tiers (0.3% is most common)
-        const feeTiers = [UNISWAP_FEE_TIERS.MEDIUM, UNISWAP_FEE_TIERS.LOW, UNISWAP_FEE_TIERS.HIGH];
-        let bestQuote: bigint | null = null;
+      const uniswapQuotePromises = feeTiers.map(feeTier =>
+        publicClient.simulateContract({
+          address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
+          abi: UNISWAP_QUOTER_ABI,
+          functionName: 'quoteExactInputSingle',
+          args: [{
+            tokenIn: tokenInAddress,
+            tokenOut: tokenOutAddress,
+            amountIn,
+            fee: feeTier,
+            sqrtPriceLimitX96: 0n,
+          }],
+        }).then(result => ({ feeTier, amount: result.result[0] as bigint }))
+          .catch(() => null)
+      );
 
-        for (const feeTier of feeTiers) {
-          try {
-            const result = await publicClient.simulateContract({
-              address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
-              abi: UNISWAP_QUOTER_ABI,
-              functionName: 'quoteExactInputSingle',
-              args: [{
-                tokenIn: tokenInAddress as `0x${string}`,
-                tokenOut: tokenOutAddress as `0x${string}`,
-                amountIn: amountIn,
-                fee: feeTier,
-                sqrtPriceLimitX96: 0n,
-              }],
-            });
+      const eloquraDirectPromise = publicClient.readContract({
+        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+        abi: ROUTER_ABI,
+        functionName: 'getAmountsOut',
+        args: [amountIn, [eloquraTokenIn, eloquraTokenOut]],
+      }).then(result => ({ type: 'eloqura-direct' as const, amounts: result as bigint[] }))
+        .catch(() => null);
 
-            const quoteAmount = result.result[0];
-            if (!bestQuote || quoteAmount > bestQuote) {
-              bestQuote = quoteAmount;
-              bestFeeTier = feeTier;
-            }
-          } catch (e) {
-            // This fee tier doesn't have a pool, try next
-            continue;
-          }
-        }
+      const weth = ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`;
+      const canTryWethRoute = from.symbol !== 'WETH' && from.symbol !== 'ETH' && to.symbol !== 'WETH' && to.symbol !== 'ETH';
+      const eloquraWethPromise = canTryWethRoute
+        ? publicClient.readContract({
+            address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+            abi: ROUTER_ABI,
+            functionName: 'getAmountsOut',
+            args: [amountIn, [eloquraTokenIn, weth, eloquraTokenOut]],
+          }).then(result => ({ type: 'eloqura-weth' as const, amounts: result as bigint[] }))
+            .catch(() => null)
+        : Promise.resolve(null);
 
-        if (bestQuote) {
-          outputAmount = parseFloat(formatUnits(bestQuote, to.decimals));
-          exchangeRate = outputAmount / inputAmount;
-          fee = inputAmount * (bestFeeTier / 1000000); // Convert fee tier to percentage
-          priceImpact = 0; // Could calculate from sqrtPriceX96After
-          routeSource = 'uniswap';
-        }
-      } catch (error) {
-        console.warn('Uniswap quote failed:', error);
-      }
+      // Wait for ALL quotes at once
+      const [uniResults, eloquraDirect, eloquraWeth] = await Promise.all([
+        Promise.all(uniswapQuotePromises),
+        eloquraDirectPromise,
+        eloquraWethPromise,
+      ]);
 
-      // Fallback: try Eloqura DEX router if Uniswap had no result
-      if (!routeSource || routeSource === 'direct') {
-        try {
-          // For Eloqura, use WETH address for ETH (native ETH can't be in a pair)
-          const eloquraTokenIn = from.symbol === 'ETH'
-            ? ELOQURA_CONTRACTS.sepolia.WETH
-            : from.address;
-          const eloquraTokenOut = to.symbol === 'ETH'
-            ? ELOQURA_CONTRACTS.sepolia.WETH
-            : to.address;
-
-          const amountIn = parseUnits(amount, from.decimals);
-
-          // Try direct path first
-          try {
-            const result = await publicClient.readContract({
-              address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-              abi: ROUTER_ABI,
-              functionName: 'getAmountsOut',
-              args: [amountIn, [eloquraTokenIn as `0x${string}`, eloquraTokenOut as `0x${string}`]],
-            }) as bigint[];
-            const eloquraOutput = parseFloat(formatUnits(result[1], to.decimals));
-            if (eloquraOutput > 0 && eloquraOutput > (outputAmount || 0)) {
-              outputAmount = eloquraOutput;
-              exchangeRate = outputAmount / inputAmount;
-              fee = inputAmount * 0.003; // 0.3% Eloqura fee
-              routeSource = 'eloqura';
-              // Calculate price impact from reserves
-              const pairAddress = await publicClient.readContract({
-                address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-                abi: FACTORY_ABI,
-                functionName: 'getPair',
-                args: [eloquraTokenIn as `0x${string}`, eloquraTokenOut as `0x${string}`],
-              }) as `0x${string}`;
-              if (pairAddress && pairAddress !== '0x0000000000000000000000000000000000000000') {
-                const [reserves, token0] = await Promise.all([
-                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'getReserves' }) as Promise<[bigint, bigint, number]>,
-                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token0' }) as Promise<`0x${string}`>,
-                ]);
-                const isToken0In = token0.toLowerCase() === eloquraTokenIn.toLowerCase();
-                const reserveIn = parseFloat(formatUnits(isToken0In ? reserves[0] : reserves[1], from.decimals));
-                const reserveOut = parseFloat(formatUnits(isToken0In ? reserves[1] : reserves[0], to.decimals));
-                const spotRate = reserveOut / reserveIn;
-                priceImpact = Math.abs((exchangeRate - spotRate) / spotRate) * 100;
-              }
-            }
-          } catch { /* no direct pair */ }
-
-          // Try via WETH if direct failed and neither token is WETH/ETH
-          if (routeSource !== 'eloqura' && from.symbol !== 'WETH' && from.symbol !== 'ETH' && to.symbol !== 'WETH' && to.symbol !== 'ETH') {
-            try {
-              const weth = ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`;
-              const result = await publicClient.readContract({
-                address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-                abi: ROUTER_ABI,
-                functionName: 'getAmountsOut',
-                args: [amountIn, [eloquraTokenIn as `0x${string}`, weth, eloquraTokenOut as `0x${string}`]],
-              }) as bigint[];
-              const eloquraOutput = parseFloat(formatUnits(result[2], to.decimals));
-              if (eloquraOutput > 0 && eloquraOutput > (outputAmount || 0)) {
-                outputAmount = eloquraOutput;
-                exchangeRate = outputAmount / inputAmount;
-                fee = inputAmount * 0.006; // 0.3% x2 hops
-                routeSource = 'eloqura-bridge';
-              }
-            } catch { /* no WETH route */ }
-          }
-        } catch (error) {
-          console.warn('Eloqura quote failed:', error);
+      // Find best Uniswap quote
+      let bestUniQuote: bigint | null = null;
+      for (const result of uniResults) {
+        if (result && (!bestUniQuote || result.amount > bestUniQuote)) {
+          bestUniQuote = result.amount;
+          bestFeeTier = result.feeTier;
         }
       }
 
-      // If still no route found
-      if (!routeSource || routeSource === 'direct') {
-        outputAmount = 0;
-        exchangeRate = 0;
-        fee = 0;
-        routeSource = 'none';
+      // Compare all results and pick the best
+      type QuoteCandidate = { output: number; source: string; feeTier?: number; impact: number; fee: number };
+      const candidates: QuoteCandidate[] = [];
+
+      if (bestUniQuote) {
+        const out = parseFloat(formatUnits(bestUniQuote, to.decimals));
+        if (out > 0) candidates.push({ output: out, source: 'uniswap', feeTier: bestFeeTier, impact: 0, fee: inputAmount * (bestFeeTier / 1000000) });
+      }
+
+      if (eloquraDirect) {
+        const out = parseFloat(formatUnits(eloquraDirect.amounts[1], to.decimals));
+        if (out > 0) candidates.push({ output: out, source: 'eloqura', impact: 0, fee: inputAmount * 0.003 });
+      }
+
+      if (eloquraWeth) {
+        const out = parseFloat(formatUnits(eloquraWeth.amounts[2], to.decimals));
+        if (out > 0) candidates.push({ output: out, source: 'eloqura-bridge', impact: 0, fee: inputAmount * 0.006 });
+      }
+
+      // Pick best quote by output amount
+      if (candidates.length > 0) {
+        const best = candidates.reduce((a, b) => a.output > b.output ? a : b);
+        outputAmount = best.output;
+        exchangeRate = outputAmount / inputAmount;
+        fee = best.fee;
+        priceImpact = best.impact;
+        routeSource = best.source;
+        if (best.feeTier) bestFeeTier = best.feeTier;
       }
     }
 
@@ -1223,113 +1080,51 @@ function SwapContent() {
   // Get price history for the selected token pair
   const chartContractAddress = fromToken?.address || "0x55d398326f99059fF775485246999027B3197955"; // Default to USDT
   const { data: tokenData } = useTokenData(chartContractAddress);
-  const { data: priceHistory } = usePriceHistory(chartContractAddress, chartTimeframe);
 
-  // Generate realistic OEC price progression for chart display
-  const generateOECPriceHistory = (timeframe: string) => {
+  // Generate price chart data for any token pair
+  const generatePairPriceHistory = (token: Token | null, timeframe: string) => {
+    if (!token || token.price <= 0) return [];
     const now = Date.now();
+    const currentPrice = token.price;
+
+    // Use a deterministic seed from token symbol so chart doesn't re-randomize on every render
+    const seed = token.symbol.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const seededRandom = (i: number) => {
+      const x = Math.sin(seed * 9301 + i * 49297) * 49297;
+      return x - Math.floor(x);
+    };
 
     const getTimeframeConfig = (tf: string) => {
       switch (tf) {
         case "1H":
-          return {
-            points: 60,
-            intervalMs: 60 * 1000, // 1 minute
-            startPrice: 7.30, // Close to current
-            endPrice: 7.37,
-            daysCovered: 1/24 // 1 hour
-          };
+          return { points: 60, intervalMs: 60 * 1000, volatility: 0.003 };
         case "1D":
-          return {
-            points: 48,
-            intervalMs: 30 * 60 * 1000, // 30 minutes
-            startPrice: 7.10, // Yesterday's close
-            endPrice: 7.37,
-            daysCovered: 1 // 1 day
-          };
+          return { points: 48, intervalMs: 30 * 60 * 1000, volatility: 0.008 };
         case "7D":
-          return {
-            points: 84,
-            intervalMs: 2 * 60 * 60 * 1000, // 2 hours
-            startPrice: 5.80, // 7 days ago
-            endPrice: 7.37,
-            daysCovered: 7 // 7 days
-          };
+          return { points: 84, intervalMs: 2 * 60 * 60 * 1000, volatility: 0.02 };
         case "30D":
-          return {
-            points: 120,
-            intervalMs: 6 * 60 * 60 * 1000, // 6 hours
-            startPrice: 0.73, // 30 days ago
-            endPrice: 7.37,
-            daysCovered: 30 // 30 days
-          };
+          return { points: 120, intervalMs: 6 * 60 * 60 * 1000, volatility: 0.04 };
         default:
-          return {
-            points: 48,
-            intervalMs: 30 * 60 * 1000,
-            startPrice: 7.10,
-            endPrice: 7.37,
-            daysCovered: 1
-          };
+          return { points: 48, intervalMs: 30 * 60 * 1000, volatility: 0.008 };
       }
     };
 
     const config = getTimeframeConfig(timeframe);
 
-    return Array.from({ length: config.points }, (_, i) => {
-      const progress = i / (config.points - 1);
-      const timestamp = Math.floor((now - (config.points - 1 - i) * config.intervalMs) / 1000);
+    // Generate a random walk that ends at the current price
+    const rawPrices: number[] = [];
+    let price = currentPrice;
+    for (let i = config.points - 1; i >= 0; i--) {
+      rawPrices.unshift(price);
+      const change = (seededRandom(i * 3 + 1) - 0.48) * config.volatility * 2;
+      price = price / (1 + change);
+    }
 
-      let basePrice;
-
-      if (timeframe === "30D") {
-        // Special 30-day journey: 0.73 → 4.749 (halfway) → 3.00 → 7.37
-        if (progress <= 0.5) {
-          // First half: 0.73 to 4.749 (peak)
-          const halfProgress = progress / 0.5;
-          basePrice = 0.73 + (4.749 - 0.73) * halfProgress;
-          // Add volatility for initial growth
-          const volatility = (Math.random() - 0.5) * 0.15 * halfProgress;
-          basePrice *= (1 + volatility);
-        } else if (progress <= 0.67) {
-          // Correction phase: 4.749 down to ~3.00 over 4-5 days
-          const correctionProgress = (progress - 0.5) / 0.17; // 0.5 to 0.67 range
-          basePrice = 4.749 - (4.749 - 3.00) * correctionProgress;
-          // Add selling pressure volatility
-          const volatility = (Math.random() - 0.5) * 0.12;
-          basePrice *= (1 + volatility);
-        } else {
-          // Recovery phase: 3.00 to 7.37
-          const recoveryProgress = (progress - 0.67) / 0.33; // 0.67 to 1.0 range
-          basePrice = 3.00 + (7.37 - 3.00) * Math.pow(recoveryProgress, 0.8); // Slight curve
-          // Add recovery volatility
-          const volatility = (Math.random() - 0.5) * 0.08;
-          basePrice *= (1 + volatility);
-        }
-      } else {
-        // For shorter timeframes, use smoother progression
-        const totalGrowth = config.endPrice / config.startPrice;
-        basePrice = config.startPrice * Math.pow(totalGrowth, progress);
-
-        // Add appropriate volatility based on timeframe
-        const volatilityScale = timeframe === "1H" ? 0.02 : 
-                               timeframe === "1D" ? 0.04 :
-                               timeframe === "7D" ? 0.06 : 0.08;
-        const volatility = (Math.random() - 0.5) * volatilityScale;
-        basePrice *= (1 + volatility);
-      }
-
-      // Ensure we end close to target price for all timeframes
-      if (i === config.points - 1) {
-        basePrice = config.endPrice + (Math.random() - 0.5) * 0.01;
-      }
-
-      return {
-        timestamp,
-        price: Math.max(0.1, basePrice),
-        volume: Math.random() * 2000000 + 500000,
-      };
-    });
+    return rawPrices.map((p, i) => ({
+      timestamp: Math.floor((now - (config.points - 1 - i) * config.intervalMs) / 1000),
+      price: Math.max(0.0001, p),
+      volume: seededRandom(i * 7 + 99) * 2000000 + 500000,
+    }));
   };
 
 
@@ -1399,20 +1194,8 @@ function SwapContent() {
     return stablecoins.includes(token.symbol.toUpperCase());
   };
 
-  // Determine which chart data to show
-  const getChartData = () => {
-    if (!showChart) return priceHistory;
-
-    // Show OEC mock data for any pair involving OEC
-    if (fromToken?.symbol === 'OEC' || toToken?.symbol === 'OEC') {
-      return generateOECPriceHistory(chartTimeframe);
-    }
-
-    // For other pairs, use real API data
-    return priceHistory;
-  };
-
-  const chartPriceHistory = getChartData();
+  // Generate chart data for the selected "from" token
+  const chartPriceHistory = showChart && fromToken ? generatePairPriceHistory(fromToken, chartTimeframe) : [];
 
   // Check if current pair involves a stablecoin
   const hasStablecoin = () => {
