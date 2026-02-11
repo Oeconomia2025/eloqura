@@ -511,7 +511,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-r from-violet-500 to-purple-500 border border-violet-500">
+            <Card className="bg-gradient-to-r from-green-500 to-emerald-500 border border-green-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -554,7 +554,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-r from-green-500 to-emerald-500 border border-green-500">
+            <Card className="bg-gradient-to-r from-violet-500 to-purple-500 border border-violet-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -747,11 +747,11 @@ export default function Dashboard() {
               >
                 <div className="text-center">
                   <Target className="w-5 h-5 mx-auto mb-1" />
-                  <div className="text-sm font-medium">Stake</div>
+                  <div className="text-sm font-medium">Stake OEC</div>
                 </div>
               </Button>
               <Button
-                onClick={() => navigate("/swap")}
+                onClick={() => window.open("https://oeconomia.io/analytics", "_blank")}
                 className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white h-16"
               >
                 <div className="text-center">

@@ -30,8 +30,7 @@ import {
   AlertTriangle,
   Heart,
   Image, // Added Image icon import
-  ArrowLeftRight,
-  Microscope // Added Microscope icon import
+  ArrowLeftRight
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 import { WalletConnect } from "@/components/wallet-connect";
@@ -188,7 +187,6 @@ export function Layout({
     { icon: Droplets, label: 'Pools', path: '/liquidity', active: location === '/liquidity' },
     { icon: ArrowLeftRight, label: 'Bridge', path: '/bridge', active: location === '/bridge' },
     { icon: DollarSign, label: 'Buy/Sell', path: '/buy-sell', active: location === '/buy-sell' },
-    { icon: Microscope, label: 'Examine', path: '/examine', active: location === '/examine' },
   ];
 
   return (

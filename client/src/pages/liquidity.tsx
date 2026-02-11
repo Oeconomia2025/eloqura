@@ -76,6 +76,8 @@ function LiquidityContent() {
   const [timeframe, setTimeframe] = useState("1D");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [isFullRange, setIsFullRange] = useState(true);
+  const [poolVersion, setPoolVersion] = useState<'v3' | 'v2'>('v3');
   const [isLoading, setIsLoading] = useState(false);
 
   // Sorting state
@@ -1407,7 +1409,19 @@ function LiquidityContent() {
 
           {/* Navigation Tabs */}
           <div className="mb-6">
-            <div className="grid w-auto grid-cols-2 bg-gray-800 border border-gray-700 rounded-lg p-1">
+            <div className="grid w-auto grid-cols-3 bg-gray-800 border border-gray-700 rounded-lg p-1">
+              <Button
+                variant={activeView === 'pools' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveView('pools')}
+                className={
+                  activeView === 'pools'
+                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-3 rounded-md"
+                    : "text-gray-400 hover:text-white px-6 py-3 rounded-md hover:bg-gray-700/50"
+                }
+              >
+                Examine
+              </Button>
               <Button
                 variant={activeView === 'positions' ? "default" : "ghost"}
                 size="sm"
@@ -1819,41 +1833,86 @@ function LiquidityContent() {
                           </div>
                         </div>
 
-                        <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm text-gray-400 mb-2 block">Min Price</label>
-                              <Input
-                                type="number"
-                                value={minPrice}
-                                onChange={(e) => setMinPrice(e.target.value)}
-                                placeholder="0.0"
-                                className="bg-transparent border-0 text-white text-xl focus:ring-0 focus:border-0 focus:outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                              />
-                              <p className="text-xs text-gray-400 mt-1">
-                                {selectedToken1.symbol} per {selectedToken0.symbol}
-                              </p>
+                        {/* Full Range / Set Range Toggle */}
+                        <div className="grid grid-cols-2 gap-2 bg-gray-800 border border-gray-700 rounded-lg p-1">
+                          <Button
+                            variant={isFullRange ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => {
+                              setIsFullRange(true);
+                              setMinPrice("");
+                              setMaxPrice("");
+                            }}
+                            className={
+                              isFullRange
+                                ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-4 py-2 rounded-md"
+                                : "text-gray-400 hover:text-white px-4 py-2 rounded-md hover:bg-gray-700/50"
+                            }
+                          >
+                            Full Range
+                          </Button>
+                          <Button
+                            variant={!isFullRange ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => setIsFullRange(false)}
+                            className={
+                              !isFullRange
+                                ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-4 py-2 rounded-md"
+                                : "text-gray-400 hover:text-white px-4 py-2 rounded-md hover:bg-gray-700/50"
+                            }
+                          >
+                            Set Range
+                          </Button>
+                        </div>
+
+                        {isFullRange ? (
+                          <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                            <div className="flex items-center justify-center space-x-3 text-gray-300">
+                              <span className="text-lg font-medium">0</span>
+                              <ArrowLeftRight className="w-5 h-5 text-gray-500" />
+                              <span className="text-lg font-medium">&infin;</span>
                             </div>
-                            <div>
-                              <label className="text-sm text-gray-400 mb-2 block">Max Price</label>
-                              <Input
-                                type="number"
-                                value={maxPrice}
-                                onChange={(e) => setMaxPrice(e.target.value)}
-                                placeholder="0.0"
-                                className="bg-transparent border-0 text-white text-xl focus:ring-0 focus:border-0 focus:outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                              />
-                              <p className="text-xs text-gray-400 mt-1">
-                                {selectedToken1.symbol} per {selectedToken0.symbol}
-                              </p>
+                            <p className="text-center text-xs text-gray-400 mt-2">
+                              Full range positions earn fees on all trades but may experience more impermanent loss.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-sm text-gray-400 mb-2 block">Min Price</label>
+                                <Input
+                                  type="number"
+                                  value={minPrice}
+                                  onChange={(e) => setMinPrice(e.target.value)}
+                                  placeholder="0.0"
+                                  className="bg-transparent border-0 text-white text-xl focus:ring-0 focus:border-0 focus:outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {selectedToken1.symbol} per {selectedToken0.symbol}
+                                </p>
+                              </div>
+                              <div>
+                                <label className="text-sm text-gray-400 mb-2 block">Max Price</label>
+                                <Input
+                                  type="number"
+                                  value={maxPrice}
+                                  onChange={(e) => setMaxPrice(e.target.value)}
+                                  placeholder="0.0"
+                                  className="bg-transparent border-0 text-white text-xl focus:ring-0 focus:border-0 focus:outline-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {selectedToken1.symbol} per {selectedToken0.symbol}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     )}
 
                     {/* Deposit Amounts */}
-                    {selectedToken0 && selectedToken1 && minPrice && maxPrice && (
+                    {selectedToken0 && selectedToken1 && (isFullRange || (minPrice && maxPrice)) && (
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-white">Deposit Amounts</h3>
 
@@ -2105,6 +2164,29 @@ function LiquidityContent() {
                   <div className="text-2xl font-bold text-crypto-green">19.2%</div>
                   <div className="text-crypto-green text-sm">+0.4%</div>
                 </Card>
+              </div>
+
+              {/* V2/V3 Toggle */}
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant={poolVersion === 'v3' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setPoolVersion('v3')}
+                  className={poolVersion === 'v3' ? "bg-violet-600 hover:bg-violet-700 text-white px-4 py-1 rounded-md text-xs" : "text-gray-400 hover:text-white px-4 py-1 rounded-md text-xs hover:bg-gray-700/50"}
+                >
+                  V3
+                </Button>
+                <Button
+                  variant={poolVersion === 'v2' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setPoolVersion('v2')}
+                  className={poolVersion === 'v2' ? "bg-violet-600 hover:bg-violet-700 text-white px-4 py-1 rounded-md text-xs" : "text-gray-400 hover:text-white px-4 py-1 rounded-md text-xs hover:bg-gray-700/50"}
+                >
+                  V2
+                </Button>
+                {poolVersion === 'v2' && (
+                  <span className="text-xs text-gray-500 ml-2">0.3% fixed fee</span>
+                )}
               </div>
 
               {/* Navigation and Search */}

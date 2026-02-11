@@ -735,10 +735,8 @@ function BridgeContent() {
                         className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
                       >
                         <div className="flex items-center space-x-2">
-                          <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                            O
-                          </div>
-                          <span>OEC Chain</span>
+                          <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-6 h-6 rounded-full" />
+                          <span>Ethereum</span>
                         </div>
                       </Button>
                     </div>
@@ -823,9 +821,7 @@ function BridgeContent() {
                         className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
                       >
                         <div className="flex items-center space-x-2">
-                          <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                            P
-                          </div>
+                          <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-6 h-6 rounded-full" />
                           <span>Polygon</span>
                         </div>
                       </Button>
@@ -1124,10 +1120,8 @@ function BridgeContent() {
               <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-purple-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                      O
-                    </div>
-                    <span className="text-sm font-medium text-white">OEC Chain</span>
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-6 h-6 rounded-full" />
+                    <span className="text-sm font-medium text-white">Ethereum</span>
                   </div>
                   <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
                     Pending
@@ -1157,9 +1151,7 @@ function BridgeContent() {
               <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-green-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                      P
-                    </div>
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-6 h-6 rounded-full" />
                     <span className="text-sm font-medium text-white">Polygon</span>
                   </div>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
@@ -1356,28 +1348,6 @@ function BridgeContent() {
           </DialogHeader>
 
           <div className="space-y-2 max-h-80 overflow-y-auto">
-            {/* OEC Chain */}
-            <Button
-              variant="ghost"
-              onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                    O
-                  </div>
-                  <div className="text-left">
-                    <div className="font-medium">OEC Chain</div>
-                    <div className="text-sm text-gray-400">Fast & Low Cost</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-400">Chain ID: 66</div>
-                </div>
-              </div>
-            </Button>
-
             {/* Ethereum */}
             <Button
               variant="ghost"
@@ -1386,9 +1356,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                    E
-                  </div>
+                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Ethereum</div>
                     <div className="text-sm text-gray-400">Mainnet</div>
@@ -1408,9 +1376,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                    P
-                  </div>
+                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Polygon</div>
                     <div className="text-sm text-gray-400">PoS Chain</div>
@@ -1430,9 +1396,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-sm font-bold text-black">
-                    B
-                  </div>
+                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" alt="BNB Smart Chain" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">BNB Smart Chain</div>
                     <div className="text-sm text-gray-400">BSC Mainnet</div>
@@ -1452,9 +1416,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                    A
-                  </div>
+                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/11841.png" alt="Arbitrum One" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Arbitrum One</div>
                     <div className="text-sm text-gray-400">L2 Rollup</div>
@@ -1474,9 +1436,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-sm font-bold text-white">
-                    O
-                  </div>
+                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/11840.png" alt="Optimism" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Optimism</div>
                     <div className="text-sm text-gray-400">L2 Rollup</div>

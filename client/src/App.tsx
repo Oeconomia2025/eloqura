@@ -12,7 +12,6 @@ import Swap from '@/pages/swap'
 import BuySell from '@/pages/buy-sell'
 import Bridge from '@/pages/bridge'
 import Liquidity from '@/pages/liquidity'
-import Examine from '@/pages/examine'
 import Dashboard from '@/pages/dashboard'
 import NotFound from '@/pages/not-found'
 
@@ -32,7 +31,6 @@ function Router() {
       <Route path="/buy-sell" component={BuySell} />
       <Route path="/bridge" component={Bridge} />
       <Route path="/liquidity" component={Liquidity} />
-      <Route path="/examine" component={Examine} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="*" component={NotFound} />
     </Switch>
