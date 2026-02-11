@@ -252,7 +252,7 @@ export function EcosystemSidebar() {
             <img
               src={openInNewTab ? "/ecosystem/tab-new.png" : "/ecosystem/tab-same.png"}
               alt={openInNewTab ? "New Tab Mode" : "Same Tab Mode"}
-              className="w-12 h-12 rounded object-cover shrink-0"
+              className="w-12 h-12 rounded object-contain shrink-0"
             />
             <h3 className="text-lg font-bold text-white">
               {openInNewTab ? "New Tab Mode" : "Same Tab Mode"}
