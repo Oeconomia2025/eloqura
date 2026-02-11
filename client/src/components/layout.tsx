@@ -97,6 +97,7 @@ export function Layout({
 }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     // Initialize from localStorage to persist state across navigation
     if (typeof window !== 'undefined') {
@@ -276,15 +277,18 @@ export function Layout({
         {/* Bottom section with wallet and social links */}
         <div className="sticky bottom-0 p-2 flex flex-col space-y-2 bg-black">
           {/* Social Media Dropdown */}
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={setLinksOpen}>
             <DropdownMenuTrigger asChild>
               <button
                 className={`w-full flex items-center ${
                   sidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'
-                } py-2 rounded-lg text-left transition-all duration-200 group relative bg-gray-800 text-white hover:bg-[#8b5cf6]/50 focus:outline-none focus:ring-0`}
+                } py-2 rounded-lg text-left transition-all duration-200 group relative text-white focus:outline-none focus:ring-0 focus:border-none outline-none ring-0 ${
+                  linksOpen ? 'shadow-lg' : 'bg-gray-800 hover:bg-[#8b5cf6]/50'
+                }`}
+                style={linksOpen ? { background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' } : {}}
                 title={sidebarCollapsed ? "Links" : undefined}
               >
-                <Globe className="w-5 h-5 flex-shrink-0 text-violet-400" />
+                <Globe className="w-5 h-5 flex-shrink-0 text-white" />
                 {!sidebarCollapsed && <span className="whitespace-nowrap">Links</span>}
                 {sidebarCollapsed && (
                   <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
