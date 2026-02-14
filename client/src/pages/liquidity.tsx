@@ -364,9 +364,21 @@ function LiquidityContent() {
   useEffect(() => {
     if (writeError) {
       console.error('Write contract error:', writeError);
+      setIsAddingLiquidity(false);
+      // Parse the error for a better message
+      let errorMsg = writeError.message || "Failed to execute transaction";
+      if (errorMsg.includes('fb8f41b2') || errorMsg.includes('InsufficientAllowance')) {
+        errorMsg = "Token approval insufficient. Please approve both tokens for the router.";
+      } else if (errorMsg.includes('e450d38c') || errorMsg.includes('InsufficientBalance')) {
+        errorMsg = "Insufficient token balance for this amount.";
+      } else if (errorMsg.includes('gas')) {
+        errorMsg = "Transaction would fail. Please check token approvals and balances.";
+      } else {
+        errorMsg = errorMsg.slice(0, 150);
+      }
       toast({
         title: "Transaction Failed",
-        description: writeError.message?.slice(0, 100) || "Failed to execute transaction",
+        description: errorMsg,
         variant: "destructive",
       });
     }
@@ -694,13 +706,43 @@ function LiquidityContent() {
         }
       }
 
+      // Pre-flight: verify token allowances before attempting addLiquidity
+      if (publicClient && address) {
+        for (const [token, amount, label] of [
+          [selectedToken0, amount0Wei, selectedToken0.symbol] as const,
+          [selectedToken1, amount1Wei, selectedToken1.symbol] as const,
+        ]) {
+          if (token.symbol === 'ETH') continue;
+          try {
+            const allowance = await publicClient.readContract({
+              address: token.address as `0x${string}`,
+              abi: erc20Abi,
+              functionName: 'allowance',
+              args: [address, ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`],
+            });
+            if ((allowance as bigint) < amount) {
+              toast({
+                title: `${label} Approval Required`,
+                description: `Please approve ${label} for the router first.`,
+                variant: "destructive",
+              });
+              setIsAddingLiquidity(false);
+              setNeedsApprovalToken0(true);
+              checkApprovals();
+              return;
+            }
+          } catch (e) {
+            console.error(`Allowance check failed for ${label}:`, e);
+          }
+        }
+      }
+
       toast({
         title: "Adding Liquidity",
         description: "Please confirm the transaction in your wallet",
       });
 
       // Slippage protection: use 5% tolerance if pair has real reserves or dust was corrected
-      // For uncorrected dust pairs this code won't reach (we return above on failure)
       const useSlippage = currentPair || dustCorrected;
       const amount0Min = useSlippage ? amount0Wei * 95n / 100n : 0n;
       const amount1Min = useSlippage ? amount1Wei * 95n / 100n : 0n;
