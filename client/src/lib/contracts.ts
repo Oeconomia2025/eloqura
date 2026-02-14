@@ -438,6 +438,13 @@ export const PAIR_ABI = [
     stateMutability: "nonpayable",
   },
   {
+    name: "sync",
+    type: "function",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
     name: "Swap",
     type: "event",
     inputs: [

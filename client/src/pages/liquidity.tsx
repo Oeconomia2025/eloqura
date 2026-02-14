@@ -31,8 +31,8 @@ import { useTokenData } from "@/hooks/use-token-data";
 import { useQuery } from "@tanstack/react-query";
 import { formatCryptoData } from "@/utils/crypto-logos";
 import type { LiveCoinWatchDbCoin } from "@shared/schema";
-import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { formatUnits, parseUnits } from "viem";
+import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt, useWalletClient } from "wagmi";
+import { formatUnits, parseUnits, erc20Abi } from "viem";
 import { ELOQURA_CONTRACTS, FACTORY_ABI, ROUTER_ABI, PAIR_ABI, ERC20_ABI } from "@/lib/contracts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -107,6 +107,7 @@ function LiquidityContent() {
   const publicClient = usePublicClient();
   const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: txHash });
+  const { data: walletClient } = useWalletClient();
   const { toast } = useToast();
 
   // Real Eloqura pool data
@@ -207,6 +208,21 @@ function LiquidityContent() {
       // Skip pairs with dust-level reserves (leftover from fully removed liquidity)
       return pair.reserve0 > MIN_RESERVE_THRESHOLD && pair.reserve1 > MIN_RESERVE_THRESHOLD;
     });
+  };
+
+  // Get raw pair (including dust reserves) - used to detect stale dust pairs
+  const getRawPair = () => {
+    if (!selectedToken0 || !selectedToken1) return null;
+    const addr0 = selectedToken0.symbol === 'ETH'
+      ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+      : selectedToken0.address.toLowerCase();
+    const addr1 = selectedToken1.symbol === 'ETH'
+      ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+      : selectedToken1.address.toLowerCase();
+    return eloquraPairs.find(pair =>
+      (pair.token0.toLowerCase() === addr0 && pair.token1.toLowerCase() === addr1) ||
+      (pair.token0.toLowerCase() === addr1 && pair.token1.toLowerCase() === addr0)
+    );
   };
 
   // Calculate amount1 when amount0 changes based on pool ratio
@@ -577,18 +593,103 @@ function LiquidityContent() {
       const isToken0ETH = selectedToken0.symbol === 'ETH';
       const isToken1ETH = selectedToken1.symbol === 'ETH';
 
+      setIsAddingLiquidity(true);
+
+      // Check for dust pair that needs ratio correction before adding liquidity
+      const currentPair = getCurrentPair();
+      const rawPair = getRawPair();
+
+      if (!currentPair && rawPair && walletClient && publicClient) {
+        // Pair exists on-chain but has dust reserves - fix the ratio first
+        const isDust = rawPair.reserve0 <= MIN_RESERVE_THRESHOLD || rawPair.reserve1 <= MIN_RESERVE_THRESHOLD;
+
+        if (isDust) {
+          toast({
+            title: "Fixing Stale Price Ratio",
+            description: "This pair has leftover dust. Correcting the price ratio first (2 wallet confirmations)...",
+          });
+
+          // Map user's selected tokens to pair's token0/token1 order
+          const userAddr0 = isToken0ETH
+            ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+            : selectedToken0.address.toLowerCase();
+          const isUserToken0PairToken0 = rawPair.token0.toLowerCase() === userAddr0;
+
+          // Get desired amounts in pair's token0/token1 order
+          const pairAmount0 = isUserToken0PairToken0 ? amount0Wei : amount1Wei;
+          const pairAmount1 = isUserToken0PairToken0 ? amount1Wei : amount0Wei;
+
+          // Determine which token to send to correct the ratio
+          // Compare cross products: pairAmount0 * reserve1 vs pairAmount1 * reserve0
+          const desiredCross = pairAmount0 * rawPair.reserve1;
+          const currentCross = pairAmount1 * rawPair.reserve0;
+
+          let correctionTokenAddr: `0x${string}`;
+          let correctionAmount: bigint;
+
+          if (desiredCross < currentCross) {
+            // Need more token1 in reserves to lower the ratio
+            const needed = rawPair.reserve0 * pairAmount1 / pairAmount0;
+            correctionAmount = (needed > rawPair.reserve1 ? needed - rawPair.reserve1 : 1n) * 10n;
+            correctionTokenAddr = rawPair.token1 as `0x${string}`;
+          } else {
+            // Need more token0 in reserves to raise the ratio
+            const needed = rawPair.reserve1 * pairAmount0 / pairAmount1;
+            correctionAmount = (needed > rawPair.reserve0 ? needed - rawPair.reserve0 : 1n) * 10n;
+            correctionTokenAddr = rawPair.token0 as `0x${string}`;
+          }
+
+          console.log('Dust pair correction:', {
+            pairAddress: rawPair.address,
+            correctionToken: correctionTokenAddr,
+            correctionAmount: correctionAmount.toString(),
+            currentReserve0: rawPair.reserve0.toString(),
+            currentReserve1: rawPair.reserve1.toString(),
+          });
+
+          // Transfer correction token to pair contract
+          const transferHash = await walletClient.writeContract({
+            address: correctionTokenAddr,
+            abi: erc20Abi,
+            functionName: 'transfer',
+            args: [rawPair.address as `0x${string}`, correctionAmount],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: transferHash });
+
+          // Sync pair reserves to reflect the new balance
+          const syncHash = await walletClient.writeContract({
+            address: rawPair.address as `0x${string}`,
+            abi: PAIR_ABI,
+            functionName: 'sync',
+          });
+          await publicClient.waitForTransactionReceipt({ hash: syncHash });
+
+          // Refresh pairs data so getCurrentPair picks up the corrected reserves
+          await fetchEloquraPairs();
+
+          toast({
+            title: "Price Ratio Fixed",
+            description: "Now adding liquidity at your desired ratio...",
+          });
+        }
+      }
+
       toast({
         title: "Adding Liquidity",
         description: "Please confirm the transaction in your wallet",
       });
 
-      setIsAddingLiquidity(true);
+      // Slippage protection: 5% tolerance
+      const amount0Min = amount0Wei * 95n / 100n;
+      const amount1Min = amount1Wei * 95n / 100n;
 
       if (isToken0ETH || isToken1ETH) {
         // Use addLiquidityETH
         const tokenAddress = isToken0ETH ? selectedToken1.address : selectedToken0.address;
         const tokenAmount = isToken0ETH ? amount1Wei : amount0Wei;
+        const tokenAmountMin = isToken0ETH ? amount1Min : amount0Min;
         const ethAmount = isToken0ETH ? amount0Wei : amount1Wei;
+        const ethAmountMin = isToken0ETH ? amount0Min : amount1Min;
 
         console.log('Adding liquidity ETH:', {
           router: ELOQURA_CONTRACTS.sepolia.Router,
@@ -605,8 +706,8 @@ function LiquidityContent() {
           args: [
             tokenAddress as `0x${string}`,
             tokenAmount,
-            0n, // amountTokenMin (0 for simplicity, should calculate with slippage)
-            0n, // amountETHMin
+            tokenAmountMin,
+            ethAmountMin,
             address,
             deadline,
           ],
@@ -620,6 +721,8 @@ function LiquidityContent() {
           token1: selectedToken1.address,
           amount0: amount0Wei.toString(),
           amount1: amount1Wei.toString(),
+          amount0Min: amount0Min.toString(),
+          amount1Min: amount1Min.toString(),
           deadline: deadline.toString(),
         });
 
@@ -632,8 +735,8 @@ function LiquidityContent() {
             selectedToken1.address as `0x${string}`,
             amount0Wei,
             amount1Wei,
-            0n, // amountAMin
-            0n, // amountBMin
+            amount0Min,
+            amount1Min,
             address,
             deadline,
           ],
@@ -641,6 +744,7 @@ function LiquidityContent() {
       }
     } catch (error: any) {
       console.error('Add liquidity error:', error);
+      setIsAddingLiquidity(false);
       toast({
         title: "Error",
         description: error?.message || "Failed to add liquidity",
