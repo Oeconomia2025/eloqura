@@ -184,7 +184,10 @@ function LiquidityContent() {
   const [needsApprovalToken1, setNeedsApprovalToken1] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
-  // Get current pair for selected tokens (if exists)
+  // Minimum reserve threshold - ignore dust-level reserves left from fully removed liquidity
+  const MIN_RESERVE_THRESHOLD = 10000000000000n; // 0.00001 tokens (18 decimals)
+
+  // Get current pair for selected tokens (if exists with meaningful liquidity)
   const getCurrentPair = () => {
     if (!selectedToken0 || !selectedToken1) return null;
 
@@ -196,10 +199,14 @@ function LiquidityContent() {
       ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
       : selectedToken1.address.toLowerCase();
 
-    return eloquraPairs.find(pair =>
-      (pair.token0.toLowerCase() === addr0 && pair.token1.toLowerCase() === addr1) ||
-      (pair.token0.toLowerCase() === addr1 && pair.token1.toLowerCase() === addr0)
-    );
+    return eloquraPairs.find(pair => {
+      const isMatch =
+        (pair.token0.toLowerCase() === addr0 && pair.token1.toLowerCase() === addr1) ||
+        (pair.token0.toLowerCase() === addr1 && pair.token1.toLowerCase() === addr0);
+      if (!isMatch) return false;
+      // Skip pairs with dust-level reserves (leftover from fully removed liquidity)
+      return pair.reserve0 > MIN_RESERVE_THRESHOLD && pair.reserve1 > MIN_RESERVE_THRESHOLD;
+    });
   };
 
   // Calculate amount1 when amount0 changes based on pool ratio
