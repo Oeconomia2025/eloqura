@@ -598,15 +598,25 @@ function LiquidityContent() {
       // Check for dust pair that needs ratio correction before adding liquidity
       const currentPair = getCurrentPair();
       const rawPair = getRawPair();
+      let dustCorrected = false;
 
-      if (!currentPair && rawPair && walletClient && publicClient) {
-        // Pair exists on-chain but has dust reserves - fix the ratio first
+      if (!currentPair && rawPair) {
         const isDust = rawPair.reserve0 <= MIN_RESERVE_THRESHOLD || rawPair.reserve1 <= MIN_RESERVE_THRESHOLD;
 
         if (isDust) {
+          if (!walletClient || !publicClient) {
+            toast({
+              title: "Wallet Not Ready",
+              description: "Please ensure your wallet is connected and try again",
+              variant: "destructive",
+            });
+            setIsAddingLiquidity(false);
+            return;
+          }
+
           toast({
             title: "Fixing Stale Price Ratio",
-            description: "This pair has leftover dust. Correcting the price ratio first (2 wallet confirmations)...",
+            description: "This pair has leftover dust. Please confirm 2 transactions to correct the price ratio...",
           });
 
           // Map user's selected tokens to pair's token0/token1 order
@@ -620,7 +630,6 @@ function LiquidityContent() {
           const pairAmount1 = isUserToken0PairToken0 ? amount1Wei : amount0Wei;
 
           // Determine which token to send to correct the ratio
-          // Compare cross products: pairAmount0 * reserve1 vs pairAmount1 * reserve0
           const desiredCross = pairAmount0 * rawPair.reserve1;
           const currentCross = pairAmount1 * rawPair.reserve0;
 
@@ -628,12 +637,10 @@ function LiquidityContent() {
           let correctionAmount: bigint;
 
           if (desiredCross < currentCross) {
-            // Need more token1 in reserves to lower the ratio
             const needed = rawPair.reserve0 * pairAmount1 / pairAmount0;
             correctionAmount = (needed > rawPair.reserve1 ? needed - rawPair.reserve1 : 1n) * 10n;
             correctionTokenAddr = rawPair.token1 as `0x${string}`;
           } else {
-            // Need more token0 in reserves to raise the ratio
             const needed = rawPair.reserve1 * pairAmount0 / pairAmount1;
             correctionAmount = (needed > rawPair.reserve0 ? needed - rawPair.reserve0 : 1n) * 10n;
             correctionTokenAddr = rawPair.token0 as `0x${string}`;
@@ -645,32 +652,45 @@ function LiquidityContent() {
             correctionAmount: correctionAmount.toString(),
             currentReserve0: rawPair.reserve0.toString(),
             currentReserve1: rawPair.reserve1.toString(),
+            desiredCross: desiredCross.toString(),
+            currentCross: currentCross.toString(),
           });
 
-          // Transfer correction token to pair contract
-          const transferHash = await walletClient.writeContract({
-            address: correctionTokenAddr,
-            abi: erc20Abi,
-            functionName: 'transfer',
-            args: [rawPair.address as `0x${string}`, correctionAmount],
-          });
-          await publicClient.waitForTransactionReceipt({ hash: transferHash });
+          try {
+            // Transfer correction token to pair contract
+            const transferHash = await walletClient.writeContract({
+              address: correctionTokenAddr,
+              abi: erc20Abi,
+              functionName: 'transfer',
+              args: [rawPair.address as `0x${string}`, correctionAmount],
+            });
+            await publicClient.waitForTransactionReceipt({ hash: transferHash });
 
-          // Sync pair reserves to reflect the new balance
-          const syncHash = await walletClient.writeContract({
-            address: rawPair.address as `0x${string}`,
-            abi: PAIR_ABI,
-            functionName: 'sync',
-          });
-          await publicClient.waitForTransactionReceipt({ hash: syncHash });
+            // Sync pair reserves to reflect the new balance
+            const syncHash = await walletClient.writeContract({
+              address: rawPair.address as `0x${string}`,
+              abi: PAIR_ABI,
+              functionName: 'sync',
+            });
+            await publicClient.waitForTransactionReceipt({ hash: syncHash });
 
-          // Refresh pairs data so getCurrentPair picks up the corrected reserves
-          await fetchEloquraPairs();
+            dustCorrected = true;
+            await fetchEloquraPairs();
 
-          toast({
-            title: "Price Ratio Fixed",
-            description: "Now adding liquidity at your desired ratio...",
-          });
+            toast({
+              title: "Price Ratio Fixed",
+              description: "Now adding liquidity at your desired ratio...",
+            });
+          } catch (correctionError: any) {
+            console.error('Dust correction failed:', correctionError);
+            toast({
+              title: "Ratio Correction Failed",
+              description: correctionError?.message || "Could not fix stale price ratio. Please try again.",
+              variant: "destructive",
+            });
+            setIsAddingLiquidity(false);
+            return;
+          }
         }
       }
 
@@ -679,9 +699,11 @@ function LiquidityContent() {
         description: "Please confirm the transaction in your wallet",
       });
 
-      // Slippage protection: 5% tolerance
-      const amount0Min = amount0Wei * 95n / 100n;
-      const amount1Min = amount1Wei * 95n / 100n;
+      // Slippage protection: use 5% tolerance if pair has real reserves or dust was corrected
+      // For uncorrected dust pairs this code won't reach (we return above on failure)
+      const useSlippage = currentPair || dustCorrected;
+      const amount0Min = useSlippage ? amount0Wei * 95n / 100n : 0n;
+      const amount1Min = useSlippage ? amount1Wei * 95n / 100n : 0n;
 
       if (isToken0ETH || isToken1ETH) {
         // Use addLiquidityETH
