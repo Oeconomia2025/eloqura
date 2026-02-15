@@ -21,51 +21,47 @@ import { formatUnits, formatEther, parseUnits } from "viem";
 import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, FACTORY_ABI, PAIR_ABI } from "@/lib/contracts";
 import { useLocation } from "wouter";
 
-// Known tokens on Sepolia
-const TOKENS = [
-  {
-    symbol: "OEC",
-    name: "Oeconomia",
-    address: "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba",
-    decimals: 18,
+// Known token metadata for logos and friendly names (keyed by lowercase address)
+const KNOWN_TOKEN_META: Record<string, { symbol: string; name: string; logo: string }> = {
+  "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba": {
+    symbol: "OEC", name: "Oeconomia",
     logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
   },
-  {
-    symbol: "ETH",
-    name: "Ethereum",
-    address: "0x0000000000000000000000000000000000000000",
-    decimals: 18,
-    logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
-  },
-  {
-    symbol: "WETH",
-    name: "Wrapped Ether",
-    address: ELOQURA_CONTRACTS.sepolia.WETH,
-    decimals: 18,
+  [ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()]: {
+    symbol: "WETH", name: "Wrapped Ether",
     logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
   },
-  {
-    symbol: "USDC",
-    name: "USD Coin",
-    address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-    decimals: 6,
+  "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238": {
+    symbol: "USDC", name: "USD Coin",
     logo: "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
   },
-  {
-    symbol: "LINK",
-    name: "Chainlink",
-    address: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
-    decimals: 18,
+  "0x779877a7b0d9e8603169ddbd7836e478b4624789": {
+    symbol: "LINK", name: "Chainlink",
     logo: "https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png",
   },
-  {
-    symbol: "DAI",
-    name: "Dai Stablecoin",
-    address: "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6",
-    decimals: 18,
+  "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6": {
+    symbol: "DAI", name: "Dai Stablecoin",
     logo: "https://assets.coingecko.com/coins/images/9956/small/dai-multi-collateral-mcd.png",
   },
-];
+  "0x5bb220afc6e2e008cb2302a83536a019ed245aa2": {
+    symbol: "AAVE", name: "Aave",
+    logo: "https://assets.coingecko.com/coins/images/12645/small/AAVE.png",
+  },
+  // Uniswap WETH (different from Eloqura WETH)
+  "0xfff9976782d46cc05630d1f6ebab18b2324d6b14": {
+    symbol: "WETH", name: "Wrapped Ether (Uniswap)",
+    logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
+  },
+};
+
+// ETH metadata (native token, not returned by Alchemy token discovery)
+const ETH_META = {
+  symbol: "ETH",
+  name: "Ethereum",
+  address: "0x0000000000000000000000000000000000000000",
+  decimals: 18,
+  logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+};
 
 const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 const OEC_ADDRESS = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
@@ -110,8 +106,38 @@ export default function Dashboard() {
   const [lpPositions, setLPPositions] = useState<LPPosition[]>([]);
   const [recentSwaps, setRecentSwaps] = useState<RecentSwap[]>([]);
   const [tokenPrices, setTokenPrices] = useState<Record<string, number>>({});
+  // Discovered tokens from Alchemy (address → { symbol, name, decimals, balance hex })
+  const [discoveredTokens, setDiscoveredTokens] = useState<Array<{
+    address: string; symbol: string; name: string; decimals: number; logo: string | null; balance: string;
+  }>>([]);
 
-  // Fetch token prices via Uniswap V3 quoter + Eloqura pools fallback
+  // Helper: get USD price for a token by address (lowercase)
+  const getPrice = (addr: string) => tokenPrices[addr.toLowerCase()] || 0;
+
+  // Convenience accessors
+  const oecPrice = tokenPrices[OEC_ADDRESS.toLowerCase()] || 0;
+  const ethPrice = tokenPrices["eth"] || 0;
+
+  // Step 1: Discover all tokens in wallet via Alchemy serverless function
+  useEffect(() => {
+    const discover = async () => {
+      if (!address) { setDiscoveredTokens([]); return; }
+      try {
+        const res = await fetch(`/.netlify/functions/wallet-tokens?address=${address}`);
+        if (res.ok) {
+          const data = await res.json();
+          setDiscoveredTokens(data.tokens || []);
+        }
+      } catch (err) {
+        console.error("Token discovery failed:", err);
+      }
+    };
+    discover();
+    const interval = setInterval(discover, 60000);
+    return () => clearInterval(interval);
+  }, [address]);
+
+  // Step 2: Fetch prices for discovered tokens + ETH
   useEffect(() => {
     const fetchPrices = async () => {
       if (!publicClient) return;
@@ -120,50 +146,34 @@ export default function Dashboard() {
       const prices: Record<string, number> = {};
       const feeTiers = [UNISWAP_FEE_TIERS.MEDIUM, UNISWAP_FEE_TIERS.LOW, UNISWAP_FEE_TIERS.HIGH];
 
-      for (const token of TOKENS) {
-        if (token.address.toLowerCase() === USDC_ADDRESS.toLowerCase()) {
-          prices[token.symbol] = 1;
-          continue;
+      // Build list of unique token addresses to price (from discovered tokens + ETH)
+      const toPriceList: { address: string; symbol: string; decimals: number }[] = [
+        { address: "eth", symbol: "ETH", decimals: 18 },
+      ];
+      for (const dt of discoveredTokens) {
+        const addr = dt.address.toLowerCase();
+        if (!toPriceList.find(t => t.address === addr)) {
+          const meta = KNOWN_TOKEN_META[addr];
+          toPriceList.push({ address: addr, symbol: meta?.symbol || dt.symbol, decimals: dt.decimals });
         }
-        if (token.symbol === "DAI") {
-          prices[token.symbol] = 1;
-          continue;
-        }
+      }
 
-        // Use Uniswap WETH address for ETH/WETH tokens when querying the quoter
-        const quoterAddress = (token.symbol === "ETH" || token.symbol === "WETH")
+      for (const token of toPriceList) {
+        const addr = token.address.toLowerCase();
+        // Stablecoins
+        if (addr === USDC_ADDRESS.toLowerCase()) { prices[addr] = 1; continue; }
+        if (token.symbol === "DAI") { prices[addr] = 1; continue; }
+
+        // For ETH/WETH, use Uniswap WETH address to query quoter
+        const isEthLike = token.symbol === "ETH" || token.symbol === "WETH" || addr === UNISWAP_CONTRACTS.sepolia.WETH.toLowerCase() || addr === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+        const quoterAddr = isEthLike
           ? UNISWAP_CONTRACTS.sepolia.WETH
           : token.address;
 
         let priceFound = false;
 
         // Try direct: token → USDC via Uniswap V3
-        for (const fee of feeTiers) {
-          try {
-            const amountIn = parseUnits("1", token.decimals);
-            const result = await publicClient.simulateContract({
-              address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
-              abi: UNISWAP_QUOTER_ABI,
-              functionName: "quoteExactInputSingle",
-              args: [{
-                tokenIn: quoterAddress as `0x${string}`,
-                tokenOut: usdcAddress,
-                amountIn,
-                fee,
-                sqrtPriceLimitX96: 0n,
-              }],
-            });
-            const usdPrice = parseFloat(formatUnits(result.result[0], usdcDecimals));
-            if (usdPrice > 0) {
-              prices[token.symbol] = usdPrice;
-              priceFound = true;
-              break;
-            }
-          } catch { continue; }
-        }
-
-        // Fallback: token → WETH → USDC via Uniswap V3
-        if (!priceFound && token.symbol !== "WETH" && token.symbol !== "ETH") {
+        if (addr !== "eth") {
           for (const fee of feeTiers) {
             try {
               const amountIn = parseUnits("1", token.decimals);
@@ -171,41 +181,54 @@ export default function Dashboard() {
                 address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
                 abi: UNISWAP_QUOTER_ABI,
                 functionName: "quoteExactInputSingle",
-                args: [{
-                  tokenIn: quoterAddress as `0x${string}`,
-                  tokenOut: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`,
-                  amountIn,
-                  fee,
-                  sqrtPriceLimitX96: 0n,
-                }],
+                args: [{ tokenIn: quoterAddr as `0x${string}`, tokenOut: usdcAddress, amountIn, fee, sqrtPriceLimitX96: 0n }],
+              });
+              const usdPrice = parseFloat(formatUnits(result.result[0], usdcDecimals));
+              if (usdPrice > 0) { prices[addr] = usdPrice; priceFound = true; break; }
+            } catch { continue; }
+          }
+        } else {
+          // ETH: price via WETH → USDC
+          for (const fee of feeTiers) {
+            try {
+              const result = await publicClient.simulateContract({
+                address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
+                abi: UNISWAP_QUOTER_ABI,
+                functionName: "quoteExactInputSingle",
+                args: [{ tokenIn: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`, tokenOut: usdcAddress, amountIn: parseUnits("1", 18), fee, sqrtPriceLimitX96: 0n }],
+              });
+              const usdPrice = parseFloat(formatUnits(result.result[0], usdcDecimals));
+              if (usdPrice > 0) { prices["eth"] = usdPrice; priceFound = true; break; }
+            } catch { continue; }
+          }
+        }
+
+        // Fallback: token → WETH → USDC
+        if (!priceFound && !isEthLike && addr !== "eth") {
+          for (const fee of feeTiers) {
+            try {
+              const amountIn = parseUnits("1", token.decimals);
+              const result = await publicClient.simulateContract({
+                address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
+                abi: UNISWAP_QUOTER_ABI,
+                functionName: "quoteExactInputSingle",
+                args: [{ tokenIn: quoterAddr as `0x${string}`, tokenOut: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`, amountIn, fee, sqrtPriceLimitX96: 0n }],
               });
               const wethAmount = parseFloat(formatUnits(result.result[0], 18));
-              if (wethAmount > 0 && prices["ETH"]) {
-                prices[token.symbol] = wethAmount * prices["ETH"];
-                priceFound = true;
-                break;
-              } else if (wethAmount > 0) {
-                // Get WETH → USDC price
+              if (wethAmount > 0) {
+                const ethP = prices["eth"] || 0;
+                if (ethP > 0) { prices[addr] = wethAmount * ethP; priceFound = true; break; }
+                // Get WETH → USDC
                 for (const wethFee of feeTiers) {
                   try {
-                    const wethResult = await publicClient.simulateContract({
+                    const wr = await publicClient.simulateContract({
                       address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
                       abi: UNISWAP_QUOTER_ABI,
                       functionName: "quoteExactInputSingle",
-                      args: [{
-                        tokenIn: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`,
-                        tokenOut: usdcAddress,
-                        amountIn: parseUnits("1", 18),
-                        fee: wethFee,
-                        sqrtPriceLimitX96: 0n,
-                      }],
+                      args: [{ tokenIn: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`, tokenOut: usdcAddress, amountIn: parseUnits("1", 18), fee: wethFee, sqrtPriceLimitX96: 0n }],
                     });
-                    const wethUsd = parseFloat(formatUnits(wethResult.result[0], usdcDecimals));
-                    if (wethUsd > 0) {
-                      prices[token.symbol] = wethAmount * wethUsd;
-                      priceFound = true;
-                      break;
-                    }
+                    const wethUsd = parseFloat(formatUnits(wr.result[0], usdcDecimals));
+                    if (wethUsd > 0) { prices[addr] = wethAmount * wethUsd; priceFound = true; break; }
                   } catch { continue; }
                 }
                 if (priceFound) break;
@@ -214,40 +237,40 @@ export default function Dashboard() {
           }
         }
 
-        // Fallback: Eloqura DEX pool (for OEC and other Eloqura-only tokens)
-        if (!priceFound) {
+        // Fallback: Eloqura DEX pool
+        if (!priceFound && addr !== "eth") {
           try {
-            // Try token/USDC pair on Eloqura
             const pairAddress = await publicClient.readContract({
               address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
               abi: FACTORY_ABI,
               functionName: "getPair",
               args: [token.address as `0x${string}`, usdcAddress],
             }) as `0x${string}`;
-
             if (pairAddress && pairAddress !== "0x0000000000000000000000000000000000000000") {
               const [reserves, token0] = await Promise.all([
                 publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "getReserves" }) as Promise<[bigint, bigint, number]>,
                 publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
               ]);
-              const isToken0 = token0.toLowerCase() === token.address.toLowerCase();
+              const isToken0 = token0.toLowerCase() === addr;
               const tokenReserve = parseFloat(formatUnits(isToken0 ? reserves[0] : reserves[1], token.decimals));
               const usdcReserve = parseFloat(formatUnits(isToken0 ? reserves[1] : reserves[0], usdcDecimals));
-              if (tokenReserve > 0) {
-                prices[token.symbol] = usdcReserve / tokenReserve;
-                priceFound = true;
-              }
+              if (tokenReserve > 0) { prices[addr] = usdcReserve / tokenReserve; }
             }
           } catch {}
         }
 
-        // ETH and WETH share price
-        if (token.symbol === "ETH" && prices["ETH"] && !prices["WETH"]) {
-          prices["WETH"] = prices["ETH"];
+        // WETH addresses share ETH price
+        if (isEthLike && addr !== "eth" && !prices[addr] && prices["eth"]) {
+          prices[addr] = prices["eth"];
         }
-        if (token.symbol === "WETH" && prices["WETH"] && !prices["ETH"]) {
-          prices["ETH"] = prices["WETH"];
-        }
+      }
+
+      // Sync ETH/WETH prices
+      if (prices["eth"] && !prices[ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()]) {
+        prices[ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()] = prices["eth"];
+      }
+      if (prices["eth"] && !prices[UNISWAP_CONTRACTS.sepolia.WETH.toLowerCase()]) {
+        prices[UNISWAP_CONTRACTS.sepolia.WETH.toLowerCase()] = prices["eth"];
       }
 
       setTokenPrices(prices);
@@ -255,67 +278,56 @@ export default function Dashboard() {
     fetchPrices();
     const interval = setInterval(fetchPrices, 60000);
     return () => clearInterval(interval);
-  }, [publicClient]);
+  }, [publicClient, discoveredTokens]);
 
-  // Get USD price for a token
-  const getTokenPrice = (symbol: string) => {
-    return tokenPrices[symbol] || 0;
-  };
-
-  // Convenience accessors
-  const oecPrice = tokenPrices["OEC"] || 0;
-  const ethPrice = tokenPrices["ETH"] || 0;
-
-  // Fetch token balances (batched with multicall)
+  // Step 3: Build final token balances from discovered tokens + ETH
   useEffect(() => {
-    const fetchBalances = async () => {
+    const buildBalances = async () => {
       if (!publicClient || !address) {
         setTokenBalances([]);
         setLoading(false);
         return;
       }
       try {
-        // Fetch ETH balance + all ERC20 balances in parallel
-        const erc20Tokens = TOKENS.filter(t => t.symbol !== "ETH");
-        const multicallContracts = erc20Tokens.map(token => ({
-          address: token.address as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: "balanceOf" as const,
-          args: [address],
-        }));
-
-        const [ethBalance, erc20Results] = await Promise.all([
-          publicClient.getBalance({ address }),
-          publicClient.multicall({ contracts: multicallContracts }),
-        ]);
-
         const balances: TokenBalance[] = [];
 
-        // Add ETH
-        const ethToken = TOKENS.find(t => t.symbol === "ETH")!;
+        // Add native ETH
+        const ethBalance = await publicClient.getBalance({ address });
         const ethBal = parseFloat(formatUnits(ethBalance, 18));
-        balances.push({ ...ethToken, balance: ethBal, usdValue: ethBal * getTokenPrice("ETH") });
-
-        // Add ERC20 tokens
-        erc20Tokens.forEach((token, i) => {
-          const result = erc20Results[i];
-          const rawBalance = result.status === "success" ? (result.result as bigint) : 0n;
-          const numBalance = parseFloat(formatUnits(rawBalance, token.decimals));
-          balances.push({ ...token, balance: numBalance, usdValue: numBalance * getTokenPrice(token.symbol) });
+        balances.push({
+          ...ETH_META,
+          balance: ethBal,
+          usdValue: ethBal * (tokenPrices["eth"] || 0),
         });
+
+        // Add discovered ERC-20 tokens
+        for (const dt of discoveredTokens) {
+          const addr = dt.address.toLowerCase();
+          const meta = KNOWN_TOKEN_META[addr];
+          const rawBal = BigInt(dt.balance);
+          const numBal = parseFloat(formatUnits(rawBal, dt.decimals));
+
+          balances.push({
+            symbol: meta?.symbol || dt.symbol,
+            name: meta?.name || dt.name,
+            address: dt.address,
+            decimals: dt.decimals,
+            logo: meta?.logo || dt.logo || "/oec-logo.png",
+            balance: numBal,
+            usdValue: numBal * (tokenPrices[addr] || 0),
+          });
+        }
 
         balances.sort((a, b) => b.usdValue - a.usdValue || b.balance - a.balance);
         setTokenBalances(balances);
       } catch (error) {
-        console.error("Error fetching balances:", error);
+        console.error("Error building balances:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchBalances();
-    const interval = setInterval(fetchBalances, 30000);
-    return () => clearInterval(interval);
-  }, [publicClient, address, tokenPrices]);
+    buildBalances();
+  }, [publicClient, address, discoveredTokens, tokenPrices]);
 
   // Fetch LP positions (batched with multicall)
   useEffect(() => {
@@ -409,8 +421,8 @@ export default function Dashboard() {
           const share = Number(pair.lpBalance) / Number(totalSupply);
           const r0 = parseFloat(formatUnits(reserves[0], info0.decimals)) * share;
           const r1 = parseFloat(formatUnits(reserves[1], info1.decimals)) * share;
-          let usd0 = r0 * getTokenPrice(info0.symbol);
-          let usd1 = r1 * getTokenPrice(info1.symbol);
+          let usd0 = r0 * getPrice(token0Addr);
+          let usd1 = r1 * getPrice(token1Addr);
           if (usd0 > 0 && usd1 === 0) usd1 = usd0;
           else if (usd1 > 0 && usd0 === 0) usd0 = usd1;
 
