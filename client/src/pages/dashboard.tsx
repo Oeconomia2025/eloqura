@@ -14,7 +14,9 @@ import {
   Eye,
   Users,
   Target,
-  ExternalLink
+  ExternalLink,
+  Settings,
+  X,
 } from "lucide-react";
 import { useAccount, usePublicClient } from "wagmi";
 import { formatUnits, formatEther, parseUnits } from "viem";
@@ -110,6 +112,24 @@ export default function Dashboard() {
   const [discoveredTokens, setDiscoveredTokens] = useState<Array<{
     address: string; symbol: string; name: string; decimals: number; logo: string | null; balance: string;
   }>>([]);
+  // Token visibility — hidden token addresses stored in localStorage
+  const [hiddenTokens, setHiddenTokens] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem("eloqura-hidden-tokens");
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [showTokenSettings, setShowTokenSettings] = useState(false);
+
+  const toggleTokenVisibility = (addr: string) => {
+    setHiddenTokens(prev => {
+      const next = new Set(prev);
+      const key = addr.toLowerCase();
+      if (next.has(key)) next.delete(key); else next.add(key);
+      localStorage.setItem("eloqura-hidden-tokens", JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   // Helper: get USD price for a token by address (lowercase)
   const getPrice = (addr: string) => tokenPrices[addr.toLowerCase()] || 0;
@@ -592,26 +612,37 @@ export default function Dashboard() {
             {/* Token Holdings */}
             <Card className="crypto-card border">
               <CardHeader>
-                <CardTitle className="text-xl text-white flex items-center">
-                  <Eye className="w-5 h-5 mr-2" />
-                  Token Holdings
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl text-white flex items-center">
+                    <Eye className="w-5 h-5 mr-2" />
+                    Token Holdings
+                  </CardTitle>
+                  {isConnected && tokenBalances.length > 0 && (
+                    <button
+                      onClick={() => setShowTokenSettings(true)}
+                      className="p-1.5 rounded-lg hover:bg-gray-700/50 transition-colors text-gray-400 hover:text-white"
+                      title="Manage visible tokens"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 {!isConnected ? (
                   <div className="p-6 text-center text-gray-400">
                     Connect your wallet to see holdings
                   </div>
-                ) : tokenBalances.filter(t => t.balance > 0).length === 0 ? (
+                ) : tokenBalances.filter(t => t.balance > 0 && !hiddenTokens.has(t.address.toLowerCase())).length === 0 ? (
                   <div className="p-6 text-center text-gray-400">
                     No token balances found
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-700">
                     {tokenBalances
-                      .filter(t => t.balance > 0)
+                      .filter(t => t.balance > 0 && !hiddenTokens.has(t.address.toLowerCase()))
                       .map((token) => (
-                        <div key={token.symbol} className="py-2 px-4">
+                        <div key={token.address} className="py-2 px-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               <img
@@ -640,6 +671,63 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Token Visibility Modal */}
+            {showTokenSettings && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowTokenSettings(false)}>
+                <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                    <h3 className="text-lg font-bold text-white">Manage Tokens</h3>
+                    <button onClick={() => setShowTokenSettings(false)} className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto flex-1 p-2">
+                    {tokenBalances.filter(t => t.balance > 0).map((token) => {
+                      const addr = token.address.toLowerCase();
+                      const isVisible = !hiddenTokens.has(addr);
+                      return (
+                        <button
+                          key={token.address}
+                          onClick={() => toggleTokenVisibility(token.address)}
+                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-800/60 transition-colors"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={token.logo}
+                              alt={token.symbol}
+                              className="w-7 h-7 rounded-full"
+                              onError={(e) => { (e.target as HTMLImageElement).src = "/oec-logo.png"; }}
+                            />
+                            <div className="text-left">
+                              <p className="text-sm font-medium text-white">{token.symbol}</p>
+                              <p className="text-xs text-gray-400">{formatAmount(token.balance)}</p>
+                            </div>
+                          </div>
+                          <div className={`w-10 h-5 rounded-full relative transition-colors ${isVisible ? 'bg-cyan-500' : 'bg-gray-600'}`}>
+                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isVisible ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="p-3 border-t border-gray-700 flex gap-2">
+                    <button
+                      onClick={() => { setHiddenTokens(new Set()); localStorage.removeItem("eloqura-hidden-tokens"); }}
+                      className="flex-1 py-2 text-sm rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+                    >
+                      Show All
+                    </button>
+                    <button
+                      onClick={() => setShowTokenSettings(false)}
+                      className="flex-1 py-2 text-sm rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Recent Activity */}
             <Card className="crypto-card border">
