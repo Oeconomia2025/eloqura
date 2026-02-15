@@ -445,6 +445,13 @@ export const PAIR_ABI = [
     stateMutability: "nonpayable",
   },
   {
+    name: "mint",
+    type: "function",
+    inputs: [{ name: "to", type: "address" }],
+    outputs: [{ name: "liquidity", type: "uint256" }],
+    stateMutability: "nonpayable",
+  },
+  {
     name: "Swap",
     type: "event",
     inputs: [

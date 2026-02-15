@@ -11,6 +11,7 @@ import { useTokenData } from "@/hooks/use-token-data";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { formatUnits, parseUnits, parseEther } from "viem";
 import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI, ROUTER_ABI } from "@/lib/contracts";
+import { trackTransaction } from "@/lib/explorer";
 
 // WETH ABI for deposit/withdraw
 const WETH_ABI = [
@@ -591,6 +592,9 @@ function SwapContent() {
   // Reset form and refetch balances after successful transaction
   useEffect(() => {
     if (isConfirmed) {
+      // Track in OECsplorer
+      if (txHash) trackTransaction(txHash);
+
       // Check if this was an approval tx (form still has values)
       const wasApproval = isApproving;
       setIsApproving(false);

@@ -34,6 +34,7 @@ import type { LiveCoinWatchDbCoin } from "@shared/schema";
 import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt, useWalletClient } from "wagmi";
 import { formatUnits, parseUnits, erc20Abi } from "viem";
 import { ELOQURA_CONTRACTS, FACTORY_ABI, ROUTER_ABI, PAIR_ABI, ERC20_ABI } from "@/lib/contracts";
+import { trackTransaction } from "@/lib/explorer";
 import { useToast } from "@/hooks/use-toast";
 
 interface Token {
@@ -531,6 +532,9 @@ function LiquidityContent() {
   // Show success toast when transaction confirms
   useEffect(() => {
     if (isConfirmed && txHash) {
+      // Track in OECsplorer
+      trackTransaction(txHash);
+
       if (isApprovingLP) {
         toast({
           title: "LP Token Approved!",
@@ -607,10 +611,9 @@ function LiquidityContent() {
 
       setIsAddingLiquidity(true);
 
-      // Check for dust pair that needs ratio correction before adding liquidity
+      // Check for dust pair that needs direct mint (bypasses router ratio enforcement)
       const currentPair = getCurrentPair();
       const rawPair = getRawPair();
-      let dustCorrected = false;
 
       if (!currentPair && rawPair) {
         const isDust = rawPair.reserve0 <= MIN_RESERVE_THRESHOLD || rawPair.reserve1 <= MIN_RESERVE_THRESHOLD;
@@ -626,9 +629,13 @@ function LiquidityContent() {
             return;
           }
 
+          // Direct mint approach: bypass router entirely for dust pairs
+          // 1. Transfer token0 to pair contract
+          // 2. Transfer token1 to pair contract
+          // 3. Call pair.mint(address) to create LP tokens
           toast({
-            title: "Fixing Stale Price Ratio",
-            description: "This pair has leftover dust. Please confirm 2 transactions to correct the price ratio...",
+            title: "Setting Pool Price",
+            description: "This pair needs initialization. Please confirm 3 transactions: transfer token A, transfer token B, then mint LP tokens.",
           });
 
           // Map user's selected tokens to pair's token0/token1 order
@@ -638,66 +645,76 @@ function LiquidityContent() {
           const isUserToken0PairToken0 = rawPair.token0.toLowerCase() === userAddr0;
 
           // Get desired amounts in pair's token0/token1 order
-          const pairAmount0 = isUserToken0PairToken0 ? amount0Wei : amount1Wei;
-          const pairAmount1 = isUserToken0PairToken0 ? amount1Wei : amount0Wei;
+          const pairToken0Amount = isUserToken0PairToken0 ? amount0Wei : amount1Wei;
+          const pairToken1Amount = isUserToken0PairToken0 ? amount1Wei : amount0Wei;
+          const pairToken0Addr = rawPair.token0 as `0x${string}`;
+          const pairToken1Addr = rawPair.token1 as `0x${string}`;
+          const pairAddr = rawPair.address as `0x${string}`;
 
-          // Determine which token to send to correct the ratio
-          const desiredCross = pairAmount0 * rawPair.reserve1;
-          const currentCross = pairAmount1 * rawPair.reserve0;
-
-          let correctionTokenAddr: `0x${string}`;
-          let correctionAmount: bigint;
-
-          if (desiredCross < currentCross) {
-            const needed = rawPair.reserve0 * pairAmount1 / pairAmount0;
-            correctionAmount = (needed > rawPair.reserve1 ? needed - rawPair.reserve1 : 1n) * 10n;
-            correctionTokenAddr = rawPair.token1 as `0x${string}`;
-          } else {
-            const needed = rawPair.reserve1 * pairAmount0 / pairAmount1;
-            correctionAmount = (needed > rawPair.reserve0 ? needed - rawPair.reserve0 : 1n) * 10n;
-            correctionTokenAddr = rawPair.token0 as `0x${string}`;
-          }
-
-          console.log('Dust pair correction:', {
-            pairAddress: rawPair.address,
-            correctionToken: correctionTokenAddr,
-            correctionAmount: correctionAmount.toString(),
+          console.log('Direct mint for dust pair:', {
+            pairAddress: pairAddr,
+            pairToken0: pairToken0Addr,
+            pairToken1: pairToken1Addr,
+            pairToken0Amount: pairToken0Amount.toString(),
+            pairToken1Amount: pairToken1Amount.toString(),
             currentReserve0: rawPair.reserve0.toString(),
             currentReserve1: rawPair.reserve1.toString(),
-            desiredCross: desiredCross.toString(),
-            currentCross: currentCross.toString(),
           });
 
           try {
-            // Transfer correction token to pair contract
-            const transferHash = await walletClient.writeContract({
-              address: correctionTokenAddr,
+            // Step 1: Transfer token0 to pair
+            toast({ title: "Step 1/3", description: `Transferring ${isUserToken0PairToken0 ? selectedToken0.symbol : selectedToken1.symbol} to pool...` });
+            const tx0 = await walletClient.writeContract({
+              address: pairToken0Addr,
               abi: erc20Abi,
               functionName: 'transfer',
-              args: [rawPair.address as `0x${string}`, correctionAmount],
+              args: [pairAddr, pairToken0Amount],
             });
-            await publicClient.waitForTransactionReceipt({ hash: transferHash });
+            await publicClient.waitForTransactionReceipt({ hash: tx0 });
 
-            // Sync pair reserves to reflect the new balance
-            const syncHash = await walletClient.writeContract({
-              address: rawPair.address as `0x${string}`,
+            // Step 2: Transfer token1 to pair
+            toast({ title: "Step 2/3", description: `Transferring ${isUserToken0PairToken0 ? selectedToken1.symbol : selectedToken0.symbol} to pool...` });
+            const tx1 = await walletClient.writeContract({
+              address: pairToken1Addr,
+              abi: erc20Abi,
+              functionName: 'transfer',
+              args: [pairAddr, pairToken1Amount],
+            });
+            await publicClient.waitForTransactionReceipt({ hash: tx1 });
+
+            // Step 3: Mint LP tokens
+            toast({ title: "Step 3/3", description: "Minting LP tokens..." });
+            const mintTx = await walletClient.writeContract({
+              address: pairAddr,
               abi: PAIR_ABI,
-              functionName: 'sync',
+              functionName: 'mint',
+              args: [address],
             });
-            await publicClient.waitForTransactionReceipt({ hash: syncHash });
+            const mintReceipt = await publicClient.waitForTransactionReceipt({ hash: mintTx });
 
-            dustCorrected = true;
+            console.log('Direct mint successful:', mintReceipt);
+
+            // Track all 3 transactions in OECsplorer
+            trackTransaction(tx0);
+            trackTransaction(tx1);
+            trackTransaction(mintTx);
+
+            // Refresh pairs data
             await fetchEloquraPairs();
 
             toast({
-              title: "Price Ratio Fixed",
-              description: "Now adding liquidity at your desired ratio...",
+              title: "Liquidity Added!",
+              description: "Pool initialized at your desired price ratio.",
             });
-          } catch (correctionError: any) {
-            console.error('Dust correction failed:', correctionError);
+            setIsAddingLiquidity(false);
+            setAmount0("");
+            setAmount1("");
+            return; // Done - skip the normal router flow below
+          } catch (mintError: any) {
+            console.error('Direct mint failed:', mintError);
             toast({
-              title: "Ratio Correction Failed",
-              description: correctionError?.message || "Could not fix stale price ratio. Please try again.",
+              title: "Transaction Failed",
+              description: mintError?.shortMessage || mintError?.message || "Failed to initialize pool. Please try again.",
               variant: "destructive",
             });
             setIsAddingLiquidity(false);
@@ -706,6 +723,7 @@ function LiquidityContent() {
         }
       }
 
+      // Normal flow: use router for pairs with real reserves or new pairs
       // Pre-flight: verify token allowances before attempting addLiquidity
       if (publicClient && address) {
         for (const [token, amount, label] of [
@@ -742,10 +760,9 @@ function LiquidityContent() {
         description: "Please confirm the transaction in your wallet",
       });
 
-      // Slippage protection: use 5% tolerance if pair has real reserves or dust was corrected
-      const useSlippage = currentPair || dustCorrected;
-      const amount0Min = useSlippage ? amount0Wei * 95n / 100n : 0n;
-      const amount1Min = useSlippage ? amount1Wei * 95n / 100n : 0n;
+      // Slippage protection: use 5% tolerance if pair has real reserves
+      const amount0Min = currentPair ? amount0Wei * 95n / 100n : 0n;
+      const amount1Min = currentPair ? amount1Wei * 95n / 100n : 0n;
 
       if (isToken0ETH || isToken1ETH) {
         // Use addLiquidityETH
