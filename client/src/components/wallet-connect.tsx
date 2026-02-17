@@ -108,7 +108,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
         title={collapsed ? formatAddress(address) : undefined}
       >
         <Wallet className="w-5 h-5 flex-shrink-0" />
-        {!collapsed && <span className="whitespace-nowrap">{formatAddress(address)}</span>}
+        {!collapsed && <span className="text-sm whitespace-nowrap">{formatAddress(address)}</span>}
         {collapsed && (
           <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
             {formatAddress(address)}
@@ -129,7 +129,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
           title={collapsed ? "Connect Wallet" : undefined}
         >
           <Wallet className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="whitespace-nowrap">Connect Wallet</span>}
+          {!collapsed && <span className="text-sm whitespace-nowrap">Connect Wallet</span>}
           {collapsed && (
             <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
               Connect Wallet

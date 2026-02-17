@@ -273,7 +273,7 @@ export function Layout({
         </div>
 
         {/* Bottom section with wallet and social links */}
-        <div className="sticky bottom-0 p-2 flex flex-col space-y-2 bg-black">
+        <div className="sticky bottom-0 p-2 border-t border-gray-700 flex flex-col space-y-2 bg-black">
           {/* Social Media Dropdown */}
           <DropdownMenu onOpenChange={setLinksOpen}>
             <DropdownMenuTrigger asChild>
@@ -287,7 +287,7 @@ export function Layout({
                 title={sidebarCollapsed ? "Links" : undefined}
               >
                 <Globe className="w-5 h-5 flex-shrink-0 text-white" />
-                {!sidebarCollapsed && <span className="whitespace-nowrap">Links</span>}
+                {!sidebarCollapsed && <span className="text-sm whitespace-nowrap">Links</span>}
                 {sidebarCollapsed && (
                   <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                     Links
@@ -340,7 +340,7 @@ export function Layout({
               alt="OEC Logo"
               className="w-5 h-5 flex-shrink-0"
             />
-            {!sidebarCollapsed && <span className="whitespace-nowrap">Oeconomia</span>}
+            {!sidebarCollapsed && <span className="text-sm whitespace-nowrap">Oeconomia</span>}
             {sidebarCollapsed && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Oeconomia
@@ -348,8 +348,45 @@ export function Layout({
             )}
           </button>
 
+          {/* OECsplorer */}
+          <a
+            href="https://oecsplorer.oeconomia.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`w-full flex items-center ${
+              sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+            } py-2 rounded-lg text-left transition-colors group relative text-white font-semibold shadow-lg hover:brightness-110 overflow-hidden`}
+            style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)" }}
+            title={sidebarCollapsed ? "OECsplorer" : undefined}
+          >
+            <img
+              src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/Globe%20Black.png"
+              alt="OECsplorer"
+              className="w-5 h-5 flex-shrink-0 object-contain"
+            />
+            {!sidebarCollapsed && <span className="text-sm">OECsplorer</span>}
+            {sidebarCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                OECsplorer
+              </div>
+            )}
+          </a>
+
           {/* Connect Wallet */}
           <WalletConnect collapsed={sidebarCollapsed} />
+
+          {/* Network indicator */}
+          <div
+            className={`flex items-center ${
+              sidebarCollapsed ? "justify-center" : "space-x-2 px-3"
+            } py-1.5 text-xs text-gray-500`}
+          >
+            <span
+              className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"
+              style={{ boxShadow: "0 0 6px #22C55E44" }}
+            />
+            {!sidebarCollapsed && <span>Sepolia Testnet</span>}
+          </div>
         </div>
 
       </aside>
