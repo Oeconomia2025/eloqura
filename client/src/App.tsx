@@ -13,6 +13,7 @@ import BuySell from '@/pages/buy-sell'
 import Bridge from '@/pages/bridge'
 import Liquidity from '@/pages/liquidity'
 import Dashboard from '@/pages/dashboard'
+import TokenDetailDynamic from '@/pages/token-detail-dynamic'
 import NotFound from '@/pages/not-found'
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/bridge" component={Bridge} />
       <Route path="/liquidity" component={Liquidity} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/coin/:code" component={TokenDetailDynamic} />
       <Route path="*" component={NotFound} />
     </Switch>
   );
