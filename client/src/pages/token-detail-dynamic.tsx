@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PriceChart } from "@/components/price-chart";
-import { ArrowLeft, ExternalLink, Plus, Copy, Check } from "lucide-react";
+import { ArrowLeft, ExternalLink, Plus, Copy, Check, DollarSign, BarChart3, Activity, TrendingUp, TrendingDown, Coins } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getCryptoLogo, cleanCoinName } from "@/utils/crypto-logos";
 import type { TokenData } from "@shared/schema";
@@ -103,6 +103,8 @@ export default function TokenDetailDynamic() {
   }
 
   const resolvedLogo = getCryptoLogo(tokenCode, tokenData.symbol);
+  const priceChangePercent = tokenData.priceChangePercent24h ?? 0;
+  const isPositive = priceChangePercent >= 0;
 
   return (
     <Layout
@@ -111,10 +113,11 @@ export default function TokenDetailDynamic() {
       tokenTicker={tokenData.symbol || tokenCode}
       tokenName={cleanCoinName(tokenData.name)}
     >
-      <div className="container mx-auto p-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+
+          {/* Header */}
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
@@ -124,26 +127,7 @@ export default function TokenDetailDynamic() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Tokens
             </Button>
-          </div>
 
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (tokenData.contractAddress) {
-                  copyToClipboard(tokenData.contractAddress);
-                }
-              }}
-              className={`border-gray-600 hover:border-gray-500 ${
-                copied
-                  ? 'text-green-400 border-green-400/50'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {copied ? <Check className="w-4 h-4 mr-2 text-green-400" /> : <Copy className="w-4 h-4 mr-2" />}
-              <span className={copied ? 'text-green-400' : ''}>{tokenData.contractAddress}</span>
-            </Button>
             <Button
               size="sm"
               onClick={() => setLocation("/liquidity?tab=add")}
@@ -153,84 +137,179 @@ export default function TokenDetailDynamic() {
               Add Liquidity
             </Button>
           </div>
-        </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <Card className="crypto-card p-3">
+          {/* Token Identity */}
+          <div className="flex items-center space-x-4">
+            <img
+              src={resolvedLogo}
+              alt={tokenData.symbol}
+              className="w-12 h-12 rounded-full"
+            />
             <div>
-              <p className="text-xs text-gray-400">Current Price</p>
-              <p className="text-base font-semibold">${formatPrice(tokenData.price)}</p>
+              <h1 className="text-2xl font-bold text-white">
+                {cleanCoinName(tokenData.name)}
+              </h1>
+              <span className="text-gray-400 text-sm">{tokenData.symbol || tokenCode}</span>
             </div>
-          </Card>
+          </div>
 
-          <Card className="crypto-card p-3">
-            <div>
-              <p className="text-xs text-gray-400">24h Volume</p>
-              <p className="text-base font-semibold">${formatNumber(tokenData.volume24h)}</p>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Card className="crypto-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-400 text-xs">Price</span>
+                <DollarSign className="w-3 h-3 text-white" />
+              </div>
+              <div className="text-lg font-bold text-white mb-1">
+                ${formatPrice(tokenData.price)}
+              </div>
+              <div className={`flex items-center space-x-1 text-xs ${isPositive ? 'text-crypto-green' : 'text-red-400'}`}>
+                {isPositive ? (
+                  <TrendingUp className="w-2 h-2" />
+                ) : (
+                  <TrendingDown className="w-2 h-2" />
+                )}
+                <span className="font-medium">
+                  {formatPercentage(priceChangePercent)}
+                </span>
+              </div>
+            </Card>
+
+            <Card className="crypto-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-400 text-xs">Market Cap</span>
+                <BarChart3 className="w-3 h-3 text-crypto-blue" />
+              </div>
+              <div className="text-lg font-bold text-crypto-blue">
+                ${formatNumber(tokenData.marketCap)}
+              </div>
+            </Card>
+
+            <Card className="crypto-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-400 text-xs">24H Volume</span>
+                <Activity className="w-3 h-3 text-crypto-green" />
+              </div>
+              <div className="text-lg font-bold text-crypto-green">
+                ${formatNumber(tokenData.volume24h)}
+              </div>
+            </Card>
+
+            <Card className="crypto-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-400 text-xs">Circulating Supply</span>
+                <Coins className="w-3 h-3 text-crypto-purple" />
+              </div>
+              <div className="text-lg font-bold text-crypto-purple">
+                {formatNumber(tokenData.circulatingSupply)}
+              </div>
+            </Card>
+
+            <Card className="crypto-card p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-400 text-xs">Total Supply</span>
+                <DollarSign className="w-3 h-3 text-gray-400" />
+              </div>
+              <div className="text-lg font-bold text-white">
+                {formatNumber(tokenData.totalSupply)}
+              </div>
+            </Card>
+          </div>
+
+          {/* Chart + Info Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Chart (2/3 width) */}
+            <div className="lg:col-span-2">
+              <PriceChart
+                contractAddress={tokenData.contractAddress}
+                tokenSymbol={tokenData.symbol}
+                tokenData={tokenData}
+                formatPercentage={formatPercentage}
+                getChangeColor={getChangeColor}
+              />
             </div>
-          </Card>
 
-          <Card className="crypto-card p-3">
-            <div>
-              <p className="text-xs text-gray-400">Market Cap</p>
-              <p className="text-base font-semibold">${formatNumber(tokenData.marketCap)}</p>
+            {/* Side Info (1/3 width) */}
+            <div className="space-y-6">
+              {/* Token Information */}
+              <Card className="crypto-card p-6">
+                <CardHeader className="p-0 pb-4">
+                  <CardTitle className="text-white text-lg">Token Information</CardTitle>
+                </CardHeader>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Contract</span>
+                    {tokenData.contractAddress ? (
+                      <button
+                        onClick={() => copyToClipboard(tokenData.contractAddress)}
+                        className={`flex items-center space-x-2 font-mono text-sm transition-colors cursor-pointer group ${
+                          copied ? 'text-green-400' : 'text-white hover:text-crypto-blue'
+                        }`}
+                        title="Click to copy full contract address"
+                      >
+                        <span>{truncateAddress(tokenData.contractAddress)}</span>
+                        {copied ? (
+                          <Check className="w-3 h-3 text-green-400" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-gray-400 group-hover:text-crypto-blue transition-colors" />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-white font-mono text-sm">N/A</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Total Supply</span>
+                    <span className="text-white">
+                      {tokenData.totalSupply ? formatNumber(tokenData.totalSupply) : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Network</span>
+                    <span className="text-white">BSC</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* About */}
+              <Card className="crypto-card p-6">
+                <CardHeader className="p-0 pb-4">
+                  <CardTitle className="text-white text-lg">About</CardTitle>
+                </CardHeader>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  Real-time {cleanCoinName(tokenData.name)} ({tokenData.symbol}) pricing data powered by Live Coin Watch.
+                </p>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="crypto-card p-6">
+                <CardHeader className="p-0 pb-4">
+                  <CardTitle className="text-white text-lg">Quick Actions</CardTitle>
+                </CardHeader>
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => setLocation("/liquidity?tab=add")}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Liquidity
+                  </Button>
+
+                  {tokenData.website && (
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(tokenData.website, '_blank')}
+                      className="w-full border-gray-600 hover:bg-gray-600/10"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Official Website
+                    </Button>
+                  )}
+                </div>
+              </Card>
             </div>
-          </Card>
+          </div>
 
-          <Card className="crypto-card p-3">
-            <div>
-              <p className="text-xs text-gray-400">Circulating Supply</p>
-              <p className="text-base font-semibold">{formatNumber(tokenData.circulatingSupply)}</p>
-            </div>
-          </Card>
-
-          <Card className="crypto-card p-3">
-            <div>
-              <p className="text-xs text-gray-400">Total Supply</p>
-              <p className="text-base font-semibold">{formatNumber(tokenData.totalSupply)}</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Chart Section */}
-        <PriceChart
-          contractAddress={tokenData.contractAddress}
-          tokenSymbol={tokenData.symbol}
-          tokenData={tokenData}
-          formatPercentage={formatPercentage}
-          getChangeColor={getChangeColor}
-        />
-
-        {/* Actions */}
-        <div className="flex flex-wrap gap-4">
-          <Button
-            onClick={() => setLocation("/liquidity?tab=tokens")}
-            className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Liquidity
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => copyToClipboard(tokenData.contractAddress)}
-            className="border-crypto-blue text-crypto-blue hover:bg-crypto-blue/10"
-          >
-            {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-            {copied ? 'Copied!' : truncateAddress(tokenData.contractAddress)}
-          </Button>
-
-          {tokenData.website && (
-            <Button
-              variant="outline"
-              onClick={() => window.open(tokenData.website, '_blank')}
-              className="border-gray-600 hover:bg-gray-600/10"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Official Website
-            </Button>
-          )}
         </div>
       </div>
     </Layout>
