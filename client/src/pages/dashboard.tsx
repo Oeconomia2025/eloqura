@@ -759,7 +759,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <a
-                            href={`https://sepolia.etherscan.io/tx/${swap.txHash}`}
+                            href={`https://oeconomia-explorer-production.up.railway.app/tx/${swap.txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-400 hover:text-blue-300"

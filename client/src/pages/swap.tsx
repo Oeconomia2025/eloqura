@@ -661,7 +661,7 @@ function SwapContent() {
       try {
         // Load swaps from localStorage (saved when user completes swaps)
         const saved = JSON.parse(localStorage.getItem("eloqura-recent-swaps") || "[]") as RecentSwap[];
-        setRecentSwaps(saved.slice(0, 10));
+        setRecentSwaps(saved.slice(0, 5));
       } catch {
         setRecentSwaps([]);
       }
@@ -2687,7 +2687,7 @@ function SwapContent() {
                     return (
                       <a
                         key={`${swap.txHash}-${i}`}
-                        href={`https://sepolia.etherscan.io/tx/${swap.txHash}`}
+                        href={`https://oeconomia-explorer-production.up.railway.app/tx/${swap.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between text-sm hover:bg-[var(--crypto-dark)] rounded-lg px-2 py-1 -mx-2 transition-colors"
