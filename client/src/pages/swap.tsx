@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -83,8 +83,10 @@ function SwapContent() {
   const [slippage, setSlippage] = useState(0.5);
   const [customSlippage, setCustomSlippage] = useState("");
   const [isSlippageCustom, setIsSlippageCustom] = useState(false);
+  const [txDeadline, setTxDeadline] = useState(20); // minutes
   const [quote, setQuote] = useState<SwapQuote | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [highImpactConfirmed, setHighImpactConfirmed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [chartTimeframe, setChartTimeframe] = useState("1D");
@@ -131,8 +133,22 @@ function SwapContent() {
   const [chartKey, setChartKey] = useState(0);
   const [chartVisible, setChartVisible] = useState(false);
 
+  // Quote management refs
+  const quoteVersionRef = useRef(0);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
   // Per-unit token prices in USD (via Uniswap quoter)
   const [tokenPrices, setTokenPrices] = useState<Record<string, number>>({});
+
+  // Gas price in wei for network cost estimation
+  const [gasPriceWei, setGasPriceWei] = useState<bigint>(0n);
+
+  // Eloqura DEX market stats (on-chain)
+  const [eloquraStats, setEloquraStats] = useState<{
+    activePairs: number;
+    totalLiquidityUsd: number;
+    volume24hUsd: number;
+  }>({ activePairs: 0, totalLiquidityUsd: 0, volume24hUsd: 0 });
 
   // Recent swaps from on-chain events
   interface RecentSwap {
@@ -536,6 +552,108 @@ function SwapContent() {
     return () => clearInterval(interval);
   }, [publicClient]);
 
+  // Fetch gas price for network cost estimation
+  useEffect(() => {
+    const fetchGasPrice = async () => {
+      if (!publicClient) return;
+      try {
+        const price = await publicClient.getGasPrice();
+        setGasPriceWei(price);
+      } catch {}
+    };
+    fetchGasPrice();
+    const interval = setInterval(fetchGasPrice, 30000);
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
+  // Fetch Eloqura DEX market stats directly from on-chain pool reserves
+  useEffect(() => {
+    const fetchEloquraStats = async () => {
+      if (!publicClient) return;
+      try {
+        const factory = ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`;
+
+        // Get total number of pairs
+        const pairCount = await publicClient.readContract({
+          address: factory,
+          abi: FACTORY_ABI,
+          functionName: 'allPairsLength',
+        }) as bigint;
+        const activePairs = Number(pairCount);
+
+        // Build a decimals lookup from known tokens
+        const decimalsMap: Record<string, number> = {};
+        for (const t of tokens) {
+          decimalsMap[t.address.toLowerCase()] = t.decimals;
+        }
+
+        // Read reserves from each pair and sum up TVL
+        let totalTvl = 0;
+        for (let i = 0; i < activePairs; i++) {
+          try {
+            const pairAddress = await publicClient.readContract({
+              address: factory,
+              abi: FACTORY_ABI,
+              functionName: 'allPairs',
+              args: [BigInt(i)],
+            }) as `0x${string}`;
+
+            const [reserves, token0Addr, token1Addr] = await Promise.all([
+              publicClient.readContract({
+                address: pairAddress,
+                abi: PAIR_ABI,
+                functionName: 'getReserves',
+              }) as Promise<[bigint, bigint, number]>,
+              publicClient.readContract({
+                address: pairAddress,
+                abi: PAIR_ABI,
+                functionName: 'token0',
+              }) as Promise<`0x${string}`>,
+              publicClient.readContract({
+                address: pairAddress,
+                abi: PAIR_ABI,
+                functionName: 'token1',
+              }) as Promise<`0x${string}`>,
+            ]);
+
+            const dec0 = decimalsMap[token0Addr.toLowerCase()] ?? 18;
+            const dec1 = decimalsMap[token1Addr.toLowerCase()] ?? 18;
+            const reserve0 = parseFloat(formatUnits(reserves[0], dec0));
+            const reserve1 = parseFloat(formatUnits(reserves[1], dec1));
+
+            const price0 = tokenPrices[token0Addr.toLowerCase()] ?? 0;
+            const price1 = tokenPrices[token1Addr.toLowerCase()] ?? 0;
+
+            const side0 = reserve0 * price0;
+            const side1 = reserve1 * price1;
+
+            // In a constant-product AMM both sides are equal in USD value.
+            // If only one side has a known price, double it for the full pool TVL.
+            if (price0 > 0 && price1 > 0) {
+              totalTvl += side0 + side1;
+            } else if (price0 > 0) {
+              totalTvl += side0 * 2;
+            } else if (price1 > 0) {
+              totalTvl += side1 * 2;
+            }
+          } catch { /* skip unreadable pair */ }
+        }
+
+        setEloquraStats({
+          activePairs,
+          totalLiquidityUsd: totalTvl,
+          volume24hUsd: 0, // Volume requires an indexer; not available on-chain
+        });
+      } catch (error) {
+        console.warn('Error fetching Eloqura stats:', error);
+      }
+    };
+
+    fetchEloquraStats();
+    const interval = setInterval(fetchEloquraStats, 60000);
+    return () => clearInterval(interval);
+  }, [publicClient, tokenPrices]);
+
   // Fetch recent swap events from Eloqura pair contracts
   useEffect(() => {
     const fetchRecentSwaps = async () => {
@@ -720,6 +838,7 @@ function SwapContent() {
   const getSwapQuote = async (from: Token, to: Token, amount: string, direction: 'from' | 'to' = 'from') => {
     if (!amount || parseFloat(amount) === 0 || !publicClient) return null;
 
+    const version = ++quoteVersionRef.current;
     setIsLoading(true);
 
     const inputAmount = parseFloat(amount);
@@ -743,12 +862,16 @@ function SwapContent() {
       priceImpact = 0;
       routeSource = 'wrap';
     } else {
+      // For direction='to', reverse the quote: query to→from to find how much 'from' is needed
+      const quoteFrom = direction === 'from' ? from : to;
+      const quoteTo = direction === 'from' ? to : from;
+
       // Run ALL quote sources in PARALLEL for speed
-      const tokenInAddress = (from.symbol === 'ETH' ? UNISWAP_CONTRACTS.sepolia.WETH : from.address) as `0x${string}`;
-      const tokenOutAddress = (to.symbol === 'ETH' ? UNISWAP_CONTRACTS.sepolia.WETH : to.address) as `0x${string}`;
-      const eloquraTokenIn = (from.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : from.address) as `0x${string}`;
-      const eloquraTokenOut = (to.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : to.address) as `0x${string}`;
-      const amountIn = parseUnits(parseFloat(amount).toFixed(from.decimals), from.decimals);
+      const tokenInAddress = (quoteFrom.symbol === 'ETH' ? UNISWAP_CONTRACTS.sepolia.WETH : quoteFrom.address) as `0x${string}`;
+      const tokenOutAddress = (quoteTo.symbol === 'ETH' ? UNISWAP_CONTRACTS.sepolia.WETH : quoteTo.address) as `0x${string}`;
+      const eloquraTokenIn = (quoteFrom.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : quoteFrom.address) as `0x${string}`;
+      const eloquraTokenOut = (quoteTo.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : quoteTo.address) as `0x${string}`;
+      const amountIn = parseUnits(parseFloat(amount).toFixed(quoteFrom.decimals), quoteFrom.decimals);
 
       // Fire all Uniswap fee tier quotes + Eloqura quotes simultaneously
       const feeTiers = [UNISWAP_FEE_TIERS.LOW, UNISWAP_FEE_TIERS.MEDIUM, UNISWAP_FEE_TIERS.HIGH];
@@ -778,7 +901,7 @@ function SwapContent() {
         .catch(() => null);
 
       const weth = ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`;
-      const canTryWethRoute = from.symbol !== 'WETH' && from.symbol !== 'ETH' && to.symbol !== 'WETH' && to.symbol !== 'ETH';
+      const canTryWethRoute = quoteFrom.symbol !== 'WETH' && quoteFrom.symbol !== 'ETH' && quoteTo.symbol !== 'WETH' && quoteTo.symbol !== 'ETH';
       const eloquraWethPromise = canTryWethRoute
         ? publicClient.readContract({
             address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
@@ -796,6 +919,9 @@ function SwapContent() {
         eloquraWethPromise,
       ]);
 
+      // Discard stale result if a newer quote was requested
+      if (version !== quoteVersionRef.current) return;
+
       // Find best Uniswap quote
       let bestUniQuote: bigint | null = null;
       for (const result of uniResults) {
@@ -810,17 +936,17 @@ function SwapContent() {
       const candidates: QuoteCandidate[] = [];
 
       if (bestUniQuote) {
-        const out = parseFloat(formatUnits(bestUniQuote, to.decimals));
+        const out = parseFloat(formatUnits(bestUniQuote, quoteTo.decimals));
         if (out > 0) candidates.push({ output: out, source: 'uniswap', feeTier: bestFeeTier, impact: 0, fee: inputAmount * (bestFeeTier / 1000000) });
       }
 
       if (eloquraDirect) {
-        const out = parseFloat(formatUnits(eloquraDirect.amounts[1], to.decimals));
+        const out = parseFloat(formatUnits(eloquraDirect.amounts[1], quoteTo.decimals));
         if (out > 0) candidates.push({ output: out, source: 'eloqura', impact: 0, fee: inputAmount * 0.003 });
       }
 
       if (eloquraWeth) {
-        const out = parseFloat(formatUnits(eloquraWeth.amounts[2], to.decimals));
+        const out = parseFloat(formatUnits(eloquraWeth.amounts[2], quoteTo.decimals));
         if (out > 0) candidates.push({ output: out, source: 'eloqura-bridge', impact: 0, fee: inputAmount * 0.006 });
       }
 
@@ -828,7 +954,13 @@ function SwapContent() {
       if (candidates.length > 0) {
         const best = candidates.reduce((a, b) => a.output > b.output ? a : b);
         outputAmount = best.output;
-        exchangeRate = outputAmount / inputAmount;
+        // Exchange rate is always in from→to terms
+        if (direction === 'from') {
+          exchangeRate = outputAmount / inputAmount;
+        } else {
+          // inputAmount is 'to' token, outputAmount is 'from' token
+          exchangeRate = inputAmount / outputAmount;
+        }
         fee = best.fee;
         priceImpact = best.impact;
         routeSource = best.source;
@@ -836,16 +968,19 @@ function SwapContent() {
       }
     }
 
+    // Discard stale result
+    if (version !== quoteVersionRef.current) return;
+
     if (direction === 'from') {
       minimumReceived = outputAmount * (1 - slippage / 100);
       setToAmount(outputAmount > 0 ? outputAmount.toFixed(6) : '0');
     } else {
-      minimumReceived = inputAmount * (1 - slippage / 100);
-      setFromAmount(inputAmount > 0 ? inputAmount.toFixed(6) : '0');
+      minimumReceived = outputAmount * (1 - slippage / 100);
+      setFromAmount(outputAmount > 0 ? outputAmount.toFixed(6) : '0');
     }
 
     const swapQuote: SwapQuote = {
-      inputAmount: direction === 'from' ? amount : fromAmount,
+      inputAmount: direction === 'from' ? amount : (outputAmount > 0 ? outputAmount.toFixed(6) : '0'),
       outputAmount: direction === 'from' ? outputAmount.toString() : amount,
       exchangeRate,
       priceImpact,
@@ -860,6 +995,28 @@ function SwapContent() {
 
     setQuote(swapQuote);
     setIsLoading(false);
+  };
+
+  // Debounced quote request — called from input onChange handlers
+  const requestQuote = (amount: string, direction: 'from' | 'to') => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    setHighImpactConfirmed(false);
+
+    if (!amount || parseFloat(amount) <= 0) {
+      quoteVersionRef.current++;
+      if (direction === 'from') setToAmount('');
+      else setFromAmount('');
+      setQuote(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    debounceTimerRef.current = setTimeout(() => {
+      if (fromToken && toToken) {
+        getSwapQuote(fromToken, toToken, amount, direction);
+      }
+    }, 300);
   };
 
   // Handle token swap
@@ -965,7 +1122,7 @@ function SwapContent() {
         const amountOutMin = quote
           ? parseUnits(minReceivedStr, toToken.decimals)
           : 0n;
-        const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+        const deadline = BigInt(Math.floor(Date.now() / 1000) + txDeadline * 60);
 
         const eloquraTokenIn = fromToken.symbol === 'ETH'
           ? ELOQURA_CONTRACTS.sepolia.WETH
@@ -1066,20 +1223,17 @@ function SwapContent() {
     }
   };
 
-  // Handle amount changes for both fields
+  // Re-quote when tokens or slippage change (not on amount changes — those are handled by requestQuote)
   useEffect(() => {
     if (fromToken && toToken) {
-      if (lastEditedField === 'from' && fromAmount) {
+      if (lastEditedField === 'from' && fromAmount && parseFloat(fromAmount) > 0) {
         getSwapQuote(fromToken, toToken, fromAmount, 'from');
-      } else if (lastEditedField === 'to' && toAmount) {
+      } else if (lastEditedField === 'to' && toAmount && parseFloat(toAmount) > 0) {
         getSwapQuote(fromToken, toToken, toAmount, 'to');
-      } else {
-        setQuote(null);
       }
-    } else {
-      setQuote(null);
     }
-  }, [fromToken, toToken, fromAmount, toAmount, lastEditedField, slippage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromToken?.symbol, toToken?.symbol, slippage]);
 
   // Get price history for the selected token pair
   const chartContractAddress = fromToken?.address || "0x55d398326f99059fF775485246999027B3197955"; // Default to USDT
@@ -1160,6 +1314,7 @@ function SwapContent() {
     const amount = (balance * percentage / 100).toString();
     setFromAmount(amount);
     setLastEditedField('from');
+    requestQuote(amount, 'from');
   };
 
   const handleSwapPercentage = (percentage: number) => {
@@ -1170,6 +1325,7 @@ function SwapContent() {
     const amount = (balance * percentage / 100).toString();
     setFromAmount(amount);
     setLastEditedField('from');
+    requestQuote(amount, 'from');
   };
 
   // Handle fiat preset amounts for buy mode
@@ -1189,6 +1345,12 @@ function SwapContent() {
     const marketRate = conditionTokens.from.price / conditionTokens.to.price;
     const adjustedRate = marketRate * (1 + limitOrder.priceAdjustment / 100);
     return adjustedRate.toFixed(6);
+  };
+
+  // Check if a token is a custom import (not in our built-in list)
+  const isCustomToken = (token: Token | null): boolean => {
+    if (!token) return false;
+    return !tokens.some(t => t.address.toLowerCase() === token.address.toLowerCase());
   };
 
   // Check if a token is a stablecoin
@@ -1284,6 +1446,53 @@ function SwapContent() {
     });
     setLimitOrderType('sell');
     setPriceConditionTokens({ from: null, to: null });
+  };
+
+  // Real fee percentage label from quote route
+  const getQuoteFeePercent = (): string => {
+    if (!quote) return '—';
+    if (quote.route.includes('Uniswap')) {
+      return `${((quote.feeTier || 3000) / 10000).toFixed(2)}%`;
+    }
+    if (quote.route.length > 3) return '0.60%'; // Eloqura bridge (2 hops × 0.3%)
+    if (quote.route.includes('Eloqura')) return '0.30%';
+    return '0%'; // wrap/unwrap
+  };
+
+  // Real fee in USD from quote
+  const getQuoteFeeUsd = (): number => {
+    if (!quote || !fromToken) return 0;
+    return quote.fee * (fromToken.price || 0);
+  };
+
+  // Network cost in USD from gas price × estimated gas × ETH price
+  const getNetworkCostUsd = (): number => {
+    if (!gasPriceWei) return 0;
+    const ethPrice = tokenPrices["0x0000000000000000000000000000000000000000"] || 0;
+    // Typical gas usage: Uniswap ~185k, Eloqura ~130k, wrap/unwrap ~50k
+    let estimatedGas = 185000n;
+    if (quote?.route.includes('Eloqura')) {
+      estimatedGas = quote.route.length > 3 ? 200000n : 130000n;
+    } else if (quote?.route.length === 2) {
+      estimatedGas = 50000n; // wrap/unwrap
+    }
+    const costWei = gasPriceWei * estimatedGas;
+    const costEth = parseFloat(formatUnits(costWei, 18));
+    return costEth * ethPrice;
+  };
+
+  // Price impact: % difference between quote rate and market rate
+  const getPriceImpact = (): { value: number; color: string } => {
+    if (!quote || !fromToken || !toToken || quote.exchangeRate === 0) {
+      return { value: 0, color: 'text-green-400' };
+    }
+    const marketRate = toToken.price > 0 ? fromToken.price / toToken.price : 0;
+    if (marketRate === 0) return { value: 0, color: 'text-green-400' };
+    // Negative impact means you get less than market rate
+    const impact = ((quote.exchangeRate - marketRate) / marketRate) * 100;
+    const absImpact = Math.abs(impact);
+    const color = absImpact < 1 ? 'text-green-400' : absImpact < 3 ? 'text-yellow-400' : 'text-red-400';
+    return { value: absImpact, color };
   };
 
   // Chart formatting functions
@@ -1441,6 +1650,23 @@ function SwapContent() {
                         </div>
                       )}
                     </div>
+                    <div>
+                      <label className="text-sm text-gray-400 mb-2 block">Transaction Deadline</label>
+                      <div className="flex space-x-2">
+                        {[5, 10, 20, 30].map((value) => (
+                          <Button
+                            key={value}
+                            variant={txDeadline === value ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setTxDeadline(value)}
+                            className="text-xs"
+                          >
+                            {value}m
+                          </Button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Transaction reverts if pending longer than this</p>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -1539,12 +1765,13 @@ function SwapContent() {
                           onChange={(e) => {
                             setFromAmount(e.target.value);
                             setLastEditedField('from');
+                            requestQuote(e.target.value, 'from');
                           }}
                           placeholder="0.0"
                           className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                          style={{ 
-                            padding: 0, 
-                            margin: 0, 
+                          style={{
+                            padding: 0,
+                            margin: 0,
                             fontSize: '2.25rem',
                             lineHeight: '1',
                             fontWeight: 'bold',
@@ -1595,12 +1822,13 @@ function SwapContent() {
                         onChange={(e) => {
                           setToAmount(e.target.value);
                           setLastEditedField('to');
+                          requestQuote(e.target.value, 'to');
                         }}
                         placeholder="0.0"
                         className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        style={{ 
-                          padding: 0, 
-                          margin: 0, 
+                        style={{
+                          padding: 0,
+                          margin: 0,
                           fontSize: '2.25rem',
                           lineHeight: '1',
                           fontWeight: 'bold',
@@ -1768,12 +1996,13 @@ function SwapContent() {
                           setFromAmount(e.target.value);
                           setSellPercentage(null);
                           setLastEditedField('from');
+                          requestQuote(e.target.value, 'from');
                         }}
                         placeholder="0.0"
                         className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        style={{ 
-                          padding: 0, 
-                          margin: 0, 
+                        style={{
+                          padding: 0,
+                          margin: 0,
                           fontSize: '2.25rem',
                           lineHeight: '1',
                           fontWeight: 'bold',
@@ -1840,12 +2069,13 @@ function SwapContent() {
                           setFromAmount(e.target.value);
                           setSwapPercentage(null);
                           setLastEditedField('from');
+                          requestQuote(e.target.value, 'from');
                         }}
                         placeholder="0.0"
                         className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                        style={{ 
-                          padding: 0, 
-                          margin: 0, 
+                        style={{
+                          padding: 0,
+                          margin: 0,
                           fontSize: '2.25rem',
                           lineHeight: '1',
                           fontWeight: 'bold',
@@ -1912,12 +2142,13 @@ function SwapContent() {
                       onChange={(e) => {
                         setToAmount(e.target.value);
                         setLastEditedField('to');
+                        requestQuote(e.target.value, 'to');
                       }}
                       placeholder="0.0"
                       className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                      style={{ 
-                        padding: 0, 
-                        margin: 0, 
+                      style={{
+                        padding: 0,
+                        margin: 0,
                         fontSize: '2.25rem',
                         lineHeight: '1',
                         fontWeight: 'bold',
@@ -1951,6 +2182,40 @@ function SwapContent() {
 
 
 
+              {/* Price Impact Warning Banner */}
+              {activeTab === "Trade" && quote && (() => {
+                const impact = getPriceImpact();
+                if (impact.value >= 5) return (
+                  <div className={`rounded-lg p-3 border flex items-center space-x-2 text-sm ${
+                    impact.value >= 15
+                      ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                      : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                  }`}>
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>
+                      {impact.value >= 15
+                        ? `Price impact is extremely high (~${impact.value.toFixed(1)}%). This trade is blocked to protect your funds.`
+                        : `Price impact is high (~${impact.value.toFixed(1)}%). You may receive significantly less than expected.`}
+                    </span>
+                  </div>
+                );
+                return null;
+              })()}
+
+              {/* Custom Token Warning */}
+              {activeTab === "Trade" && fromToken && toToken && (
+                isCustomToken(fromToken) || isCustomToken(toToken)
+              ) && (
+                <div className="rounded-lg p-3 border bg-yellow-500/10 border-yellow-500/30 flex items-center space-x-2 text-sm text-yellow-400">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    {isCustomToken(fromToken) && isCustomToken(toToken)
+                      ? `${fromToken.symbol} and ${toToken.symbol} are custom imported tokens — not verified.`
+                      : `${isCustomToken(fromToken) ? fromToken.symbol : toToken!.symbol} is a custom imported token — not verified.`}
+                  </span>
+                </div>
+              )}
+
               {/* Action Button - Approve or Swap */}
               {activeTab === "Trade" && needsApproval && fromToken && fromToken.symbol !== 'ETH' && fromAmount ? (
                 <Button
@@ -1969,17 +2234,29 @@ function SwapContent() {
                 </Button>
               ) : (
                 <Button
-                  onClick={handleSwapExecution}
+                  onClick={() => {
+                    const impact = getPriceImpact();
+                    if (activeTab === "Trade" && impact.value >= 5 && impact.value < 15 && !highImpactConfirmed) {
+                      setHighImpactConfirmed(true);
+                      return;
+                    }
+                    handleSwapExecution();
+                  }}
                   disabled={
                     isLoading || isWritePending || isConfirming ||
                     !isConnected ||
                     (activeTab === "Trade" && (!fromToken || !toToken || (!fromAmount && !toAmount))) ||
                     (activeTab === "Trade" && quote && quote.exchangeRate === 0 && fromToken?.symbol !== 'ETH' && toToken?.symbol !== 'WETH' && fromToken?.symbol !== 'WETH' && toToken?.symbol !== 'ETH') ||
+                    (activeTab === "Trade" && getPriceImpact().value >= 15) ||
                     (activeTab === "Limit" && (!fromToken || !toToken || !fromAmount || !limitOrder.triggerPrice)) ||
                     (activeTab === "Buy" && (!toToken || !fiatAmount)) ||
                     (activeTab === "Sell" && (!fromToken || !fromAmount))
                   }
-                  className="w-full bg-gradient-to-r from-crypto-blue to-crypto-green hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
+                  className={`w-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg ${
+                    activeTab === "Trade" && highImpactConfirmed
+                      ? 'bg-gradient-to-r from-red-500 to-orange-500'
+                      : 'bg-gradient-to-r from-crypto-blue to-crypto-green'
+                  }`}
                 >
                   {isWritePending ? (
                     <div className="flex items-center space-x-2">
@@ -2004,6 +2281,7 @@ function SwapContent() {
                     fromToken.symbol === 'ETH' && toToken.symbol === 'WETH' ? `Wrap ${fromToken.symbol}` :
                     fromToken.symbol === 'WETH' && toToken.symbol === 'ETH' ? `Unwrap ${fromToken.symbol}` :
                     quote && quote.exchangeRate === 0 ? "No Liquidity" :
+                    highImpactConfirmed ? "Swap Anyway — High Price Impact" :
                     quote && quote.route.includes('Uniswap') ? `Swap via Uniswap` :
                     quote && quote.route.includes('Eloqura') ? `Swap via Eloqura` :
                     `Swap ${fromToken.symbol}`
@@ -2030,23 +2308,43 @@ function SwapContent() {
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-400">Exchange Rate</span>
                     <span className="text-white">
-                      1 {fromToken?.symbol} = {formatNumber(quote?.exchangeRate || (fromToken.price / toToken.price), 6)} {toToken?.symbol}
+                      1 {fromToken?.symbol} = {formatNumber(quote?.exchangeRate || (toToken.price > 0 ? fromToken.price / toToken.price : 0), 6)} {toToken?.symbol}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-400">Protocol Fee (0.25%)</span>
+                    <span className="text-gray-400">Protocol Fee ({quote ? getQuoteFeePercent() : '—'})</span>
                     <span className="text-white">
-                      ~${formatNumber((parseFloat(fromAmount) || 0) * (fromToken?.price || 0) * 0.0025, 2)}
+                      {quote ? `~$${formatNumber(getQuoteFeeUsd(), 2)}` : '—'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-400">Network Cost</span>
-                    <span className="text-white">~$2.50</span>
+                    <span className="text-white">
+                      {(() => {
+                        const cost = getNetworkCostUsd();
+                        if (cost === 0) return '—';
+                        if (cost < 0.01) return '< $0.01';
+                        return `~$${formatNumber(cost, 2)}`;
+                      })()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-400">Price Impact</span>
-                    <span className="text-green-400">&lt; 0.01%</span>
+                    {(() => {
+                      const impact = getPriceImpact();
+                      return (
+                        <span className={impact.color}>
+                          {impact.value < 0.01 ? '< 0.01%' : `~${impact.value.toFixed(2)}%`}
+                        </span>
+                      );
+                    })()}
                   </div>
+                  {quote && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-400">Route</span>
+                      <span className="text-gray-300">{quote.route.join(' → ')}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2339,22 +2637,30 @@ function SwapContent() {
             <CardHeader>
               <CardTitle className="text-white flex items-center space-x-2">
                 <TrendingUp className="w-5 h-5" />
-                <span>Market Stats</span>
+                <span>Eloqura DEX Stats</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-400 text-sm">24h Volume</span>
-                  <span className="text-white font-medium">$2.85M</span>
+                  <span className="text-white font-medium">
+                    {eloquraStats.volume24hUsd > 0
+                      ? `$${formatNumber(eloquraStats.volume24hUsd, 2)}`
+                      : '$0.00'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400 text-sm">Total Liquidity</span>
-                  <span className="text-white font-medium">$18.9M</span>
+                  <span className="text-white font-medium">
+                    {eloquraStats.totalLiquidityUsd > 0
+                      ? `$${formatNumber(eloquraStats.totalLiquidityUsd, 2)}`
+                      : '—'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400 text-sm">Active Pairs</span>
-                  <span className="text-white font-medium">247</span>
+                  <span className="text-white font-medium">{eloquraStats.activePairs}</span>
                 </div>
               </div>
             </CardContent>
@@ -2412,21 +2718,55 @@ function SwapContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">MEV Protection</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full" />
+                    <span className="text-sm text-gray-200">MEV Protection</span>
+                  </div>
+                  <span className="text-xs text-gray-300">{txDeadline}m deadline · {slippage}% max slip</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">Slippage Control</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${slippage <= 1 ? 'bg-green-400' : slippage <= 5 ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                    <span className="text-sm text-gray-200">Slippage Control</span>
+                  </div>
+                  <span className={`text-xs font-medium ${slippage <= 1 ? 'text-green-400' : slippage <= 5 ? 'text-yellow-400' : 'text-red-400'}`}>{slippage}%</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">Price Impact Warning</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full" />
+                    <span className="text-sm text-gray-200">Price Impact Warning</span>
+                  </div>
+                  <span className="text-xs text-gray-300">Warns &gt;5% · Blocks &gt;15%</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <span className="text-sm text-gray-300">Contract Verification</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {(() => {
+                      const fromCustom = fromToken ? isCustomToken(fromToken) : false;
+                      const toCustom = toToken ? isCustomToken(toToken) : false;
+                      const hasCustom = fromCustom || toCustom;
+                      return (
+                        <>
+                          <div className={`w-2 h-2 rounded-full ${hasCustom ? 'bg-yellow-400' : 'bg-green-400'}`} />
+                          <span className="text-sm text-gray-200">Token Verification</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <span className={`text-xs font-medium ${(() => {
+                    const fromCustom = fromToken ? isCustomToken(fromToken) : false;
+                    const toCustom = toToken ? isCustomToken(toToken) : false;
+                    return (fromCustom || toCustom) ? 'text-yellow-400' : 'text-green-400';
+                  })()}`}>
+                    {(() => {
+                      const fromCustom = fromToken ? isCustomToken(fromToken) : false;
+                      const toCustom = toToken ? isCustomToken(toToken) : false;
+                      if (fromCustom && toCustom) return 'Both unverified';
+                      if (fromCustom) return `${fromToken?.symbol} unverified`;
+                      if (toCustom) return `${toToken?.symbol} unverified`;
+                      return 'Both verified';
+                    })()}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -2467,7 +2807,14 @@ function SwapContent() {
                     <div className="flex items-center space-x-3">
                       <img src={token.logo} alt={token.symbol} className="w-8 h-8 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = "/oec-logo.png"; }} />
                       <div className="text-left">
-                        <div className="font-medium">{token.symbol}</div>
+                        <div className="font-medium flex items-center space-x-1">
+                          <span>{token.symbol}</span>
+                          {isCustomToken(token) ? (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-normal">Custom</span>
+                          ) : (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-normal">Verified</span>
+                          )}
+                        </div>
                         <div className="text-sm text-gray-400">{token.name}</div>
                       </div>
                     </div>
@@ -2506,7 +2853,11 @@ function SwapContent() {
             )}
 
             {lookupResult && !lookupLoading && (
-              <div className="border border-cyan-500/30 rounded-lg p-3 bg-cyan-500/5">
+              <div className="border border-yellow-500/30 rounded-lg p-3 bg-yellow-500/5">
+                <div className="flex items-center space-x-2 mb-2 text-yellow-400 text-xs">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Unverified token — trade at your own risk. Verify the contract address before importing.</span>
+                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white">
@@ -2525,9 +2876,9 @@ function SwapContent() {
                     <Button
                       size="sm"
                       onClick={() => importCustomToken(lookupResult)}
-                      className="bg-cyan-500 hover:bg-cyan-600 text-white text-xs"
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-semibold"
                     >
-                      Import
+                      Import Anyway
                     </Button>
                   </div>
                 </div>
