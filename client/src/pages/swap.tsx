@@ -2687,7 +2687,7 @@ function SwapContent() {
                     return (
                       <a
                         key={`${swap.txHash}-${i}`}
-                        href={`https://oeconomia-explorer-production.up.railway.app/tx/${swap.txHash}`}
+                        href={`https://oecsplorer.oeconomia.io/tx/${swap.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between text-sm hover:bg-[var(--crypto-dark)] rounded-lg px-2 py-1 -mx-2 transition-colors"
