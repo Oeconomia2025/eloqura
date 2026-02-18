@@ -60,21 +60,47 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
   const tokenColor = getTokenColor(tokenSymbol);
   const gradientId = getChartGradientId(tokenSymbol);
 
-  // Smooth the data by reducing data points for cleaner curves - matching ETH chart density
+  // Time-based intervals for evenly spaced chart points
+  const INTERVAL_MS: Record<string, number> = {
+    '1H':  3 * 60 * 1000,        // 3 minutes
+    '1D':  60 * 60 * 1000,       // 1 hour
+    '7D':  6 * 60 * 60 * 1000,   // 6 hours
+    '30D': 24 * 60 * 60 * 1000,  // 1 day
+  };
+
   const smoothPriceData = (data: PriceHistory[] | undefined): PriceHistory[] => {
     if (!data || data.length === 0) return [];
-    
-    // Ensure we always return meaningful data
-    if (data.length <= 5) return data; // Don't filter if we have very few points
-    
-    // Use same target points as ETH chart for consistency
-    const targetPoints = timeframe === "1H" ? 15 : timeframe === "1D" ? 24 : timeframe === "7D" ? 28 : 30;
-    const interval = Math.max(1, Math.floor(data.length / targetPoints));
-    
-    const filtered = data.filter((_, index) => index % interval === 0 || index === data.length - 1);
-    
-    // Ensure we have at least 2 points for a line
-    return filtered.length < 2 ? data.slice(0, Math.min(data.length, 10)) : filtered;
+    if (data.length <= 2) return data;
+
+    const intervalMs = INTERVAL_MS[timeframe] || INTERVAL_MS['1D'];
+    const firstTs = Number(data[0].timestamp);
+    const lastTs = Number(data[data.length - 1].timestamp);
+
+    // Generate evenly spaced target timestamps
+    const targets: number[] = [];
+    for (let t = firstTs; t <= lastTs; t += intervalMs) {
+      targets.push(t);
+    }
+    if (targets.length === 0 || targets[targets.length - 1] < lastTs) {
+      targets.push(lastTs);
+    }
+
+    // For each target, find the closest data point
+    const result: PriceHistory[] = [];
+    let dataIdx = 0;
+    for (const target of targets) {
+      while (
+        dataIdx < data.length - 1 &&
+        Math.abs(Number(data[dataIdx + 1].timestamp) - target) < Math.abs(Number(data[dataIdx].timestamp) - target)
+      ) {
+        dataIdx++;
+      }
+      if (result.length === 0 || result[result.length - 1] !== data[dataIdx]) {
+        result.push(data[dataIdx]);
+      }
+    }
+
+    return result.length < 2 ? data.slice(0, Math.min(data.length, 10)) : result;
   };
 
   // Process data and ensure current price is the final point
@@ -177,7 +203,7 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
 
   return (
     <div className="lg:col-span-2">
-      <Card className="crypto-card p-4 border bg-crypto-card">
+      <Card className="crypto-card p-4 border-0 bg-crypto-card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-6">
             {tokenData && formatPercentage && getChangeColor && (
@@ -239,11 +265,11 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
         </div>
 
         {isLoading ? (
-          <div className="h-80 flex items-center justify-center">
+          <div className="h-96 flex items-center justify-center">
             <Skeleton className="w-full h-full" />
           </div>
         ) : !priceHistory || priceHistory.length === 0 ? (
-          <div className="h-80 bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
+          <div className="h-96 bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
             <div className="text-center">
               <TrendingUp className="w-12 h-12 text-crypto-green mx-auto mb-4" />
               <p className="text-gray-400 text-lg mb-2">No Historical Data</p>
@@ -251,7 +277,7 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
             </div>
           </div>
         ) : priceHistory.length === 1 ? (
-          <div className="h-80 bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
+          <div className="h-96 bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
             <div className="text-center">
               <TrendingUp className="w-12 h-12 text-crypto-green mx-auto mb-4" />
               <p className="text-gray-400 text-lg mb-2">Current Price</p>
@@ -260,7 +286,7 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
             </div>
           </div>
         ) : (
-          <div className="h-80">
+          <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={priceHistory} margin={{ top: 20, right: 20, bottom: 5, left: 20 }}>
                 <defs>

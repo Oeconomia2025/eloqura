@@ -144,6 +144,17 @@ export default function TokenDetailDynamic() {
               {copied ? <Check className="w-4 h-4 mr-2 text-green-400" /> : <Copy className="w-4 h-4 mr-2" />}
               <span className={copied ? 'text-green-400' : ''}>{tokenData.contractAddress}</span>
             </Button>
+            {tokenData.website && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(tokenData.website, '_blank')}
+                className="border-gray-600 hover:bg-gray-600/10"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Official Website
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={() => setLocation("/liquidity?tab=add")}
@@ -172,35 +183,35 @@ export default function TokenDetailDynamic() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <Card className="crypto-card p-3">
+          <Card className="crypto-card border-0 px-3 py-4">
             <div>
               <p className="text-xs text-gray-400">Current Price</p>
               <p className="text-base font-semibold">${formatPrice(tokenData.price)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card p-3">
+          <Card className="crypto-card border-0 px-3 py-4">
             <div>
               <p className="text-xs text-gray-400">24h Volume</p>
               <p className="text-base font-semibold">${formatNumber(tokenData.volume24h)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card p-3">
+          <Card className="crypto-card border-0 px-3 py-4">
             <div>
               <p className="text-xs text-gray-400">Market Cap</p>
               <p className="text-base font-semibold">${formatNumber(tokenData.marketCap)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card p-3">
+          <Card className="crypto-card border-0 px-3 py-4">
             <div>
               <p className="text-xs text-gray-400">Circulating Supply</p>
               <p className="text-base font-semibold">{formatNumber(tokenData.circulatingSupply)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card p-3">
+          <Card className="crypto-card border-0 px-3 py-4">
             <div>
               <p className="text-xs text-gray-400">Total Supply</p>
               <p className="text-base font-semibold">{formatNumber(tokenData.totalSupply)}</p>
@@ -217,36 +228,6 @@ export default function TokenDetailDynamic() {
           getChangeColor={getChangeColor}
         />
 
-        {/* Actions */}
-        <div className="flex flex-wrap gap-4">
-          <Button
-            onClick={() => setLocation("/liquidity?tab=tokens")}
-            className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Liquidity
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => copyToClipboard(tokenData.contractAddress)}
-            className="border-crypto-blue text-crypto-blue hover:bg-crypto-blue/10"
-          >
-            {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-            {copied ? 'Copied!' : truncateAddress(tokenData.contractAddress)}
-          </Button>
-
-          {tokenData.website && (
-            <Button
-              variant="outline"
-              onClick={() => window.open(tokenData.website, '_blank')}
-              className="border-gray-600 hover:bg-gray-600/10"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Official Website
-            </Button>
-          )}
-        </div>
       </div>
     </Layout>
   );
