@@ -183,35 +183,35 @@ export default function TokenDetailDynamic() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <Card className="crypto-card border-0 px-3 py-4">
+          <Card className="crypto-card border border-gray-700/50 px-3 py-5">
             <div>
               <p className="text-xs text-gray-400">Current Price</p>
               <p className="text-base font-semibold">${formatPrice(tokenData.price)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card border-0 px-3 py-4">
+          <Card className="crypto-card border border-gray-700/50 px-3 py-5">
             <div>
               <p className="text-xs text-gray-400">24h Volume</p>
               <p className="text-base font-semibold">${formatNumber(tokenData.volume24h)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card border-0 px-3 py-4">
+          <Card className="crypto-card border border-gray-700/50 px-3 py-5">
             <div>
               <p className="text-xs text-gray-400">Market Cap</p>
               <p className="text-base font-semibold">${formatNumber(tokenData.marketCap)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card border-0 px-3 py-4">
+          <Card className="crypto-card border border-gray-700/50 px-3 py-5">
             <div>
               <p className="text-xs text-gray-400">Circulating Supply</p>
               <p className="text-base font-semibold">{formatNumber(tokenData.circulatingSupply)}</p>
             </div>
           </Card>
 
-          <Card className="crypto-card border-0 px-3 py-4">
+          <Card className="crypto-card border border-gray-700/50 px-3 py-5">
             <div>
               <p className="text-xs text-gray-400">Total Supply</p>
               <p className="text-base font-semibold">{formatNumber(tokenData.totalSupply)}</p>

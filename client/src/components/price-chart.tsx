@@ -203,7 +203,7 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
 
   return (
     <div className="lg:col-span-2">
-      <Card className="crypto-card p-4 border-0 bg-crypto-card">
+      <Card className="crypto-card p-4 border border-gray-700/50 bg-crypto-card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-6">
             {tokenData && formatPercentage && getChangeColor && (
@@ -265,11 +265,11 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
         </div>
 
         {isLoading ? (
-          <div className="h-96 flex items-center justify-center">
+          <div className="h-[442px] flex items-center justify-center">
             <Skeleton className="w-full h-full" />
           </div>
         ) : !priceHistory || priceHistory.length === 0 ? (
-          <div className="h-96 bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
+          <div className="h-[442px] bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
             <div className="text-center">
               <TrendingUp className="w-12 h-12 text-crypto-green mx-auto mb-4" />
               <p className="text-gray-400 text-lg mb-2">No Historical Data</p>
@@ -277,7 +277,7 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
             </div>
           </div>
         ) : priceHistory.length === 1 ? (
-          <div className="h-96 bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
+          <div className="h-[442px] bg-gradient-to-br from-crypto-green/10 to-crypto-blue/10 rounded-lg flex items-center justify-center">
             <div className="text-center">
               <TrendingUp className="w-12 h-12 text-crypto-green mx-auto mb-4" />
               <p className="text-gray-400 text-lg mb-2">Current Price</p>
@@ -286,7 +286,7 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
             </div>
           </div>
         ) : (
-          <div className="h-96">
+          <div className="h-[442px] rounded-[5px] overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={priceHistory} margin={{ top: 20, right: 20, bottom: 5, left: 20 }}>
                 <defs>
