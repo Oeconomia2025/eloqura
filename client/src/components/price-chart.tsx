@@ -16,11 +16,17 @@ interface PriceChartProps {
   getChangeColor?: (percent: number | undefined) => string;
 }
 
+// X-axis tick intervals in milliseconds
+const TICK_INTERVAL_MS: Record<string, number> = {
+  '1H':  3 * 60 * 1000,        // 3 minutes
+  '1D':  60 * 60 * 1000,       // 1 hour
+  '7D':  6 * 60 * 60 * 1000,   // 6 hours
+  '30D': 24 * 60 * 60 * 1000,  // 1 day
+};
+
 export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData, formatPercentage, getChangeColor }: PriceChartProps) {
   const [timeframe, setTimeframe] = useState("1D");
-  
-  // UNIVERSAL TOKEN HISTORY: Use same pattern as ETH for all tokens
-  // All tokens now use the same database table and API pattern as ETH
+
   const apiEndpoint = `/.netlify/functions/token-history?token=${tokenSymbol}&timeframe=${timeframe}`;
 
   const { data: rawPriceHistory, isLoading, error } = useQuery<PriceHistory[]>({
@@ -29,25 +35,15 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
       const response = await fetch(apiEndpoint);
       if (!response.ok) {
         console.warn(`No historical data available for ${tokenSymbol} (${response.status})`);
-        return []; // Return empty array instead of throwing error
+        return [];
       }
       const data = await response.json();
-      
-      // Ensure we always return an array
+
       if (!Array.isArray(data)) {
         console.warn(`Invalid data format for ${tokenSymbol}:`, data);
         return [];
       }
-      
-      console.log("Chart API Response:", { 
-        token: tokenSymbol,
-        url: apiEndpoint, 
-        dataLength: data?.length, 
-        firstItem: data?.[0],
-        lastItem: data?.[data?.length - 1],
-        expectedPrice: tokenData?.price,
-        targetPoints: timeframe === "1H" ? 15 : timeframe === "1D" ? 24 : timeframe === "7D" ? 28 : 30
-      });
+
       return data;
     },
     refetchInterval: 5 * 60 * 1000,
@@ -55,124 +51,80 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
     retry: false,
     staleTime: 10 * 60 * 1000,
   });
-  
-  // Get dynamic colors for this token
+
   const tokenColor = getTokenColor(tokenSymbol);
   const gradientId = getChartGradientId(tokenSymbol);
 
-  // Time-based intervals for evenly spaced chart points
-  const INTERVAL_MS: Record<string, number> = {
-    '1H':  3 * 60 * 1000,        // 3 minutes
-    '1D':  60 * 60 * 1000,       // 1 hour
-    '7D':  6 * 60 * 60 * 1000,   // 6 hours
-    '30D': 24 * 60 * 60 * 1000,  // 1 day
-  };
+  // Use all data points - no downsampling. Recharts handles hundreds of points fine.
+  // Only append the current live price as the final point.
+  const priceHistory = (() => {
+    if (!rawPriceHistory || rawPriceHistory.length === 0) return [];
 
-  const smoothPriceData = (data: PriceHistory[] | undefined): PriceHistory[] => {
-    if (!data || data.length === 0) return [];
-    if (data.length <= 2) return data;
+    const data = [...rawPriceHistory];
 
-    const intervalMs = INTERVAL_MS[timeframe] || INTERVAL_MS['1D'];
+    if (tokenData?.price && data.length > 0) {
+      data[data.length - 1] = {
+        ...data[data.length - 1],
+        price: tokenData.price,
+        timestamp: Date.now()
+      };
+    }
+
+    return data;
+  })();
+
+  // Generate evenly spaced X-axis ticks
+  const generateXTicks = (data: PriceHistory[]): number[] => {
+    if (!data || data.length < 2) return [];
+
+    const intervalMs = TICK_INTERVAL_MS[timeframe] || TICK_INTERVAL_MS['1D'];
     const firstTs = Number(data[0].timestamp);
     const lastTs = Number(data[data.length - 1].timestamp);
 
-    // Generate evenly spaced target timestamps
-    const targets: number[] = [];
-    for (let t = firstTs; t <= lastTs; t += intervalMs) {
-      targets.push(t);
-    }
-    if (targets.length === 0 || targets[targets.length - 1] < lastTs) {
-      targets.push(lastTs);
+    // Align first tick to the nearest clean boundary
+    const alignedStart = Math.ceil(firstTs / intervalMs) * intervalMs;
+
+    const ticks: number[] = [];
+    for (let t = alignedStart; t <= lastTs; t += intervalMs) {
+      ticks.push(t);
     }
 
-    // For each target, find the closest data point
-    const result: PriceHistory[] = [];
-    let dataIdx = 0;
-    for (const target of targets) {
-      while (
-        dataIdx < data.length - 1 &&
-        Math.abs(Number(data[dataIdx + 1].timestamp) - target) < Math.abs(Number(data[dataIdx].timestamp) - target)
-      ) {
-        dataIdx++;
-      }
-      if (result.length === 0 || result[result.length - 1] !== data[dataIdx]) {
-        result.push(data[dataIdx]);
-      }
-    }
-
-    return result.length < 2 ? data.slice(0, Math.min(data.length, 10)) : result;
+    return ticks;
   };
 
-  // Process data and ensure current price is the final point
-  const processedPriceHistory = (() => {
-    const smoothed = smoothPriceData(rawPriceHistory);
-    
-    // If we have tokenData with current price, append it as the final point
-    if (smoothed.length > 0 && tokenData?.price) {
-      const lastPoint = smoothed[smoothed.length - 1];
-      const currentTime = Date.now();
-      
-      // Update the last point to match current price instead of adding a new point
-      // This ensures the chart ends exactly at the displayed current price
-      const updatedHistory = [...smoothed];
-      updatedHistory[updatedHistory.length - 1] = {
-        ...lastPoint,
-        price: tokenData.price,
-        timestamp: currentTime
-      };
-      
-      console.log("Chart price correction:", {
-        token: tokenSymbol,
-        originalLastPrice: lastPoint.price,
-        correctedPrice: tokenData.price,
-        difference: Math.abs(lastPoint.price - tokenData.price)
-      });
-      
-      return updatedHistory;
-    }
-    
-    return smoothed;
-  })();
-
-  const priceHistory = processedPriceHistory;
+  const xTicks = generateXTicks(priceHistory);
 
   // Calculate evenly spaced Y-axis ticks
   const calculateYTicks = (data: PriceHistory[]) => {
     if (!data || data.length === 0) return [];
-    
+
     const prices = data.map(d => d.price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
-    const padding = (maxPrice - minPrice) * 0.1; // 10% padding
+    const padding = (maxPrice - minPrice) * 0.1;
     const adjustedMin = minPrice - padding;
     const adjustedMax = maxPrice + padding;
     const range = adjustedMax - adjustedMin;
     const tickCount = 5;
     const step = range / (tickCount - 1);
-    
+
     return Array.from({ length: tickCount }, (_, i) => adjustedMin + (step * i));
   };
 
   const yTicks = calculateYTicks(priceHistory);
 
   const formatXAxis = (tickItem: any) => {
-    // Handle different timestamp formats properly
     let date;
     if (typeof tickItem === 'string') {
-      // ISO string format
       date = new Date(tickItem);
     } else if (tickItem > 1e12) {
-      // Already in milliseconds (like 1754433600000)
       date = new Date(tickItem);
     } else {
-      // Unix timestamp in seconds, convert to milliseconds
       date = new Date(tickItem * 1000);
     }
-    
-    if (isNaN(date.getTime())) {
-      return 'Invalid';
-    }
-    
+
+    if (isNaN(date.getTime())) return '';
+
     switch (timeframe) {
       case "1H":
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -301,17 +253,19 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
                   </linearGradient>
                 </defs>
                 <rect x="0" y="0" width="100%" height="100%" fill="url(#chartBackground)" />
-                <XAxis 
-                  dataKey="timestamp" 
+                <XAxis
+                  dataKey="timestamp"
+                  type="number"
+                  domain={['dataMin', 'dataMax']}
+                  ticks={xTicks}
                   tickFormatter={formatXAxis}
                   stroke="#9CA3AF"
                   fontSize={12}
                 />
-                <YAxis 
+                <YAxis
                   domain={['dataMin * 0.9', 'dataMax * 1.1']}
                   ticks={yTicks}
                   tickFormatter={(value) => {
-                    // Better formatting based on value range
                     if (value >= 1000) return `${(value/1000).toFixed(1)}k`;
                     if (value >= 100) return value.toFixed(1);
                     if (value >= 1) return value.toFixed(2);
@@ -321,27 +275,18 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
                   fontSize={12}
                   tickMargin={12}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={formatTooltip}
                   labelFormatter={(value) => {
-                    // Handle different timestamp formats properly
                     let date;
                     if (typeof value === 'string') {
-                      // ISO string format
                       date = new Date(value);
                     } else if (value > 1e12) {
-                      // Already in milliseconds (like 1754433600000)
                       date = new Date(value);
                     } else {
-                      // Unix timestamp in seconds, convert to milliseconds
                       date = new Date(value * 1000);
                     }
-                    
-                    // Ensure valid date
-                    if (isNaN(date.getTime())) {
-                      return 'Invalid Date';
-                    }
-                    
+                    if (isNaN(date.getTime())) return 'Invalid Date';
                     return date.toLocaleString();
                   }}
                   contentStyle={{
@@ -351,10 +296,10 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
                     color: 'white'
                   }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke={tokenColor} 
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke={tokenColor}
                   strokeWidth={2}
                   fill={`url(#${gradientId})`}
                   dot={false}
