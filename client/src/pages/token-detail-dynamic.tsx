@@ -158,7 +158,7 @@ export default function TokenDetailDynamic() {
             <Button
               size="sm"
               onClick={() => setLocation("/liquidity?tab=add")}
-              className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Liquidity

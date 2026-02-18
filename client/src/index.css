@@ -45,27 +45,28 @@ body {
   --popover-foreground: hsl(0, 0%, 0%); /* Pure black */
   --card: hsl(0, 0%, 100%); /* Pure white */
   --card-foreground: hsl(0, 0%, 0%); /* Pure black */
-  --border: hsl(270, 100%, 85%); /* Light purple */
+  --border: hsl(207, 80%, 80%); /* Light sky blue */
   --input: hsl(0, 0%, 95%); /* Very light gray */
-  --primary: hsl(270, 100%, 50%); /* Medium purple */
+  --primary: hsl(207, 90%, 50%); /* Sky blue */
   --primary-foreground: hsl(0, 0%, 100%); /* Pure white */
   --secondary: hsl(0, 0%, 95%); /* Very light gray */
   --secondary-foreground: hsl(0, 0%, 0%); /* Pure black */
-  --accent: hsl(270, 100%, 90%); /* Very light purple */
+  --accent: hsl(207, 80%, 90%); /* Very light sky blue */
   --accent-foreground: hsl(0, 0%, 0%); /* Pure black */
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(270, 100%, 50%); /* Medium purple */
+  --ring: hsl(207, 90%, 50%); /* Sky blue */
   --radius: 0.5rem;
 
   /* Crypto dashboard specific colors - Light mode */
   --crypto-dark: hsl(0, 0%, 100%); /* Pure white */
   --crypto-card: hsl(0, 0%, 100%); /* Pure white */
-  --crypto-border: hsl(270, 100%, 85%); /* Light purple */
+  --crypto-sidebar: hsl(0, 0%, 100%); /* Pure white */
+  --crypto-border: hsl(207, 80%, 80%); /* Light sky blue */
   --crypto-green: hsl(142, 76%, 36%);
   --crypto-red: hsl(0, 84%, 60%);
   --crypto-gold: hsl(43, 96%, 56%);
-  --crypto-blue: hsl(270, 100%, 30%); /* Dark purple */
+  --crypto-blue: hsl(207, 90%, 35%); /* Deep sky blue */
 }
 
 .light {
@@ -78,59 +79,61 @@ body {
   --popover-foreground: hsl(0, 0%, 0%); /* Pure black */
   --card: hsl(0, 0%, 100%); /* Pure white */
   --card-foreground: hsl(0, 0%, 0%); /* Pure black */
-  --border: hsl(270, 100%, 85%); /* Light purple */
+  --border: hsl(207, 80%, 80%); /* Light sky blue */
   --input: hsl(0, 0%, 95%); /* Very light gray */
-  --primary: hsl(270, 100%, 50%); /* Medium purple */
+  --primary: hsl(207, 90%, 50%); /* Sky blue */
   --primary-foreground: hsl(0, 0%, 100%); /* Pure white */
   --secondary: hsl(0, 0%, 95%); /* Very light gray */
   --secondary-foreground: hsl(0, 0%, 0%); /* Pure black */
-  --accent: hsl(270, 100%, 90%); /* Very light purple */
+  --accent: hsl(207, 80%, 90%); /* Very light sky blue */
   --accent-foreground: hsl(0, 0%, 0%); /* Pure black */
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(270, 100%, 50%); /* Medium purple */
+  --ring: hsl(207, 90%, 50%); /* Sky blue */
   --radius: 0.5rem;
 
   /* Crypto dashboard specific colors - Light mode */
   --crypto-dark: hsl(0, 0%, 100%); /* Pure white */
   --crypto-card: hsl(0, 0%, 100%); /* Pure white */
-  --crypto-border: hsl(270, 100%, 85%); /* Light purple */
+  --crypto-sidebar: hsl(0, 0%, 100%); /* Pure white */
+  --crypto-border: hsl(207, 80%, 80%); /* Light sky blue */
   --crypto-green: hsl(142, 76%, 36%);
   --crypto-red: hsl(0, 84%, 60%);
   --crypto-gold: hsl(43, 96%, 56%);
-  --crypto-blue: hsl(270, 100%, 30%); /* Dark purple */
+  --crypto-blue: hsl(207, 90%, 35%); /* Deep sky blue */
 }
 
 .dark {
-  --background: hsl(0, 0%, 0%); /* Pure black */
+  --background: hsl(0, 0%, 0%); /* Pure black — body stays dark */
   --foreground: hsl(0, 0%, 100%); /* Pure white */
-  --muted: hsl(0, 0%, 8%); /* Very dark gray */
-  --muted-foreground: hsl(0, 0%, 70%); /* Light gray */
-  --popover: hsl(0, 0%, 5%); /* Near black */
+  --muted: hsl(208, 65%, 18%); /* Matches strip hover midtone */
+  --muted-foreground: hsl(207, 25%, 72%); /* Light blue-gray */
+  --popover: hsl(208, 70%, 19%); /* Strip hover blue */
   --popover-foreground: hsl(0, 0%, 100%); /* Pure white */
-  --card: hsl(0, 0%, 5%); /* Near black */
+  --card: hsl(208, 70%, 19%); /* Strip hover blue */
   --card-foreground: hsl(0, 0%, 100%); /* Pure white */
-  --border: hsl(270, 100%, 25%); /* Dark purple */
-  --input: hsl(0, 0%, 10%); /* Dark gray */
-  --primary: hsl(270, 100%, 60%); /* Medium purple */
+  --border: hsl(207, 60%, 30%); /* Brighter steel blue */
+  --input: hsl(208, 60%, 17%); /* Blue tint input */
+  --primary: hsl(207, 58%, 55%); /* Sky blue */
   --primary-foreground: hsl(0, 0%, 100%); /* Pure white */
-  --secondary: hsl(0, 0%, 8%); /* Very dark gray */
+  --secondary: hsl(208, 65%, 18%); /* Matches strip hover */
   --secondary-foreground: hsl(0, 0%, 100%); /* Pure white */
-  --accent: hsl(270, 100%, 40%); /* Darker purple */
+  --accent: hsl(207, 60%, 38%); /* Medium blue accent */
   --accent-foreground: hsl(0, 0%, 100%); /* Pure white */
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(270, 100%, 80%); /* Light purple */
+  --ring: hsl(207, 58%, 74%); /* #91c1e7 */
   --radius: 0.5rem;
 
   /* Crypto dashboard specific colors - Dark mode */
-  --crypto-dark: hsl(0, 0%, 0%); /* Pure black */
-  --crypto-card: hsl(0, 0%, 5%); /* Near black */
-  --crypto-border: hsl(270, 100%, 25%); /* Dark purple */
+  --crypto-dark: hsl(0, 0%, 0%); /* Pure black — body background unchanged */
+  --crypto-card: hsl(208, 70%, 19%); /* Strip hover blue for cards/panels */
+  --crypto-sidebar: hsl(208, 65%, 14%); /* Slightly darker strip blue for sidebar */
+  --crypto-border: hsl(207, 60%, 30%); /* Brighter steel blue */
   --crypto-green: hsl(142, 76%, 50%); /* Bright green for contrast */
   --crypto-red: hsl(0, 84%, 60%);
   --crypto-gold: hsl(43, 96%, 56%);
-  --crypto-blue: hsl(270, 100%, 70%); /* Light purple */
+  --crypto-blue: hsl(207, 58%, 74%); /* #91c1e7 */
 }
 
 @layer base {

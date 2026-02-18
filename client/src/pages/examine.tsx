@@ -633,8 +633,8 @@ function LiquidityContent() {
                         <p className="text-gray-400 text-sm mb-1">Active Positions</p>
                         <p className="text-2xl font-bold text-white">{positions.length}</p>
                       </div>
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                        <Star className="w-6 h-6 text-purple-400" />
+                      <div className="w-12 h-12 bg-gradient-to-r from-sky-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
+                        <Star className="w-6 h-6 text-sky-400" />
                       </div>
                     </div>
                   </CardContent>
@@ -1133,9 +1133,9 @@ function LiquidityContent() {
                 <Card className="crypto-card p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Active Pools</span>
-                    <div className="w-4 h-4 bg-crypto-purple rounded-full" />
+                    <div className="w-4 h-4 bg-sky-400 rounded-full" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-purple">1,247</div>
+                  <div className="text-2xl font-bold text-sky-400">1,247</div>
                   <div className="text-gray-400 text-sm">pools</div>
                 </Card>
                 

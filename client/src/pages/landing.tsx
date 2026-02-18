@@ -24,7 +24,7 @@ export default function Landing() {
       title: "Trade",
       description: "Trade tokens instantly with best-in-class execution and minimal slippage",
       path: "/swap",
-      gradient: "from-blue-500 to-purple-600"
+      gradient: "from-sky-500 to-blue-600"
     },
     {
       icon: DollarSign,
@@ -52,7 +52,7 @@ export default function Landing() {
       title: "Analytics",
       description: "Deep market insights and portfolio analytics for informed decisions",
       path: "/examine",
-      gradient: "from-purple-500 to-pink-600"
+      gradient: "from-blue-500 to-cyan-600"
     }
   ];
 
@@ -67,7 +67,7 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden min-h-screen">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/10 to-cyan-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-900/20 via-blue-900/10 to-cyan-900/20" />
         <div className="relative max-w-7xl mx-auto px-6 py-24 min-h-screen flex items-center">
           <div className="w-full">
             <div className="text-center space-y-8">
@@ -79,7 +79,7 @@ export default function Landing() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-indigo-300 via-purple-300 to-teal-400 bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-sky-300 via-blue-300 to-cyan-400 bg-clip-text text-transparent">
                 Eloqura
               </h1>
               </div>
@@ -93,7 +93,7 @@ export default function Landing() {
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/swap')}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 text-lg"
+                  className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white px-8 py-3 text-lg"
                 >
                   Start Trading
                   <ChevronRight className="w-5 h-5 ml-2" />
@@ -102,7 +102,7 @@ export default function Landing() {
                   size="lg" 
                   variant="outline"
                   onClick={() => navigate('/liquidity')}
-                  className="border-purple-500/50 hover:bg-purple-500/10 px-8 py-3 text-lg"
+                  className="border-sky-500/50 hover:bg-sky-500/10 px-8 py-3 text-lg"
                 >
                   Explore Pools
                 </Button>
@@ -119,7 +119,7 @@ export default function Landing() {
             {stats.map((stat, index) => (
               <Card key={index} className="bg-card/50 border-border/50 backdrop-blur-sm">
                 <CardContent className="p-6 text-center">
-                  <stat.icon className="w-8 h-8 mx-auto mb-3 text-purple-400" />
+                  <stat.icon className="w-8 h-8 mx-auto mb-3 text-sky-400" />
                   <div className="text-2xl font-bold text-foreground mb-1">{stat.value}</div>
                   <div className="text-sm text-muted-foreground">{stat.label}</div>
                 </CardContent>
@@ -153,13 +153,13 @@ export default function Landing() {
                   <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-3 group-hover:text-purple-400 transition-colors">
+                  <h3 className="text-xl font-semibold mb-3 group-hover:text-sky-400 transition-colors">
                     {feature.title}
                   </h3>
                   <p className="text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
-                  <div className="flex items-center mt-4 text-purple-400 group-hover:translate-x-2 transition-transform duration-300">
+                  <div className="flex items-center mt-4 text-sky-400 group-hover:translate-x-2 transition-transform duration-300">
                     <span className="text-sm font-medium">Learn more</span>
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </div>
@@ -173,7 +173,7 @@ export default function Landing() {
       {/* CTA Section */}
       <div className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
-          <Card className="bg-gradient-to-r from-purple-900/20 to-cyan-900/20 border-purple-500/30 backdrop-blur-sm">
+          <Card className="bg-gradient-to-r from-sky-900/20 to-cyan-900/20 border-sky-500/30 backdrop-blur-sm">
             <CardContent className="p-12 text-center">
               <Star className="w-12 h-12 mx-auto mb-6 text-yellow-400 fill-current" />
               <h2 className="text-3xl font-bold mb-4">
@@ -187,7 +187,7 @@ export default function Landing() {
                 <Button 
                   size="lg"
                   onClick={() => navigate('/swap')}
-                  className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white px-8 py-3"
+                  className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white px-8 py-3"
                 >
                   Get Started Now
                 </Button>

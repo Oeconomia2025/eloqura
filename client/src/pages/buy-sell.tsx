@@ -1789,7 +1789,7 @@ function BuySellContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                  <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
                     O
                   </div>
                   <div className="text-left">
@@ -1833,7 +1833,7 @@ function BuySellContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-sky-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
                     P
                   </div>
                   <div className="text-left">

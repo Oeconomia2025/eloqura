@@ -910,7 +910,7 @@ function BridgeContent() {
                 <Button
                   onClick={handleSwapExecution}
                   disabled={isLoading || !fromToken || !toToken || !fromAmount}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
+                  className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
@@ -1109,7 +1109,7 @@ function BridgeContent() {
           <Card className="crypto-card border">
             <CardHeader>
               <CardTitle className="text-white flex items-center space-x-2">
-                <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <div className="w-5 h-5 bg-gradient-to-r from-sky-500 to-blue-500 rounded-full flex items-center justify-center">
                   <ArrowUpDown className="w-3 h-3 text-white transform rotate-90" />
                 </div>
                 <span>Bridge Status</span>
@@ -1117,7 +1117,7 @@ function BridgeContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Outgoing Bridge Transaction */}
-              <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-purple-500/30">
+              <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-sky-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-6 h-6 rounded-full" />
@@ -1142,7 +1142,7 @@ function BridgeContent() {
                   </div>
                 </div>
                 <div className="mt-2 bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full w-3/4 animate-pulse"></div>
+                  <div className="bg-gradient-to-r from-sky-500 to-blue-500 h-1.5 rounded-full w-3/4 animate-pulse"></div>
                 </div>
                 <div className="text-xs text-gray-400 mt-1">Estimated: 2-5 minutes</div>
               </div>

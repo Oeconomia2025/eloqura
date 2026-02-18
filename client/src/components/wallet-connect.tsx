@@ -104,13 +104,13 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
         className={`w-full flex items-center ${
           collapsed ? 'justify-center px-2' : 'space-x-3 px-3'
         } py-2 rounded-lg text-left transition-colors group relative text-white font-medium shadow-lg`}
-        style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' }}
         title={collapsed ? formatAddress(address) : undefined}
       >
         <Wallet className="w-5 h-5 flex-shrink-0" />
         {!collapsed && <span className="text-sm whitespace-nowrap">{formatAddress(address)}</span>}
         {collapsed && (
-          <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="absolute left-full ml-2 px-2 py-1 bg-sky-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
             {formatAddress(address)}
           </div>
         )}
@@ -125,13 +125,13 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
           className={`w-full flex items-center ${
             collapsed ? 'justify-center px-2' : 'space-x-3 px-3'
           } py-2 rounded-lg text-left transition-colors group relative text-white font-medium shadow-lg`}
-          style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' }}
           title={collapsed ? "Connect Wallet" : undefined}
         >
           <Wallet className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span className="text-sm whitespace-nowrap">Connect Wallet</span>}
           {collapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+            <div className="absolute left-full ml-2 px-2 py-1 bg-sky-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
               Connect Wallet
             </div>
           )}
@@ -139,7 +139,7 @@ export function WalletConnect({ collapsed = false }: { collapsed?: boolean }) {
       </DialogTrigger>
       <DialogContent className="bg-gradient-to-br from-[var(--crypto-card)] to-[var(--crypto-dark)] border-crypto-blue/20 shadow-xl max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-crypto-blue to-purple-400 bg-clip-text text-transparent">
+          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-sky-400 to-blue-400 bg-clip-text text-transparent">
             Connect Your Wallet
           </DialogTitle>
           <DialogDescription className="text-gray-400">

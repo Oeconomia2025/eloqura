@@ -1738,8 +1738,8 @@ function LiquidityContent() {
                         <p className="text-gray-400 text-sm mb-1">Active Positions</p>
                         <p className="text-2xl font-bold text-white">{positions.length}</p>
                       </div>
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                        <Star className="w-6 h-6 text-purple-400" />
+                      <div className="w-12 h-12 bg-gradient-to-r from-sky-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
+                        <Star className="w-6 h-6 text-sky-400" />
                       </div>
                     </div>
                   </CardContent>
@@ -1789,7 +1789,7 @@ function LiquidityContent() {
                             className="p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
                             onClick={() => togglePositionExpansion(position.id)}
                           >
-                            <div className="grid items-center gap-1" style={{ gridTemplateColumns: '1fr 110px 24px 190px 32px 70px auto 28px' }}>
+                            <div className="grid items-center gap-1" style={{ gridTemplateColumns: '1fr 200px 0px 320px 32px 70px auto 28px' }}>
                               {/* Token Pair & Status */}
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center -space-x-2">
@@ -2399,9 +2399,9 @@ function LiquidityContent() {
                 <Card className="crypto-card p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Active Pools</span>
-                    <div className="w-4 h-4 bg-crypto-purple rounded-full" />
+                    <div className="w-4 h-4 bg-sky-400 rounded-full" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-purple">1,247</div>
+                  <div className="text-2xl font-bold text-sky-400">1,247</div>
                   <div className="text-gray-400 text-sm">pools</div>
                 </Card>
 
@@ -2415,28 +2415,6 @@ function LiquidityContent() {
                 </Card>
               </div>
 
-              {/* V2/V3 Toggle */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant={poolVersion === 'v3' ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setPoolVersion('v3')}
-                  className={poolVersion === 'v3' ? "bg-violet-600 hover:bg-violet-700 text-white px-4 py-1 rounded-md text-xs" : "text-gray-400 hover:text-white px-4 py-1 rounded-md text-xs hover:bg-gray-700/50"}
-                >
-                  V3
-                </Button>
-                <Button
-                  variant={poolVersion === 'v2' ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setPoolVersion('v2')}
-                  className={poolVersion === 'v2' ? "bg-violet-600 hover:bg-violet-700 text-white px-4 py-1 rounded-md text-xs" : "text-gray-400 hover:text-white px-4 py-1 rounded-md text-xs hover:bg-gray-700/50"}
-                >
-                  V2
-                </Button>
-                {poolVersion === 'v2' && (
-                  <span className="text-xs text-gray-500 ml-2">0.3% fixed fee</span>
-                )}
-              </div>
 
               {/* Navigation and Search */}
               <div className="flex justify-between items-center">

@@ -38,7 +38,7 @@ export function LoadingSpinner({
             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/20 to-purple-600/20 rounded-full animate-ping"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-500/20 rounded-full animate-ping"></div>
       </div>
       <p className={cn('text-gray-400 mt-4 font-medium', textSizeClasses[size])}>{text}</p>
       <div className="flex space-x-1 mt-2">

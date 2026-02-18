@@ -273,10 +273,10 @@ export function EcosystemSidebar() {
       >
         {/* Bar - always visible, acts as left edge handle */}
         <div
-          className={`w-9 h-full shrink-0 cursor-pointer relative border-l border-violet-500/30 transition-colors duration-300 ${
+          className={`w-9 h-full shrink-0 cursor-pointer relative border-l border-sky-500/30 transition-colors duration-300 ${
             expanded
-              ? "bg-gradient-to-b from-violet-600 via-cyan-600 to-violet-600"
-              : "bg-gradient-to-b from-violet-500/30 via-cyan-500/20 to-violet-500/30 hover:from-violet-500/50 hover:via-cyan-500/40 hover:to-violet-500/50"
+              ? "bg-gradient-to-b from-sky-700 via-blue-600 to-sky-700"
+              : "bg-gradient-to-b from-sky-600/30 via-blue-500/25 to-sky-600/30 hover:from-sky-600/50 hover:via-blue-500/45 hover:to-sky-600/50"
           }`}
           onClick={toggleExpanded}
         >
@@ -319,7 +319,7 @@ export function EcosystemSidebar() {
 
         {/* Expanded images panel - appears to the right of bar */}
         <div
-          className={`h-full bg-black/90 flex flex-col items-center justify-center gap-3 py-4 px-3 transition-all duration-300 ${
+          className={`h-full bg-[var(--crypto-sidebar,#000)]/95 backdrop-blur-sm flex flex-col items-center justify-center gap-3 py-4 px-3 transition-all duration-300 ${
             expanded ? "w-[80px] opacity-100 overflow-visible" : "w-0 opacity-0 overflow-hidden"
           }`}
         >
@@ -350,7 +350,7 @@ export function EcosystemSidebar() {
                 src={item.image}
                 alt={item.name}
                 className={`w-12 h-12 rounded-full object-cover transition-all duration-200 ${
-                  hoveredItem === item.name ? "scale-110 ring-2 ring-violet-400/60" : "hover:scale-110"
+                  hoveredItem === item.name ? "scale-110 ring-2 ring-sky-400/60" : "hover:scale-110"
                 }`}
               />
             </a>

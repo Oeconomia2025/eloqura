@@ -194,19 +194,19 @@ export function Layout({
       {/* Collapse/Expand button - outside all containers for true fixed positioning */}
       <button
         onClick={toggleCollapsed}
-        className={`hidden lg:flex fixed top-[29px] z-[60] w-6 h-6 rounded-full items-center justify-center transition-all duration-300 bg-gray-800 border border-[var(--crypto-border)] ${
+        className={`hidden lg:flex fixed top-[29px] z-[60] w-6 h-6 rounded-full items-center justify-center transition-all duration-300 bg-sky-800 border border-sky-500/40 ${
           sidebarCollapsed ? "left-[52px]" : "left-[180px]"
         }`}
         title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {sidebarCollapsed ? <ChevronRight className="w-3 h-3 text-violet-400" /> : <ChevronLeft className="w-3 h-3 text-violet-400" />}
+        {sidebarCollapsed ? <ChevronRight className="w-3 h-3 text-sky-300" /> : <ChevronLeft className="w-3 h-3 text-sky-300" />}
       </button>
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} bg-black border-r border-[var(--crypto-border)] transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
+        className={`fixed inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} bg-[var(--crypto-sidebar,#000)] border-r border-[var(--crypto-border)] transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between h-20 px-4 bg-black">
+        <div className="sticky top-0 z-10 flex items-center justify-between h-20 px-4 bg-[var(--crypto-sidebar,#000)]">
           <div
             className={`flex items-center cursor-pointer hover:opacity-80 transition-opacity ${sidebarCollapsed ? 'justify-center w-full' : 'space-x-3'}`}
             onClick={() => navigate('/')}
@@ -237,7 +237,7 @@ export function Layout({
           </div>
         </div>
 
-        <div className="sticky top-20 z-10 bg-black">
+        <div className="sticky top-20 z-10 bg-[var(--crypto-sidebar,#000)]">
           <nav className="p-2">
             <ul className="space-y-2">
               {sidebarItems.map((item, index) => (
@@ -251,13 +251,13 @@ export function Layout({
                         ? 'text-white font-medium shadow-lg'
                         : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }`}
-                    style={item.active ? { background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' } : {}}
+                    style={item.active ? { background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' } : {}}
                     title={sidebarCollapsed ? item.label : undefined}
                   >
-                    <item.icon className={`w-5 h-5 flex-shrink-0 ${item.active ? 'text-white' : 'text-violet-400'}`} />
+                    <item.icon className={`w-5 h-5 flex-shrink-0 ${item.active ? 'text-white' : 'text-sky-400'}`} />
                     {!sidebarCollapsed && <span className="whitespace-nowrap">{item.label}</span>}
                     {sidebarCollapsed && (
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-sky-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                         {item.label}
                       </div>
                     )}
@@ -273,7 +273,7 @@ export function Layout({
         </div>
 
         {/* Bottom section with wallet and social links */}
-        <div className="sticky bottom-0 p-2 border-t border-gray-700 flex flex-col space-y-2 bg-black">
+        <div className="sticky bottom-0 p-2 border-t border-sky-500/30 flex flex-col space-y-2 bg-[var(--crypto-sidebar,#000)]">
           {/* Social Media Dropdown */}
           <DropdownMenu onOpenChange={setLinksOpen}>
             <DropdownMenuTrigger asChild>
@@ -281,15 +281,15 @@ export function Layout({
                 className={`w-full flex items-center ${
                   sidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'
                 } py-2 rounded-lg text-left transition-all duration-200 group relative text-white focus:outline-none focus:ring-0 focus:border-none outline-none ring-0 ${
-                  linksOpen ? 'shadow-lg' : 'bg-gray-800 hover:bg-[#8b5cf6]/50'
+                  linksOpen ? 'shadow-lg' : 'bg-sky-800/50 hover:bg-sky-600/50'
                 }`}
-                style={linksOpen ? { background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)' } : {}}
+                style={linksOpen ? { background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' } : {}}
                 title={sidebarCollapsed ? "Links" : undefined}
               >
                 <Globe className="w-5 h-5 flex-shrink-0 text-white" />
                 {!sidebarCollapsed && <span className="text-sm whitespace-nowrap">Links</span>}
                 {sidebarCollapsed && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-sky-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                     Links
                   </div>
                 )}
@@ -304,7 +304,7 @@ export function Layout({
               >
                 <DropdownMenuItem 
                   onClick={() => window.open('https://oeconomia.tech/', '_blank')}
-                  className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
+                  className="cursor-pointer hover:bg-gradient-to-r hover:from-sky-500/20 hover:to-blue-600/20 transition-all duration-200"
                 >
                   <Globe className="w-4 h-4 mr-2" />
                   Website
@@ -313,7 +313,7 @@ export function Layout({
                   <DropdownMenuItem
                     key={link.name}
                     onClick={() => link.enabled && window.open(link.url, '_blank')}
-                    className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${!link.enabled ? 'opacity-50' : ''}`}
+                    className={`cursor-pointer hover:bg-gradient-to-r hover:from-sky-500/20 hover:to-blue-600/20 transition-all duration-200 ${!link.enabled ? 'opacity-50' : ''}`}
                     disabled={!link.enabled}
                   >
                     <link.icon className="w-4 h-4 mr-2" />
@@ -330,7 +330,7 @@ export function Layout({
               sidebarCollapsed ? 'justify-center px-2' : 'space-x-3 px-3'
             } py-2 rounded-lg text-left transition-colors group relative text-white hover:bg-white/5`}
             style={{
-              background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
+              background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #0284c7, #2563eb, #0ea5e9) border-box',
               border: '2px solid transparent'
             }}
             title={sidebarCollapsed ? "Oeconomia" : undefined}
@@ -342,7 +342,7 @@ export function Layout({
             />
             {!sidebarCollapsed && <span className="text-sm whitespace-nowrap">Oeconomia</span>}
             {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+              <div className="absolute left-full ml-2 px-2 py-1 bg-sky-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 Oeconomia
               </div>
             )}
@@ -356,7 +356,7 @@ export function Layout({
             className={`w-full flex items-center ${
               sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
             } py-2 rounded-lg text-left transition-colors group relative text-white font-semibold shadow-lg hover:brightness-110 overflow-hidden`}
-            style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)" }}
+            style={{ background: "linear-gradient(135deg, #0284c7 0%, #2563eb 100%)" }}
             title={sidebarCollapsed ? "OECsplorer" : undefined}
           >
             <img
@@ -366,7 +366,7 @@ export function Layout({
             />
             {!sidebarCollapsed && <span className="text-sm">OECsplorer</span>}
             {sidebarCollapsed && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-violet-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+              <div className="absolute left-full ml-2 px-2 py-1 bg-sky-900/90 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 OECsplorer
               </div>
             )}
@@ -476,7 +476,7 @@ export function Layout({
                 Additionally, upcoming marketing initiatives will help expand the Oeconomia ecosystem and reach new users. Every contribution directly supports continued development and innovation.
               </p>
 
-              <div className="bg-gradient-to-r from-cyan-500/10 to-purple-600/10 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+              <div className="bg-gradient-to-r from-sky-500/10 to-blue-600/10 border border-sky-500/30 rounded-lg p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-cyan-400 mb-2">Donation Addresses (Click to Copy):</h3>
 
                 <div className="space-y-3 text-sm">
@@ -611,7 +611,7 @@ export function Layout({
 
               <Button 
                 onClick={() => setSupportOpen(false)}
-                className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white"
+                className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white"
               >
                 Close
               </Button>
@@ -632,7 +632,7 @@ export function Layout({
 
                   {/* Thank You Message */}
                   <div className="space-y-3">
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-500" style={{animationDelay: '0.2s'}}>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-400 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-500" style={{animationDelay: '0.2s'}}>
                       Thank You!
                     </h2>
                     <p className="text-lg text-gray-300 animate-in slide-in-from-bottom duration-500" style={{animationDelay: '0.4s'}}>
@@ -641,7 +641,7 @@ export function Layout({
                   </div>
 
                   {/* Personalized Message */}
-                  <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg p-4 space-y-3 animate-in slide-in-from-bottom duration-500" style={{animationDelay: '0.6s'}}>
+                  <div className="bg-gradient-to-r from-sky-500/10 to-blue-500/10 border border-sky-500/30 rounded-lg p-4 space-y-3 animate-in slide-in-from-bottom duration-500" style={{animationDelay: '0.6s'}}>
                     <p className="text-gray-300">
                       Your support means the world to us! 🌟 Every contribution helps fund:
                     </p>
@@ -661,7 +661,7 @@ export function Layout({
                       placeholder="Your name or handle"
                       value={donorName}
                       onChange={(e) => setDonorName(e.target.value)}
-                      className="w-full px-3 py-2 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
                     />
                   </div>
 
@@ -696,7 +696,7 @@ export function Layout({
                           setDonorName('');
                         }, 300);
                       }}
-                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                      className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700"
                     >
                       Complete
                     </Button>

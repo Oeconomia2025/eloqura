@@ -586,7 +586,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-r from-violet-500 to-purple-500 border border-violet-500">
+            <Card className="bg-gradient-to-r from-sky-600 to-blue-600 border border-sky-500">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -852,7 +852,7 @@ export default function Dashboard() {
               </Button>
               <Button
                 onClick={() => window.open("https://oeconomia.io/analytics", "_blank")}
-                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white h-16"
+                className="bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white h-16"
               >
                 <div className="text-center">
                   <BarChart3 className="w-5 h-5 mx-auto mb-1" />

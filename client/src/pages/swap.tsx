@@ -149,6 +149,7 @@ function SwapContent() {
     totalLiquidityUsd: number;
     volume24hUsd: number;
   }>({ activePairs: 0, totalLiquidityUsd: 0, volume24hUsd: 0 });
+  const [eloquraStatsLoading, setEloquraStatsLoading] = useState(true);
 
   // Recent swaps from on-chain events
   interface RecentSwap {
@@ -570,6 +571,7 @@ function SwapContent() {
   useEffect(() => {
     const fetchEloquraStats = async () => {
       if (!publicClient) return;
+      setEloquraStatsLoading(true);
       try {
         const factory = ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`;
 
@@ -646,6 +648,8 @@ function SwapContent() {
         });
       } catch (error) {
         console.warn('Error fetching Eloqura stats:', error);
+      } finally {
+        setEloquraStatsLoading(false);
       }
     };
 
@@ -2653,9 +2657,11 @@ function SwapContent() {
                 <div className="flex justify-between">
                   <span className="text-gray-400 text-sm">Total Liquidity</span>
                   <span className="text-white font-medium">
-                    {eloquraStats.totalLiquidityUsd > 0
-                      ? `$${formatNumber(eloquraStats.totalLiquidityUsd, 2)}`
-                      : '—'}
+                    {eloquraStatsLoading
+                      ? <span className="inline-block w-3 h-3 border-2 border-gray-600 border-t-cyan-400 rounded-full animate-spin" />
+                      : eloquraStats.totalLiquidityUsd > 0
+                        ? `$${formatNumber(eloquraStats.totalLiquidityUsd, 2)}`
+                        : '$0.00'}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -2914,7 +2920,7 @@ function SwapContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                  <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
                     O
                   </div>
                   <div className="text-left">
@@ -2958,7 +2964,7 @@ function SwapContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-sky-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
                     P
                   </div>
                   <div className="text-left">
