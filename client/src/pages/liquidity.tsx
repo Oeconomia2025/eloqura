@@ -630,17 +630,20 @@ function LiquidityContent() {
           }
 
           // Direct mint approach: bypass router entirely for dust pairs
-          // 1. Transfer token0 to pair contract
-          // 2. Transfer token1 to pair contract
-          // 3. Call pair.mint(address) to create LP tokens
-          toast({
-            title: "Setting Pool Price",
-            description: "This pair needs initialization. Please confirm 3 transactions: transfer token A, transfer token B, then mint LP tokens.",
-          });
+          // The router enforces price ratio based on existing (dust) reserves,
+          // which would force a nonsensical price. Direct mint lets us set the price.
+          //
+          // If one token is ETH, we wrap it to WETH first via deposit().
+          // On failure, we call skim() to recover any tokens already transferred
+          // so they don't get stranded in the pair contract.
+
+          const WETH_DEPOSIT_ABI = [{ name: "deposit", type: "function", inputs: [], outputs: [], stateMutability: "payable" }] as const;
+          const SKIM_ABI = [{ name: "skim", type: "function", inputs: [{ name: "to", type: "address" }], outputs: [], stateMutability: "nonpayable" }] as const;
 
           // Map user's selected tokens to pair's token0/token1 order
+          const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
           const userAddr0 = isToken0ETH
-            ? ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()
+            ? wethAddr
             : selectedToken0.address.toLowerCase();
           const isUserToken0PairToken0 = rawPair.token0.toLowerCase() === userAddr0;
 
@@ -651,6 +654,13 @@ function LiquidityContent() {
           const pairToken1Addr = rawPair.token1 as `0x${string}`;
           const pairAddr = rawPair.address as `0x${string}`;
 
+          // Determine which pair tokens are ETH (need wrapping)
+          const pairToken0IsETH = pairToken0Addr.toLowerCase() === wethAddr;
+          const pairToken1IsETH = pairToken1Addr.toLowerCase() === wethAddr;
+          const eitherIsETH = isToken0ETH || isToken1ETH;
+
+          const totalSteps = eitherIsETH ? 4 : 3;
+
           console.log('Direct mint for dust pair:', {
             pairAddress: pairAddr,
             pairToken0: pairToken0Addr,
@@ -659,11 +669,36 @@ function LiquidityContent() {
             pairToken1Amount: pairToken1Amount.toString(),
             currentReserve0: rawPair.reserve0.toString(),
             currentReserve1: rawPair.reserve1.toString(),
+            eitherIsETH,
           });
 
+          toast({
+            title: "Setting Pool Price",
+            description: `This pair needs initialization. Please confirm ${totalSteps} transactions.`,
+          });
+
+          let step = 0;
+          const txHashes: `0x${string}`[] = [];
+
           try {
-            // Step 1: Transfer token0 to pair
-            toast({ title: "Step 1/3", description: `Transferring ${isUserToken0PairToken0 ? selectedToken0.symbol : selectedToken1.symbol} to pool...` });
+            // Step 0 (if ETH): Wrap ETH to WETH
+            if (eitherIsETH) {
+              const ethAmount = isToken0ETH ? amount0Wei : amount1Wei;
+              step++;
+              toast({ title: `Step ${step}/${totalSteps}`, description: "Wrapping ETH to WETH..." });
+              const wrapTx = await walletClient.writeContract({
+                address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
+                abi: WETH_DEPOSIT_ABI,
+                functionName: 'deposit',
+                value: ethAmount,
+              });
+              await publicClient.waitForTransactionReceipt({ hash: wrapTx });
+              txHashes.push(wrapTx);
+            }
+
+            // Transfer token0 to pair
+            step++;
+            toast({ title: `Step ${step}/${totalSteps}`, description: `Transferring ${isUserToken0PairToken0 ? selectedToken0.symbol : selectedToken1.symbol} to pool...` });
             const tx0 = await walletClient.writeContract({
               address: pairToken0Addr,
               abi: erc20Abi,
@@ -671,9 +706,11 @@ function LiquidityContent() {
               args: [pairAddr, pairToken0Amount],
             });
             await publicClient.waitForTransactionReceipt({ hash: tx0 });
+            txHashes.push(tx0);
 
-            // Step 2: Transfer token1 to pair
-            toast({ title: "Step 2/3", description: `Transferring ${isUserToken0PairToken0 ? selectedToken1.symbol : selectedToken0.symbol} to pool...` });
+            // Transfer token1 to pair
+            step++;
+            toast({ title: `Step ${step}/${totalSteps}`, description: `Transferring ${isUserToken0PairToken0 ? selectedToken1.symbol : selectedToken0.symbol} to pool...` });
             const tx1 = await walletClient.writeContract({
               address: pairToken1Addr,
               abi: erc20Abi,
@@ -681,25 +718,23 @@ function LiquidityContent() {
               args: [pairAddr, pairToken1Amount],
             });
             await publicClient.waitForTransactionReceipt({ hash: tx1 });
+            txHashes.push(tx1);
 
-            // Step 3: Mint LP tokens
-            toast({ title: "Step 3/3", description: "Minting LP tokens..." });
+            // Mint LP tokens
+            step++;
+            toast({ title: `Step ${step}/${totalSteps}`, description: "Minting LP tokens..." });
             const mintTx = await walletClient.writeContract({
               address: pairAddr,
               abi: PAIR_ABI,
               functionName: 'mint',
               args: [address],
             });
-            const mintReceipt = await publicClient.waitForTransactionReceipt({ hash: mintTx });
+            await publicClient.waitForTransactionReceipt({ hash: mintTx });
+            txHashes.push(mintTx);
 
-            console.log('Direct mint successful:', mintReceipt);
+            console.log('Direct mint successful');
 
-            // Track all 3 transactions in OECsplorer
-            trackTransaction(tx0);
-            trackTransaction(tx1);
-            trackTransaction(mintTx);
-
-            // Refresh pairs data
+            for (const h of txHashes) trackTransaction(h);
             await fetchEloquraPairs();
 
             toast({
@@ -709,14 +744,36 @@ function LiquidityContent() {
             setIsAddingLiquidity(false);
             setAmount0("");
             setAmount1("");
-            return; // Done - skip the normal router flow below
+            return;
           } catch (mintError: any) {
-            console.error('Direct mint failed:', mintError);
-            toast({
-              title: "Transaction Failed",
-              description: mintError?.shortMessage || mintError?.message || "Failed to initialize pool. Please try again.",
-              variant: "destructive",
-            });
+            console.error('Direct mint failed at step', step, mintError);
+
+            // Recovery: skim any tokens that were already transferred to the pair
+            // so they don't get permanently stranded
+            try {
+              toast({ title: "Recovering tokens...", description: "A step failed. Recovering any tokens sent to the pool..." });
+              const skimTx = await walletClient.writeContract({
+                address: pairAddr,
+                abi: SKIM_ABI,
+                functionName: 'skim',
+                args: [address!],
+              });
+              await publicClient.waitForTransactionReceipt({ hash: skimTx });
+              console.log('Recovery skim successful:', skimTx);
+              toast({
+                title: "Tokens Recovered",
+                description: `Step ${step} failed, but your tokens have been recovered via skim. ${mintError?.shortMessage || mintError?.message || "Please try again."}`,
+                variant: "destructive",
+              });
+            } catch (skimError) {
+              console.error('Recovery skim failed:', skimError);
+              toast({
+                title: "Transaction Failed",
+                description: `Step ${step} failed. If tokens were sent to the pool, use the skim tool to recover them. ${mintError?.shortMessage || mintError?.message || ""}`,
+                variant: "destructive",
+              });
+            }
+
             setIsAddingLiquidity(false);
             return;
           }
