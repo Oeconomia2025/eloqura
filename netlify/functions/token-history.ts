@@ -2,7 +2,7 @@ import type { Handler } from '@netlify/functions';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import * as schema from '../../shared/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, desc } from 'drizzle-orm';
 import ws from "ws";
 
 neonConfig.webSocketConstructor = ws;
@@ -14,12 +14,21 @@ if (!process.env.DATABASE_URL) {
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle({ client: pool, schema });
 
+// Map requested timeframe to milliseconds lookback
+const TIMEFRAME_MS: Record<string, number> = {
+  '1H':  60 * 60 * 1000,
+  '1D':  24 * 60 * 60 * 1000,
+  '7D':  7 * 24 * 60 * 60 * 1000,
+  '30D': 30 * 24 * 60 * 60 * 1000,
+};
+
+const MAX_POINTS = 1500;
+
 export const handler: Handler = async (event) => {
-  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+    'Access-Control-Allow-Methods': 'GET',
     'Content-Type': 'application/json',
   };
 
@@ -36,7 +45,6 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Extract token and timeframe from query parameters
     const tokenCode = event.queryStringParameters?.token;
     const timeframe = event.queryStringParameters?.timeframe || '1D';
 
@@ -48,9 +56,12 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    console.log(`Fetching ${tokenCode} historical data for timeframe: ${timeframe}`);
+    // Calculate the timestamp cutoff based on requested timeframe
+    const lookbackMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1D'];
+    const cutoffTimestamp = Date.now() - lookbackMs;
 
-    // Fetch token historical data from database (same table as ETH)
+    // All sync data is stored with timeframe='1D', so always query that.
+    // Use the requested timeframe to determine the time range instead.
     const historicalData = await db
       .select({
         timestamp: schema.priceHistoryData.timestamp,
@@ -59,21 +70,13 @@ export const handler: Handler = async (event) => {
       .from(schema.priceHistoryData)
       .where(and(
         eq(schema.priceHistoryData.tokenCode, tokenCode.toUpperCase()),
-        eq(schema.priceHistoryData.timeframe, timeframe)
+        eq(schema.priceHistoryData.timeframe, '1D'),
+        gte(schema.priceHistoryData.timestamp, cutoffTimestamp)
       ))
-      .orderBy(schema.priceHistoryData.timestamp);
+      .orderBy(schema.priceHistoryData.timestamp)
+      .limit(MAX_POINTS);
 
-    // Data is already in correct format from select
-    const formattedData = historicalData;
-
-    // Debug logging
-    console.log(`Found ${formattedData.length} records for ${tokenCode} ${timeframe}`);
-    console.log('Sample data:', formattedData.slice(0, 2));
-    
-    // If no data found, return empty array to prevent synthetic data
-    if (formattedData.length === 0) {
-      console.log(`No ${tokenCode} historical data found for timeframe: ${timeframe}, returning empty data`);
-      
+    if (historicalData.length === 0) {
       return {
         statusCode: 200,
         headers,
@@ -81,19 +84,17 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    console.log(`Found ${formattedData.length} historical records for ${tokenCode}`);
-
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(formattedData),
+      body: JSON.stringify(historicalData),
     };
   } catch (error) {
     console.error('Error fetching token historical data:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         message: 'Failed to fetch token historical data',
         error: error instanceof Error ? error.message : 'Unknown error'
       }),
