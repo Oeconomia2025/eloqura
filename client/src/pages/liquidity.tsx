@@ -1718,8 +1718,9 @@ function LiquidityContent() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-400 text-sm mb-1">Uncollected Fees</p>
-                        <p className="text-2xl font-bold text-white">{formatPrice(calculateTotalFees())}</p>
+                        <p className="text-gray-400 text-sm mb-1">Accrued Fees</p>
+                        <p className="text-lg font-bold text-green-400">Included in value</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Earned on withdrawal</p>
                       </div>
                       <div className="w-12 h-12 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
                         <TrendingUp className="w-6 h-6 text-green-400" />
@@ -1811,12 +1812,12 @@ function LiquidityContent() {
                                 </div>
                               </div>
 
-                              {/* Uncollected Fees */}
+                              {/* Accrued Fees */}
                               <div className="text-center">
-                                <p className="text-green-400 font-semibold">
-                                  {formatPrice(parseFloat(position.uncollectedFees0) * position.token0.price + parseFloat(position.uncollectedFees1) * position.token1.price)}
+                                <p className="text-green-400 font-semibold text-sm">
+                                  In position
                                 </p>
-                                <p className="text-xs text-gray-400">Uncollected Fees</p>
+                                <p className="text-xs text-gray-400">Accrued Fees</p>
                               </div>
 
                               {/* Spacer */}
@@ -1859,17 +1860,11 @@ function LiquidityContent() {
                                 <p className="text-xs text-gray-400">Fee Tier</p>
                               </div>
 
-                              {/* Collect Fees */}
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Handle collect fees
-                                }}
-                              >
-                                Collect Fees
-                              </Button>
+                              {/* Accrued Fees Info */}
+                              <div className="text-center" title="V2 fees are automatically included when you remove liquidity">
+                                <p className="text-xs text-gray-500">Fees auto-collected</p>
+                                <p className="text-xs text-gray-500">on withdrawal</p>
+                              </div>
 
                               {/* Expand/Collapse */}
                               <div className="flex justify-center">
@@ -2856,18 +2851,16 @@ function LiquidityContent() {
                 </div>
               </div>
 
-              {/* Uncollected Fees Warning */}
-              {(parseFloat(selectedPositionForRemoval.uncollectedFees0) > 0 || parseFloat(selectedPositionForRemoval.uncollectedFees1) > 0) && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                  <div className="flex items-start space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-yellow-400">
-                      <p className="font-medium mb-1">Uncollected Fees</p>
-                      <p>You have {formatPrice(parseFloat(selectedPositionForRemoval.uncollectedFees0) * selectedPositionForRemoval.token0.price + parseFloat(selectedPositionForRemoval.uncollectedFees1) * selectedPositionForRemoval.token1.price)} in uncollected fees. Consider collecting them first.</p>
-                    </div>
+              {/* Accrued Fees Info */}
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <TrendingUp className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-green-400">
+                    <p className="font-medium mb-1">Accrued Fees Included</p>
+                    <p>Your accrued trading fees (0.3% per swap) are automatically included in the tokens you receive when removing liquidity.</p>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Action Buttons */}
               <div className="flex space-x-3 pt-4">
