@@ -153,7 +153,7 @@ export function ETHHistoricalChart() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <img 
-              src="https://cryptofonts.com/img/SVG/eth.svg" 
+              src="https://s2.coinmarketcap.com/static/img/coins/32x32/1027.png" 
               alt="ETH"
               className="w-8 h-8"
             />
@@ -191,7 +191,7 @@ export function ETHHistoricalChart() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <img 
-            src="https://cryptofonts.com/img/SVG/eth.svg" 
+            src="https://s2.coinmarketcap.com/static/img/coins/32x32/1027.png" 
             alt="ETH"
             className="w-8 h-8"
           />

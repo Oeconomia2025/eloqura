@@ -219,7 +219,7 @@ function BuySellContent() {
       name: "Tether USD",
       address: "0x55d398326f99059fF775485246999027B3197955",
       decimals: 18,
-      logo: "https://cryptofonts.com/img/SVG/usdt.svg",
+      logo: "https://assets.coingecko.com/coins/images/325/small/Tether.png",
       price: 1.00,
       balance: 485.25
     },
@@ -228,7 +228,7 @@ function BuySellContent() {
       name: "BNB",
       address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
       decimals: 18,
-      logo: "https://cryptofonts.com/img/SVG/bnb.svg",
+      logo: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png",
       price: 645.50,
       balance: 2.15
     },
@@ -237,7 +237,7 @@ function BuySellContent() {
       name: "Wrapped Ethereum",
       address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
       decimals: 18,
-      logo: "https://cryptofonts.com/img/SVG/weth.svg",
+      logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
       price: 3850.75,
       balance: 0.085
     },
@@ -246,7 +246,7 @@ function BuySellContent() {
       name: "Bitcoin BEP2",
       address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
       decimals: 18,
-      logo: "https://cryptofonts.com/img/SVG/btc.svg",
+      logo: "https://assets.coingecko.com/coins/images/14108/small/Binance-bitcoin.png",
       price: 98500.25,
       balance: 0.0015
     }
