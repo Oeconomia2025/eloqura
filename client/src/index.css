@@ -35,6 +35,13 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Token logos from CryptoFonts CDN — add white background so dark SVGs are visible on dark UI */
+img[src*="cryptofonts.com"] {
+  background: white;
+  padding: 2px;
+  border-radius: 9999px;
+}
+
 :root {
   /* Light mode colors */
   --background: hsl(0, 0%, 100%); /* Pure white */
