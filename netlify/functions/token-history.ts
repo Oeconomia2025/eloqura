@@ -30,6 +30,14 @@ const TARGET_POINTS: Record<string, number> = {
   '30D': 720,
 };
 
+// Fallback point count when primary window is empty (e.g. 1H with stale data)
+const FALLBACK_POINTS: Record<string, number> = {
+  '1H':  60,
+  '1D':  288,
+  '7D':  500,
+  '30D': 720,
+};
+
 export const handler: Handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -62,22 +70,40 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Calculate the timestamp cutoff based on requested timeframe
+    const upperCode = tokenCode.toUpperCase();
     const lookbackMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1D'];
     const cutoffTimestamp = Date.now() - lookbackMs;
 
-    // Query ALL data across all stored timeframe labels in the time range
-    const historicalData = await db
+    // Query all data in the time range across all stored timeframe labels
+    let historicalData = await db
       .select({
         timestamp: schema.priceHistoryData.timestamp,
         price: schema.priceHistoryData.price
       })
       .from(schema.priceHistoryData)
       .where(and(
-        eq(schema.priceHistoryData.tokenCode, tokenCode.toUpperCase()),
+        eq(schema.priceHistoryData.tokenCode, upperCode),
         gte(schema.priceHistoryData.timestamp, cutoffTimestamp)
       ))
       .orderBy(schema.priceHistoryData.timestamp);
+
+    // If the time window returned nothing (e.g. 1H but sync is stale),
+    // fall back to the most recent N points regardless of time
+    if (historicalData.length === 0) {
+      const fallbackCount = FALLBACK_POINTS[timeframe] || 60;
+      historicalData = await db
+        .select({
+          timestamp: schema.priceHistoryData.timestamp,
+          price: schema.priceHistoryData.price
+        })
+        .from(schema.priceHistoryData)
+        .where(eq(schema.priceHistoryData.tokenCode, upperCode))
+        .orderBy(desc(schema.priceHistoryData.timestamp))
+        .limit(fallbackCount);
+
+      // Reverse to chronological order
+      historicalData.reverse();
+    }
 
     // Deduplicate by timestamp (same timestamp may exist under different timeframe labels)
     const seen = new Set<number>();
@@ -93,6 +119,22 @@ export const handler: Handler = async (event) => {
         headers,
         body: JSON.stringify([]),
       };
+    }
+
+    // Append current live price so chart always extends to "now"
+    const [currentCoin] = await db
+      .select({ rate: schema.liveCoinWatchCoins.rate })
+      .from(schema.liveCoinWatchCoins)
+      .where(eq(schema.liveCoinWatchCoins.code, upperCode))
+      .limit(1);
+
+    if (currentCoin?.rate) {
+      const nowTs = Date.now();
+      const lastTs = deduped[deduped.length - 1].timestamp;
+      // Only append if there's a meaningful gap (> 30 seconds)
+      if (nowTs - lastTs > 30_000) {
+        deduped.push({ timestamp: nowTs, price: currentCoin.rate });
+      }
     }
 
     // Downsample to target points if we have too many, preserving first and last

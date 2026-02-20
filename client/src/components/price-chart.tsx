@@ -58,23 +58,9 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
   const tokenColor = getTokenColor(tokenSymbol);
   const gradientId = getChartGradientId(tokenSymbol);
 
-  // Use all data points - no downsampling. Recharts handles hundreds of points fine.
-  // Only append the current live price as the final point.
-  const priceHistory = (() => {
-    if (!rawPriceHistory || rawPriceHistory.length === 0) return [];
-
-    const data = [...rawPriceHistory];
-
-    if (tokenData?.price && data.length > 0) {
-      data[data.length - 1] = {
-        ...data[data.length - 1],
-        price: tokenData.price,
-        timestamp: Date.now()
-      };
-    }
-
-    return data;
-  })();
+  // Server-side already appends current live price as the final point.
+  // Just use the data as-is.
+  const priceHistory = rawPriceHistory || [];
 
   // Generate evenly spaced X-axis ticks
   const generateXTicks = (data: PriceHistory[]): number[] => {

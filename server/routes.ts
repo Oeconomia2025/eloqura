@@ -18,7 +18,7 @@ import {
   liveCoinWatchCoins
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, desc } from "drizzle-orm";
 import * as schema from "@shared/schema";
 
 
@@ -1098,6 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/tokens/historical/:token/:timeframe', async (req, res) => {
     try {
       const { token, timeframe } = req.params;
+      const upperCode = token.toUpperCase();
 
       const TIMEFRAME_MS: Record<string, number> = {
         '1H':  60 * 60 * 1000,
@@ -1111,24 +1112,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         '7D':  500,
         '30D': 720,
       };
+      const FALLBACK_POINTS: Record<string, number> = {
+        '1H':  60,
+        '1D':  288,
+        '7D':  500,
+        '30D': 720,
+      };
 
       const lookbackMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1D'];
       const cutoffTimestamp = Date.now() - lookbackMs;
 
-      // Query ALL data across all stored timeframe labels in the time range
-      const historicalData = await db
+      // Query all data in the time range across all stored timeframe labels
+      let historicalData = await db
         .select({
           timestamp: schema.priceHistoryData.timestamp,
           price: schema.priceHistoryData.price,
         })
         .from(schema.priceHistoryData)
         .where(and(
-          eq(schema.priceHistoryData.tokenCode, token.toUpperCase()),
+          eq(schema.priceHistoryData.tokenCode, upperCode),
           gte(schema.priceHistoryData.timestamp, cutoffTimestamp)
         ))
         .orderBy(schema.priceHistoryData.timestamp);
 
-      // Deduplicate by timestamp (same timestamp may exist under different timeframe labels)
+      // If the time window returned nothing, fall back to most recent N points
+      if (historicalData.length === 0) {
+        const fallbackCount = FALLBACK_POINTS[timeframe] || 60;
+        historicalData = await db
+          .select({
+            timestamp: schema.priceHistoryData.timestamp,
+            price: schema.priceHistoryData.price,
+          })
+          .from(schema.priceHistoryData)
+          .where(eq(schema.priceHistoryData.tokenCode, upperCode))
+          .orderBy(desc(schema.priceHistoryData.timestamp))
+          .limit(fallbackCount);
+        historicalData.reverse();
+      }
+
+      // Deduplicate by timestamp
       const seen = new Set<number>();
       const deduped = historicalData.filter(d => {
         if (seen.has(d.timestamp)) return false;
@@ -1138,6 +1160,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (deduped.length === 0) {
         return res.json([]);
+      }
+
+      // Append current live price so chart extends to "now"
+      const [currentCoin] = await db
+        .select({ rate: schema.liveCoinWatchCoins.rate })
+        .from(schema.liveCoinWatchCoins)
+        .where(eq(schema.liveCoinWatchCoins.code, upperCode))
+        .limit(1);
+
+      if (currentCoin?.rate) {
+        const nowTs = Date.now();
+        const lastTs = deduped[deduped.length - 1].timestamp;
+        if (nowTs - lastTs > 30_000) {
+          deduped.push({ timestamp: nowTs, price: currentCoin.rate });
+        }
       }
 
       // Downsample to target points if too many, preserving first and last
