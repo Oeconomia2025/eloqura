@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { 
   Settings, 
   Activity, 
-  BarChart3, 
+  LayoutDashboard,
   Wallet, 
   TrendingUp, 
   ArrowUpDown, 
@@ -182,7 +182,7 @@ export function Layout({
   };
 
   const sidebarItems = [
-    { icon: BarChart3, label: 'Dashboard', path: '/dashboard', active: location === '/dashboard' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', active: location === '/dashboard' },
     { icon: ArrowUpDown, label: 'Trade', path: '/swap', active: location === '/swap' },
     { icon: Droplets, label: 'Pools', path: '/liquidity', active: location === '/liquidity' },
     { icon: ArrowLeftRight, label: 'Bridge', path: '/bridge', active: location === '/bridge' },
@@ -385,7 +385,7 @@ export function Layout({
               className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"
               style={{ boxShadow: "0 0 6px #22C55E44" }}
             />
-            {!sidebarCollapsed && <span>Sepolia Testnet</span>}
+            {!sidebarCollapsed && <span className="whitespace-nowrap">Sepolia Testnet</span>}
           </div>
         </div>
 
