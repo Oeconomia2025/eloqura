@@ -310,7 +310,7 @@ function SwapContent() {
       name: "Ethereum",
       address: "0x0000000000000000000000000000000000000000", // Native ETH
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+      logo: "https://cryptofonts.com/img/SVG/eth.svg",
       price: 0,
     },
     {
@@ -318,7 +318,7 @@ function SwapContent() {
       name: "Wrapped Ether",
       address: ELOQURA_CONTRACTS.sepolia.WETH,
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
+      logo: "https://cryptofonts.com/img/SVG/weth.svg",
       price: 0,
     },
     {
@@ -326,7 +326,7 @@ function SwapContent() {
       name: "Chainlink",
       address: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png",
+      logo: "https://cryptofonts.com/img/SVG/link.svg",
       price: 0,
     },
     {
@@ -334,7 +334,7 @@ function SwapContent() {
       name: "USD Coin",
       address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
       decimals: 6,
-      logo: "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
+      logo: "https://cryptofonts.com/img/SVG/usdc.svg",
       price: 0,
     },
     {
@@ -342,7 +342,7 @@ function SwapContent() {
       name: "Aave",
       address: "0x5bB220Afc6E2e008CB2302a83536A019ED245AA2",
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/12645/small/aave-token-round.png",
+      logo: "https://cryptofonts.com/img/SVG/aave.svg",
       price: 0,
     },
     {
@@ -350,7 +350,7 @@ function SwapContent() {
       name: "Dai Stablecoin",
       address: "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6",
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/9956/small/dai-multi-collateral-mcd.png",
+      logo: "https://cryptofonts.com/img/SVG/dai.svg",
       price: 0,
     },
   ];

@@ -219,7 +219,7 @@ function BridgeContent() {
       name: "Tether USD",
       address: "0x55d398326f99059fF775485246999027B3197955",
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/325/small/Tether.png",
+      logo: "https://cryptofonts.com/img/SVG/usdt.svg",
       price: 1.00,
       balance: 485.25
     },
@@ -228,7 +228,7 @@ function BridgeContent() {
       name: "BNB",
       address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png",
+      logo: "https://cryptofonts.com/img/SVG/bnb.svg",
       price: 645.50,
       balance: 2.15
     },
@@ -237,7 +237,7 @@ function BridgeContent() {
       name: "Wrapped Ethereum",
       address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
+      logo: "https://cryptofonts.com/img/SVG/weth.svg",
       price: 3850.75,
       balance: 0.085
     },
@@ -246,7 +246,7 @@ function BridgeContent() {
       name: "Bitcoin BEP2",
       address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
       decimals: 18,
-      logo: "https://assets.coingecko.com/coins/images/14108/small/Binance-bitcoin.png",
+      logo: "https://cryptofonts.com/img/SVG/btc.svg",
       price: 98500.25,
       balance: 0.0015
     }
@@ -740,7 +740,7 @@ function BridgeContent() {
                         className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
                       >
                         <div className="flex items-center space-x-2">
-                          <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-6 h-6 rounded-full" />
+                          <img src="https://cryptofonts.com/img/SVG/eth.svg" alt="Ethereum" className="w-6 h-6 rounded-full" />
                           <span>Ethereum</span>
                         </div>
                       </Button>
@@ -826,7 +826,7 @@ function BridgeContent() {
                         className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
                       >
                         <div className="flex items-center space-x-2">
-                          <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-6 h-6 rounded-full" />
+                          <img src="https://cryptofonts.com/img/SVG/matic.svg" alt="Polygon" className="w-6 h-6 rounded-full" />
                           <span>Polygon</span>
                         </div>
                       </Button>
@@ -1125,7 +1125,7 @@ function BridgeContent() {
               <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-sky-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-6 h-6 rounded-full" />
+                    <img src="https://cryptofonts.com/img/SVG/eth.svg" alt="Ethereum" className="w-6 h-6 rounded-full" />
                     <span className="text-sm font-medium text-white">Ethereum</span>
                   </div>
                   <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
@@ -1156,7 +1156,7 @@ function BridgeContent() {
               <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-green-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-6 h-6 rounded-full" />
+                    <img src="https://cryptofonts.com/img/SVG/matic.svg" alt="Polygon" className="w-6 h-6 rounded-full" />
                     <span className="text-sm font-medium text-white">Polygon</span>
                   </div>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
@@ -1361,7 +1361,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-8 h-8 rounded-full" />
+                  <img src="https://cryptofonts.com/img/SVG/eth.svg" alt="Ethereum" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Ethereum</div>
                     <div className="text-sm text-gray-400">Mainnet</div>
@@ -1381,7 +1381,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-8 h-8 rounded-full" />
+                  <img src="https://cryptofonts.com/img/SVG/matic.svg" alt="Polygon" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Polygon</div>
                     <div className="text-sm text-gray-400">PoS Chain</div>
@@ -1401,7 +1401,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" alt="BNB Smart Chain" className="w-8 h-8 rounded-full" />
+                  <img src="https://cryptofonts.com/img/SVG/bnb.svg" alt="BNB Smart Chain" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">BNB Smart Chain</div>
                     <div className="text-sm text-gray-400">BSC Mainnet</div>
@@ -1421,7 +1421,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/11841.png" alt="Arbitrum One" className="w-8 h-8 rounded-full" />
+                  <img src="https://cryptofonts.com/img/SVG/arb.svg" alt="Arbitrum One" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Arbitrum One</div>
                     <div className="text-sm text-gray-400">L2 Rollup</div>
@@ -1441,7 +1441,7 @@ function BridgeContent() {
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/11840.png" alt="Optimism" className="w-8 h-8 rounded-full" />
+                  <img src="https://cryptofonts.com/img/SVG/op.svg" alt="Optimism" className="w-8 h-8 rounded-full" />
                   <div className="text-left">
                     <div className="font-medium">Optimism</div>
                     <div className="text-sm text-gray-400">L2 Rollup</div>

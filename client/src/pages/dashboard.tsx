@@ -31,28 +31,28 @@ const KNOWN_TOKEN_META: Record<string, { symbol: string; name: string; logo: str
   },
   [ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()]: {
     symbol: "WETH", name: "Wrapped Ether",
-    logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
+    logo: "https://cryptofonts.com/img/SVG/weth.svg",
   },
   "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238": {
     symbol: "USDC", name: "USD Coin",
-    logo: "https://assets.coingecko.com/coins/images/6319/small/usdc.png",
+    logo: "https://cryptofonts.com/img/SVG/usdc.svg",
   },
   "0x779877a7b0d9e8603169ddbd7836e478b4624789": {
     symbol: "LINK", name: "Chainlink",
-    logo: "https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png",
+    logo: "https://cryptofonts.com/img/SVG/link.svg",
   },
   "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6": {
     symbol: "DAI", name: "Dai Stablecoin",
-    logo: "https://assets.coingecko.com/coins/images/9956/small/dai-multi-collateral-mcd.png",
+    logo: "https://cryptofonts.com/img/SVG/dai.svg",
   },
   "0x5bb220afc6e2e008cb2302a83536a019ed245aa2": {
     symbol: "AAVE", name: "Aave",
-    logo: "https://assets.coingecko.com/coins/images/12645/small/AAVE.png",
+    logo: "https://cryptofonts.com/img/SVG/aave.svg",
   },
   // Uniswap WETH (different from Eloqura WETH)
   "0xfff9976782d46cc05630d1f6ebab18b2324d6b14": {
     symbol: "WETH", name: "Wrapped Ether (Uniswap)",
-    logo: "https://assets.coingecko.com/coins/images/2518/small/weth.png",
+    logo: "https://cryptofonts.com/img/SVG/weth.svg",
   },
 };
 
@@ -62,7 +62,7 @@ const ETH_META = {
   name: "Ethereum",
   address: "0x0000000000000000000000000000000000000000",
   decimals: 18,
-  logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+  logo: "https://cryptofonts.com/img/SVG/eth.svg",
 };
 
 const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";

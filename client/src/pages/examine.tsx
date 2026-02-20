@@ -159,7 +159,7 @@ function LiquidityContent() {
         name: "Binance Coin",
         address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
         decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
+        logo: "https://cryptofonts.com/img/SVG/bnb.svg",
         price: 610.50,
         balance: 5
       },
@@ -180,7 +180,7 @@ function LiquidityContent() {
         name: "Tether USD",
         address: "0x55d398326f99059fF775485246999027B3197955",
         decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png",
+        logo: "https://cryptofonts.com/img/SVG/usdt.svg",
         price: 1.00,
         balance: 500
       },
@@ -210,7 +210,7 @@ function LiquidityContent() {
         name: "Bitcoin",
         address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
         decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
+        logo: "https://cryptofonts.com/img/SVG/btc.svg",
         price: 97500.00,
         balance: 0.1
       },
@@ -219,7 +219,7 @@ function LiquidityContent() {
         name: "Wrapped Ethereum",
         address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
         decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+        logo: "https://cryptofonts.com/img/SVG/eth.svg",
         price: 3200.50,
         balance: 2
       },
@@ -240,7 +240,7 @@ function LiquidityContent() {
         name: "Bitcoin",
         address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
         decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
+        logo: "https://cryptofonts.com/img/SVG/btc.svg",
         price: 97500.00,
         balance: 0.1
       },
@@ -249,7 +249,7 @@ function LiquidityContent() {
         name: "USD Coin",
         address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
         decimals: 18,
-        logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png",
+        logo: "https://cryptofonts.com/img/SVG/usdc.svg",
         price: 1.00,
         balance: 1000
       },
@@ -280,7 +280,7 @@ function LiquidityContent() {
       name: "Binance Coin",
       address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
+      logo: "https://cryptofonts.com/img/SVG/bnb.svg",
       price: 610.50,
       balance: 5
     },
@@ -289,7 +289,7 @@ function LiquidityContent() {
       name: "Tether USD",
       address: "0x55d398326f99059fF775485246999027B3197955",
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png",
+      logo: "https://cryptofonts.com/img/SVG/usdt.svg",
       price: 1.00,
       balance: 500
     },
@@ -298,7 +298,7 @@ function LiquidityContent() {
       name: "Wrapped Ethereum",
       address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+      logo: "https://cryptofonts.com/img/SVG/eth.svg",
       price: 3200.50,
       balance: 2
     },
@@ -307,7 +307,7 @@ function LiquidityContent() {
       name: "Bitcoin",
       address: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
+      logo: "https://cryptofonts.com/img/SVG/btc.svg",
       price: 97500.00,
       balance: 0.1
     },
@@ -316,7 +316,7 @@ function LiquidityContent() {
       name: "USD Coin",
       address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
       decimals: 18,
-      logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png",
+      logo: "https://cryptofonts.com/img/SVG/usdc.svg",
       price: 1.00,
       balance: 1000
     }
@@ -356,8 +356,8 @@ function LiquidityContent() {
   const mockPools = [
     {
       id: 1,
-      tokenA: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
-      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
+      tokenA: { symbol: "USDT", name: "Tether USD", logo: "https://cryptofonts.com/img/SVG/usdt.svg" },
+      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://cryptofonts.com/img/SVG/bnb.svg" },
       fee: "0.05%",
       volume24h: "$2.4M",
       volume7d: "$18.2M",
@@ -369,7 +369,7 @@ function LiquidityContent() {
     {
       id: 2,
       tokenA: { symbol: "OEC", name: "Oeconomia", logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png" },
-      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
+      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://cryptofonts.com/img/SVG/usdt.svg" },
       fee: "0.30%",
       volume24h: "$567K",
       volume7d: "$4.2M",
@@ -380,8 +380,8 @@ function LiquidityContent() {
     },
     {
       id: 3,
-      tokenA: { symbol: "WBNB", name: "Wrapped BNB", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
-      tokenB: { symbol: "BUSD", name: "Binance USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/4687.png" },
+      tokenA: { symbol: "WBNB", name: "Wrapped BNB", logo: "https://cryptofonts.com/img/SVG/bnb.svg" },
+      tokenB: { symbol: "BUSD", name: "Binance USD", logo: "https://cryptofonts.com/img/SVG/busd.svg" },
       fee: "0.25%",
       volume24h: "$1.8M",
       volume7d: "$12.6M",
@@ -392,8 +392,8 @@ function LiquidityContent() {
     },
     {
       id: 4,
-      tokenA: { symbol: "CAKE", name: "PancakeSwap", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/7186.png" },
-      tokenB: { symbol: "WBNB", name: "Wrapped BNB", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
+      tokenA: { symbol: "CAKE", name: "PancakeSwap", logo: "https://cryptofonts.com/img/SVG/cake.svg" },
+      tokenB: { symbol: "WBNB", name: "Wrapped BNB", logo: "https://cryptofonts.com/img/SVG/bnb.svg" },
       fee: "0.25%",
       volume24h: "$890K",
       volume7d: "$6.8M",
@@ -404,8 +404,8 @@ function LiquidityContent() {
     },
     {
       id: 5,
-      tokenA: { symbol: "ETH", name: "Ethereum", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" },
-      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
+      tokenA: { symbol: "ETH", name: "Ethereum", logo: "https://cryptofonts.com/img/SVG/eth.svg" },
+      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://cryptofonts.com/img/SVG/usdt.svg" },
       fee: "0.05%",
       volume24h: "$3.1M",
       volume7d: "$21.4M",
@@ -416,8 +416,8 @@ function LiquidityContent() {
     },
     {
       id: 6,
-      tokenA: { symbol: "BTCB", name: "Bitcoin BEP20", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png" },
-      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
+      tokenA: { symbol: "BTCB", name: "Bitcoin BEP20", logo: "https://cryptofonts.com/img/SVG/btc.svg" },
+      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://cryptofonts.com/img/SVG/bnb.svg" },
       fee: "0.25%",
       volume24h: "$1.2M",
       volume7d: "$8.7M",
@@ -428,8 +428,8 @@ function LiquidityContent() {
     },
     {
       id: 7,
-      tokenA: { symbol: "ADA", name: "Cardano", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png" },
-      tokenB: { symbol: "USDC", name: "USD Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png" },
+      tokenA: { symbol: "ADA", name: "Cardano", logo: "https://cryptofonts.com/img/SVG/ada.svg" },
+      tokenB: { symbol: "USDC", name: "USD Coin", logo: "https://cryptofonts.com/img/SVG/usdc.svg" },
       fee: "0.30%",
       volume24h: "$445K",
       volume7d: "$3.1M",
@@ -440,8 +440,8 @@ function LiquidityContent() {
     },
     {
       id: 8,
-      tokenA: { symbol: "DOT", name: "Polkadot", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/6636.png" },
-      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
+      tokenA: { symbol: "DOT", name: "Polkadot", logo: "https://cryptofonts.com/img/SVG/dot.svg" },
+      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://cryptofonts.com/img/SVG/bnb.svg" },
       fee: "0.25%",
       volume24h: "$678K",
       volume7d: "$4.9M",
@@ -452,8 +452,8 @@ function LiquidityContent() {
     },
     {
       id: 9,
-      tokenA: { symbol: "LINK", name: "Chainlink", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1975.png" },
-      tokenB: { symbol: "ETH", name: "Ethereum", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" },
+      tokenA: { symbol: "LINK", name: "Chainlink", logo: "https://cryptofonts.com/img/SVG/link.svg" },
+      tokenB: { symbol: "ETH", name: "Ethereum", logo: "https://cryptofonts.com/img/SVG/eth.svg" },
       fee: "0.30%",
       volume24h: "$523K",
       volume7d: "$3.8M",
@@ -464,8 +464,8 @@ function LiquidityContent() {
     },
     {
       id: 10,
-      tokenA: { symbol: "UNI", name: "Uniswap", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/7083.png" },
-      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
+      tokenA: { symbol: "UNI", name: "Uniswap", logo: "https://cryptofonts.com/img/SVG/uni.svg" },
+      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://cryptofonts.com/img/SVG/usdt.svg" },
       fee: "0.25%",
       volume24h: "$389K",
       volume7d: "$2.6M",
