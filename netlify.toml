@@ -8,7 +8,6 @@
 
 [functions]
   node_bundler = "esbuild"
-  # Neon needs ws in Netlify functions
   external_node_modules = ["ws"]
   included_files = ["shared/schema.js"]
 
