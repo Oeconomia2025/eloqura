@@ -13,7 +13,7 @@
   included_files = ["shared/schema.js"]
 
 [functions."live-coin-watch-sync"]
-  schedule = "*/2 * * * *"
+  schedule = "*/1 * * * *"
 
 
 

@@ -14,14 +14,14 @@ interface LiveCoinWatchCoin {
 }
 
 class LiveCoinWatchApiService {
-  private readonly apiKey: string;
   private readonly baseUrl = 'https://api.livecoinwatch.com';
 
-  constructor() {
-    this.apiKey = process.env.LIVE_COIN_WATCH_API_KEY || '';
-    if (!this.apiKey) {
+  private getApiKey(): string {
+    const key = process.env.LIVE_COIN_WATCH_API_KEY || '';
+    if (!key) {
       throw new Error('LIVE_COIN_WATCH_API_KEY environment variable is required');
     }
+    return key;
   }
 
   async getTopCoins(limit: number = 100): Promise<LiveCoinWatchCoin[]> {
@@ -30,7 +30,7 @@ class LiveCoinWatchApiService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+          'x-api-key': this.getApiKey(),
         },
         body: JSON.stringify({
           currency: 'USD',
