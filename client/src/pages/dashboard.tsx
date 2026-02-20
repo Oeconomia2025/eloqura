@@ -22,6 +22,7 @@ import { useAccount, usePublicClient } from "wagmi";
 import { formatUnits, formatEther, parseUnits } from "viem";
 import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, FACTORY_ABI, PAIR_ABI } from "@/lib/contracts";
 import { useLocation } from "wouter";
+import { getCryptoLogo } from "@/utils/crypto-logos";
 
 // Known token metadata for logos and friendly names (keyed by lowercase address)
 const KNOWN_TOKEN_META: Record<string, { symbol: string; name: string; logo: string }> = {
@@ -332,7 +333,7 @@ export default function Dashboard() {
             name: meta?.name || dt.name,
             address: dt.address,
             decimals: dt.decimals,
-            logo: meta?.logo || dt.logo || "/oec-logo.png",
+            logo: meta?.logo || dt.logo || getCryptoLogo(dt.symbol),
             balance: numBal,
             usdValue: numBal * (tokenPrices[addr] || 0),
           });
