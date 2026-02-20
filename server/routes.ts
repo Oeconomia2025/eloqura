@@ -18,7 +18,7 @@ import {
   liveCoinWatchCoins
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte } from "drizzle-orm";
 import * as schema from "@shared/schema";
 
 
@@ -1094,61 +1094,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get historical data from database cache
+  // Get historical data from database cache (matches Netlify token-history function logic)
   app.get('/api/tokens/historical/:token/:timeframe', async (req, res) => {
     try {
       const { token, timeframe } = req.params;
-      
+
+      const TIMEFRAME_MS: Record<string, number> = {
+        '1H':  60 * 60 * 1000,
+        '1D':  24 * 60 * 60 * 1000,
+        '7D':  7 * 24 * 60 * 60 * 1000,
+        '30D': 30 * 24 * 60 * 60 * 1000,
+      };
+      const TARGET_POINTS: Record<string, number> = {
+        '1H':  120,
+        '1D':  288,
+        '7D':  500,
+        '30D': 720,
+      };
+
+      const lookbackMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1D'];
+      const cutoffTimestamp = Date.now() - lookbackMs;
+
+      // Query ALL data across all stored timeframe labels in the time range
       const historicalData = await db
-        .select()
+        .select({
+          timestamp: schema.priceHistoryData.timestamp,
+          price: schema.priceHistoryData.price,
+        })
         .from(schema.priceHistoryData)
         .where(and(
-          eq(schema.priceHistoryData.tokenCode, token),
-          eq(schema.priceHistoryData.timeframe, timeframe)
+          eq(schema.priceHistoryData.tokenCode, token.toUpperCase()),
+          gte(schema.priceHistoryData.timestamp, cutoffTimestamp)
         ))
         .orderBy(schema.priceHistoryData.timestamp);
 
-      const formattedData = historicalData.map(record => ({
-        timestamp: record.timestamp,
-        price: parseFloat(record.price.toString()),
-        date: new Date(record.timestamp).toISOString()
-      }));
+      // Deduplicate by timestamp (same timestamp may exist under different timeframe labels)
+      const seen = new Set<number>();
+      const deduped = historicalData.filter(d => {
+        if (seen.has(d.timestamp)) return false;
+        seen.add(d.timestamp);
+        return true;
+      });
 
-      // If no data found, create minimal fallback from current price
-      if (formattedData.length === 0) {
-        const [currentToken] = await db
-          .select()
-          .from(schema.liveCoinWatchCoins)
-          .where(eq(schema.liveCoinWatchCoins.code, token))
-          .limit(1);
-
-        if (currentToken) {
-          const now = Date.now();
-          const currentPrice = parseFloat(currentToken.rate.toString());
-          
-          const timeInterval = timeframe === '1H' ? 5 * 60 * 1000 :
-                             timeframe === '1D' ? 60 * 60 * 1000 :
-                             timeframe === '7D' ? 6 * 60 * 60 * 1000 :
-                             24 * 60 * 60 * 1000;
-          
-          const fallbackData = [];
-          for (let i = 9; i >= 0; i--) {
-            const timestamp = now - (i * timeInterval);
-            const variation = 1 + (Math.random() - 0.5) * 0.04;
-            const price = currentPrice * variation;
-            
-            fallbackData.push({
-              timestamp,
-              price,
-              date: new Date(timestamp).toISOString()
-            });
-          }
-          
-          return res.json(fallbackData);
-        }
+      if (deduped.length === 0) {
+        return res.json([]);
       }
 
-      res.json(formattedData);
+      // Downsample to target points if too many, preserving first and last
+      const target = TARGET_POINTS[timeframe] || 500;
+      let result = deduped;
+
+      if (deduped.length > target) {
+        const sampled: typeof deduped = [deduped[0]];
+        const step = (deduped.length - 1) / (target - 1);
+        for (let i = 1; i < target - 1; i++) {
+          const idx = Math.round(i * step);
+          sampled.push(deduped[idx]);
+        }
+        sampled.push(deduped[deduped.length - 1]);
+        result = sampled;
+      }
+
+      res.json(result);
     } catch (error) {
       console.error('Error fetching historical data from database:', error);
       res.status(500).json({ error: 'Failed to fetch historical data from database cache' });

@@ -1,22 +1,22 @@
 // Centralized environment detection
+export function isLocalhost(): boolean {
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+}
+
 export function isProduction(): boolean {
-  return window.location.hostname === 'oeconomia.io' || 
-         window.location.hostname.includes('netlify.app') ||
-         import.meta.env.PROD;
+  return !isLocalhost();
 }
 
 export function getApiBaseUrl(): string {
-  // FORCE PRODUCTION MODE: Always use Netlify functions, never connect to Replit
-  // This ensures the website works independently without Replit connection
   return '';
 }
 
 export function getEnvironmentInfo() {
   return {
-    isProduction: true,
-    isDevelopment: false,
+    isProduction: isProduction(),
+    isDevelopment: isLocalhost(),
     apiBaseUrl: getApiBaseUrl(),
     hostname: window.location.hostname,
-    nodeEnv: 'production'
+    nodeEnv: isLocalhost() ? 'development' : 'production'
   };
 }

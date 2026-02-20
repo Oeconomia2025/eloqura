@@ -22,7 +22,13 @@ const TIMEFRAME_MS: Record<string, number> = {
   '30D': 30 * 24 * 60 * 60 * 1000,
 };
 
-const MAX_POINTS = 1500;
+// Target number of points per timeframe for smooth chart rendering
+const TARGET_POINTS: Record<string, number> = {
+  '1H':  120,
+  '1D':  288,
+  '7D':  500,
+  '30D': 720,
+};
 
 export const handler: Handler = async (event) => {
   const headers = {
@@ -60,8 +66,7 @@ export const handler: Handler = async (event) => {
     const lookbackMs = TIMEFRAME_MS[timeframe] || TIMEFRAME_MS['1D'];
     const cutoffTimestamp = Date.now() - lookbackMs;
 
-    // All sync data is stored with timeframe='1D', so always query that.
-    // Use the requested timeframe to determine the time range instead.
+    // Query ALL data across all stored timeframe labels in the time range
     const historicalData = await db
       .select({
         timestamp: schema.priceHistoryData.timestamp,
@@ -70,13 +75,19 @@ export const handler: Handler = async (event) => {
       .from(schema.priceHistoryData)
       .where(and(
         eq(schema.priceHistoryData.tokenCode, tokenCode.toUpperCase()),
-        eq(schema.priceHistoryData.timeframe, '1D'),
         gte(schema.priceHistoryData.timestamp, cutoffTimestamp)
       ))
-      .orderBy(schema.priceHistoryData.timestamp)
-      .limit(MAX_POINTS);
+      .orderBy(schema.priceHistoryData.timestamp);
 
-    if (historicalData.length === 0) {
+    // Deduplicate by timestamp (same timestamp may exist under different timeframe labels)
+    const seen = new Set<number>();
+    const deduped = historicalData.filter(d => {
+      if (seen.has(d.timestamp)) return false;
+      seen.add(d.timestamp);
+      return true;
+    });
+
+    if (deduped.length === 0) {
       return {
         statusCode: 200,
         headers,
@@ -84,10 +95,27 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    // Downsample to target points if we have too many, preserving first and last
+    const target = TARGET_POINTS[timeframe] || 500;
+    let result = deduped;
+
+    if (deduped.length > target) {
+      const sampled: typeof deduped = [deduped[0]];
+      const step = (deduped.length - 1) / (target - 1);
+
+      for (let i = 1; i < target - 1; i++) {
+        const idx = Math.round(i * step);
+        sampled.push(deduped[idx]);
+      }
+
+      sampled.push(deduped[deduped.length - 1]);
+      result = sampled;
+    }
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(historicalData),
+      body: JSON.stringify(result),
     };
   } catch (error) {
     console.error('Error fetching token historical data:', error);

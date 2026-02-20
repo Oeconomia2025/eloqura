@@ -6,6 +6,7 @@ import { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getTokenColor, getChartGradientId } from "@/utils/token-colors";
+import { isLocalhost } from "@/lib/environment";
 import type { PriceHistory } from "@shared/schema";
 
 interface PriceChartProps {
@@ -27,7 +28,9 @@ const TICK_INTERVAL_MS: Record<string, number> = {
 export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData, formatPercentage, getChangeColor }: PriceChartProps) {
   const [timeframe, setTimeframe] = useState("1D");
 
-  const apiEndpoint = `/.netlify/functions/token-history?token=${tokenSymbol}&timeframe=${timeframe}`;
+  const apiEndpoint = isLocalhost()
+    ? `/api/tokens/historical/${tokenSymbol}/${timeframe}`
+    : `/.netlify/functions/token-history?token=${tokenSymbol}&timeframe=${timeframe}`;
 
   const { data: rawPriceHistory, isLoading, error } = useQuery<PriceHistory[]>({
     queryKey: ["token-history", tokenSymbol, timeframe],

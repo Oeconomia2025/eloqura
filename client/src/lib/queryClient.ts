@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { isLocalhost } from './environment';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -7,37 +8,31 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function rewriteToNetlify(apiPath: string): string {
+  const cleanPath = apiPath.replace('/api/', '');
+  if (cleanPath.startsWith('price-history/')) {
+    const parts = cleanPath.split('/');
+    const contract = parts[1];
+    const timeframe = parts[2] || '1D';
+    return `/.netlify/functions/price-history?contract=${contract}&timeframe=${timeframe}`;
+  } else if (cleanPath.startsWith('live-coin-watch/token/')) {
+    const tokenCode = cleanPath.split('/')[2];
+    return `/.netlify/functions/live-coin-watch-token?token=${tokenCode}`;
+  } else if (cleanPath.startsWith('live-coin-watch/')) {
+    return `/.netlify/functions/${cleanPath.replace(/\//g, '-')}`;
+  } else {
+    return `/.netlify/functions/${cleanPath.replace(/\//g, '-')}`;
+  }
+}
 
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // FORCE NETLIFY FUNCTIONS: Convert all API calls to use Netlify functions
   let fullUrl = url;
-  if (!url.startsWith('http')) {
-    if (url.startsWith('/api/')) {
-      const cleanPath = url.replace('/api/', '');
-      if (cleanPath.startsWith('price-history/')) {
-        // Handle price-history with contract and timeframe
-        const parts = cleanPath.split('/');
-        const contract = parts[1];
-        const timeframe = parts[2] || '1D';
-        fullUrl = `/.netlify/functions/price-history?contract=${contract}&timeframe=${timeframe}`;
-      } else if (cleanPath.startsWith('live-coin-watch/token/')) {
-        // Handle live-coin-watch token endpoints: /api/live-coin-watch/token/BTC -> /live-coin-watch-token?token=BTC
-        const tokenCode = cleanPath.split('/')[2];
-        fullUrl = `/.netlify/functions/live-coin-watch-token?token=${tokenCode}`;
-      } else if (cleanPath.startsWith('live-coin-watch/')) {
-        // Handle other live-coin-watch endpoints
-        fullUrl = `/.netlify/functions/${cleanPath.replace(/\//g, '-')}`;
-      } else {
-        // Handle other endpoints
-        fullUrl = `/.netlify/functions/${cleanPath.replace(/\//g, '-')}`;
-      }
-    } else {
-      fullUrl = url;
-    }
+  if (!url.startsWith('http') && url.startsWith('/api/') && !isLocalhost()) {
+    fullUrl = rewriteToNetlify(url);
   }
 
   const res = await fetch(fullUrl, {
@@ -52,7 +47,6 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-import { getApiBaseUrl } from './environment';
 
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
@@ -61,27 +55,10 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     try {
       const apiPath = queryKey.join("/") as string;
-      // FORCE NETLIFY FUNCTIONS: Convert all API calls to use Netlify functions
+      // On localhost, use Express routes directly; on production, rewrite to Netlify functions
       let url = apiPath;
-      if (apiPath.startsWith('/api/')) {
-        const cleanPath = apiPath.replace('/api/', '');
-        if (cleanPath.startsWith('price-history/')) {
-          // Handle price-history with contract and timeframe
-          const parts = cleanPath.split('/');
-          const contract = parts[1];
-          const timeframe = parts[2] || '1D';
-          url = `/.netlify/functions/price-history?contract=${contract}&timeframe=${timeframe}`;
-        } else if (cleanPath.startsWith('live-coin-watch/token/')) {
-          // Handle live-coin-watch token endpoints: /api/live-coin-watch/token/BTC -> /live-coin-watch-token?token=BTC
-          const tokenCode = cleanPath.split('/')[2];
-          url = `/.netlify/functions/live-coin-watch-token?token=${tokenCode}`;
-        } else if (cleanPath.startsWith('live-coin-watch/')) {
-          // Handle other live-coin-watch endpoints
-          url = `/.netlify/functions/${cleanPath.replace(/\//g, '-')}`;
-        } else {
-          // Handle other endpoints
-          url = `/.netlify/functions/${cleanPath.replace(/\//g, '-')}`;
-        }
+      if (apiPath.startsWith('/api/') && !isLocalhost()) {
+        url = rewriteToNetlify(apiPath);
       }
 
       const res = await fetch(url, {
@@ -92,7 +69,6 @@ export const getQueryFn: <T>(options: {
         return null;
       }
 
-      // Handle 404s gracefully for static deployments
       if (res.status === 404 && url.includes('/api/')) {
         console.warn(`API endpoint not available: ${url}`);
         return null;
@@ -101,7 +77,6 @@ export const getQueryFn: <T>(options: {
       await throwIfResNotOk(res);
       return await res.json();
     } catch (error) {
-      // Log error but still throw for React Query to handle properly
       console.warn(`API call failed: ${queryKey.join("/")}`, error);
       throw error;
     }

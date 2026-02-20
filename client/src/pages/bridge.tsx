@@ -699,6 +699,11 @@ function BridgeContent() {
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Coming Soon Banner */}
+        <div className="mb-6 rounded-lg border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-blue-600/10 p-4 text-center">
+          <span className="text-lg font-semibold text-sky-400">Coming Soon</span>
+          <p className="text-sm text-gray-400 mt-1">Cross-chain bridging is under development and will be available in a future update.</p>
+        </div>
         <div className={`grid gap-6 ${showChart ? (hideSidebar ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 xl:grid-cols-5') : 'grid-cols-1 lg:grid-cols-3'}`}>
         {/* Main Swap Interface */}
         <div className={showChart ? (hideSidebar ? 'lg:col-span-1' : 'xl:col-span-2') : 'lg:col-span-2'}>

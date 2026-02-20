@@ -32,6 +32,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatCryptoData } from "@/utils/crypto-logos";
 import type { LiveCoinWatchDbCoin } from "@shared/schema";
 import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt, useWalletClient } from "wagmi";
+import { sepolia } from "wagmi/chains";
 import { formatUnits, parseUnits, erc20Abi } from "viem";
 import { ELOQURA_CONTRACTS, FACTORY_ABI, ROUTER_ABI, PAIR_ABI, ERC20_ABI } from "@/lib/contracts";
 import { trackTransaction } from "@/lib/explorer";
@@ -346,6 +347,7 @@ function LiquidityContent() {
 
     setIsApproving(true);
     writeContract({
+      chainId: sepolia.id,
       address: token.address as `0x${string}`,
       abi: ERC20_ABI,
       functionName: 'approve',
@@ -400,10 +402,9 @@ function LiquidityContent() {
     const t0 = selectedPositionForAddition.token0;
     const t1 = selectedPositionForAddition.token1;
 
-    // ETH / WETH used as ETH doesn't need approval (we'll use addLiquidityETH)
-    const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
-    const isT0Eth = t0.symbol === 'ETH' || t0.address.toLowerCase() === wethAddr;
-    const isT1Eth = t1.symbol === 'ETH' || t1.address.toLowerCase() === wethAddr;
+    // Only skip approval for native ETH (not WETH — we use addLiquidity with WETH directly)
+    const isT0Eth = t0.symbol === 'ETH';
+    const isT1Eth = t1.symbol === 'ETH';
 
     if (!isT0Eth && addAmount0) {
       try {
@@ -451,6 +452,7 @@ function LiquidityContent() {
     const token = tokenIndex === 0 ? selectedPositionForAddition.token0 : selectedPositionForAddition.token1;
     setIsApprovingAdd(true);
     writeContract({
+      chainId: sepolia.id,
       address: token.address as `0x${string}`,
       abi: ERC20_ABI,
       functionName: 'approve',
@@ -459,14 +461,13 @@ function LiquidityContent() {
   };
 
   // Handle adding liquidity to existing position
+  // Always uses addLiquidity (token-token) with WETH directly to avoid
+  // MetaMask Blockaid blocking raw ETH sends on testnet.
   const handleAddToExistingPosition = async () => {
     if (!selectedPositionForAddition || !addAmount0 || !addAmount1 || !address) return;
 
     const t0 = selectedPositionForAddition.token0;
     const t1 = selectedPositionForAddition.token1;
-    const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
-    const isT0Weth = t0.address.toLowerCase() === wethAddr;
-    const isT1Weth = t1.address.toLowerCase() === wethAddr;
 
     try {
       const amount0Wei = parseUnits(parseFloat(addAmount0).toFixed(t0.decimals), t0.decimals);
@@ -480,44 +481,22 @@ function LiquidityContent() {
 
       setIsAddingToExisting(true);
 
-      if (isT0Weth || isT1Weth) {
-        // Use addLiquidityETH - user sends ETH for the WETH side
-        const tokenAddress = isT0Weth ? t1.address : t0.address;
-        const tokenAmount = isT0Weth ? amount1Wei : amount0Wei;
-        const ethAmount = isT0Weth ? amount0Wei : amount1Wei;
-
-        writeContract({
-          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-          abi: ROUTER_ABI,
-          functionName: 'addLiquidityETH',
-          args: [
-            tokenAddress as `0x${string}`,
-            tokenAmount,
-            0n,
-            0n,
-            address,
-            deadline,
-          ],
-          value: ethAmount,
-        });
-      } else {
-        // Token-token pair
-        writeContract({
-          address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
-          abi: ROUTER_ABI,
-          functionName: 'addLiquidity',
-          args: [
-            t0.address as `0x${string}`,
-            t1.address as `0x${string}`,
-            amount0Wei,
-            amount1Wei,
-            0n,
-            0n,
-            address,
-            deadline,
-          ],
-        });
-      }
+      writeContract({
+        chainId: sepolia.id,
+        address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
+        abi: ROUTER_ABI,
+        functionName: 'addLiquidity',
+        args: [
+          t0.address as `0x${string}`,
+          t1.address as `0x${string}`,
+          amount0Wei,
+          amount1Wei,
+          0n,
+          0n,
+          address,
+          deadline,
+        ],
+      });
     } catch (error: any) {
       console.error('Add to existing position error:', error);
       setIsAddingToExisting(false);
@@ -687,6 +666,7 @@ function LiquidityContent() {
               step++;
               toast({ title: `Step ${step}/${totalSteps}`, description: "Wrapping ETH to WETH..." });
               const wrapTx = await walletClient.writeContract({
+                chain: sepolia,
                 address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
                 abi: WETH_DEPOSIT_ABI,
                 functionName: 'deposit',
@@ -700,6 +680,7 @@ function LiquidityContent() {
             step++;
             toast({ title: `Step ${step}/${totalSteps}`, description: `Transferring ${isUserToken0PairToken0 ? selectedToken0.symbol : selectedToken1.symbol} to pool...` });
             const tx0 = await walletClient.writeContract({
+              chain: sepolia,
               address: pairToken0Addr,
               abi: erc20Abi,
               functionName: 'transfer',
@@ -712,6 +693,7 @@ function LiquidityContent() {
             step++;
             toast({ title: `Step ${step}/${totalSteps}`, description: `Transferring ${isUserToken0PairToken0 ? selectedToken1.symbol : selectedToken0.symbol} to pool...` });
             const tx1 = await walletClient.writeContract({
+              chain: sepolia,
               address: pairToken1Addr,
               abi: erc20Abi,
               functionName: 'transfer',
@@ -724,6 +706,7 @@ function LiquidityContent() {
             step++;
             toast({ title: `Step ${step}/${totalSteps}`, description: "Minting LP tokens..." });
             const mintTx = await walletClient.writeContract({
+              chain: sepolia,
               address: pairAddr,
               abi: PAIR_ABI,
               functionName: 'mint',
@@ -753,6 +736,7 @@ function LiquidityContent() {
             try {
               toast({ title: "Recovering tokens...", description: "A step failed. Recovering any tokens sent to the pool..." });
               const skimTx = await walletClient.writeContract({
+                chain: sepolia,
                 address: pairAddr,
                 abi: SKIM_ABI,
                 functionName: 'skim',
@@ -838,6 +822,7 @@ function LiquidityContent() {
         });
 
         writeContract({
+          chainId: sepolia.id,
           address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
           abi: ROUTER_ABI,
           functionName: 'addLiquidityETH',
@@ -865,6 +850,7 @@ function LiquidityContent() {
         });
 
         writeContract({
+          chainId: sepolia.id,
           address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
           abi: ROUTER_ABI,
           functionName: 'addLiquidity',
@@ -932,6 +918,7 @@ function LiquidityContent() {
     });
 
     writeContract({
+      chainId: sepolia.id,
       address: pairAddress as `0x${string}`,
       abi: PAIR_ABI,
       functionName: 'approve',
@@ -979,6 +966,7 @@ function LiquidityContent() {
         const tokenAddress = isToken0WETH ? token1 : token0;
 
         writeContract({
+          chainId: sepolia.id,
           address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
           abi: ROUTER_ABI,
           functionName: 'removeLiquidityETH',
@@ -993,6 +981,7 @@ function LiquidityContent() {
         });
       } else {
         writeContract({
+          chainId: sepolia.id,
           address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
           abi: ROUTER_ABI,
           functionName: 'removeLiquidity',
@@ -1636,8 +1625,16 @@ function LiquidityContent() {
 
   const selectToken = (token: Token) => {
     if (tokenSelectionFor === 'token0') {
+      // If the selected token matches the other slot, swap them
+      if (selectedToken1 && token.address.toLowerCase() === selectedToken1.address.toLowerCase()) {
+        setSelectedToken1(selectedToken0);
+      }
       setSelectedToken0(token);
     } else if (tokenSelectionFor === 'token1') {
+      // If the selected token matches the other slot, swap them
+      if (selectedToken0 && token.address.toLowerCase() === selectedToken0.address.toLowerCase()) {
+        setSelectedToken0(selectedToken1);
+      }
       setSelectedToken1(token);
     }
     setIsTokenModalOpen(false);
@@ -2451,6 +2448,7 @@ function LiquidityContent() {
               {/* Tables Container */}
               {activeTab === 'pools' ? (
                 <div>
+                <p className="text-xs text-gray-500 mb-2 italic">Click a row to view pool details</p>
                 <div className="border rounded-lg overflow-hidden relative max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide">
                   <table className="w-full">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
@@ -2600,13 +2598,14 @@ function LiquidityContent() {
               </div>
               ) : (
                 <div>
+                <p className="text-xs text-gray-500 mb-2 italic">Click a row to view token details</p>
                 <div className="border rounded-lg overflow-hidden relative max-h-[700px] overflow-y-auto scrollbar-hide">
                   <table className="w-full">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
                       <tr>
                         <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">#</th>
                         <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
-                          <button 
+                          <button
                             onClick={() => handleTokensSort('symbol')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
                           >

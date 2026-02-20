@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTokenData } from "@/hooks/use-token-data";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { sepolia } from "wagmi/chains";
 import { formatUnits, parseUnits, parseEther } from "viem";
 import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI, ROUTER_ABI } from "@/lib/contracts";
 import { trackTransaction } from "@/lib/explorer";
@@ -591,6 +592,7 @@ function SwapContent() {
 
         // Read reserves from each pair and sum up TVL
         let totalTvl = 0;
+        let nonDustPairs = 0;
         for (let i = 0; i < activePairs; i++) {
           try {
             const pairAddress = await publicClient.readContract({
@@ -600,7 +602,7 @@ function SwapContent() {
               args: [BigInt(i)],
             }) as `0x${string}`;
 
-            const [reserves, token0Addr, token1Addr] = await Promise.all([
+            const [reserves, token0Addr, token1Addr, totalSupply] = await Promise.all([
               publicClient.readContract({
                 address: pairAddress,
                 abi: PAIR_ABI,
@@ -616,7 +618,16 @@ function SwapContent() {
                 abi: PAIR_ABI,
                 functionName: 'token1',
               }) as Promise<`0x${string}`>,
+              publicClient.readContract({
+                address: pairAddress,
+                abi: PAIR_ABI,
+                functionName: 'totalSupply',
+              }) as Promise<bigint>,
             ]);
+
+            // Skip dust pairs (only MINIMUM_LIQUIDITY locked, no real liquidity)
+            if (totalSupply <= 1000n) continue;
+            nonDustPairs++;
 
             const dec0 = decimalsMap[token0Addr.toLowerCase()] ?? 18;
             const dec1 = decimalsMap[token1Addr.toLowerCase()] ?? 18;
@@ -642,7 +653,7 @@ function SwapContent() {
         }
 
         setEloquraStats({
-          activePairs,
+          activePairs: nonDustPairs,
           totalLiquidityUsd: totalTvl,
           volume24hUsd: 0, // Volume requires an indexer; not available on-chain
         });
@@ -1083,6 +1094,7 @@ function SwapContent() {
     setIsApproving(true);
     try {
       writeContract({
+        chainId: sepolia.id,
         address: fromToken.address as `0x${string}`,
         abi: ERC20_ABI,
         functionName: 'approve',
@@ -1102,6 +1114,7 @@ function SwapContent() {
       if (fromToken.symbol === 'ETH' && toToken.symbol === 'WETH') {
         const amount = parseEther(fromAmount);
         writeContract({
+          chainId: sepolia.id,
           address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
           abi: WETH_ABI,
           functionName: 'deposit',
@@ -1112,6 +1125,7 @@ function SwapContent() {
       else if (fromToken.symbol === 'WETH' && toToken.symbol === 'ETH') {
         const amount = parseEther(fromAmount);
         writeContract({
+          chainId: sepolia.id,
           address: ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`,
           abi: WETH_ABI,
           functionName: 'withdraw',
@@ -1143,6 +1157,7 @@ function SwapContent() {
         if (fromToken.symbol === 'ETH') {
           // ETH -> Token via Eloqura: swapExactETHForTokens
           writeContract({
+            chainId: sepolia.id,
             address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
             abi: ROUTER_ABI,
             functionName: 'swapExactETHForTokens',
@@ -1152,6 +1167,7 @@ function SwapContent() {
         } else if (toToken.symbol === 'ETH') {
           // Token -> ETH via Eloqura: swapExactTokensForETH
           writeContract({
+            chainId: sepolia.id,
             address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
             abi: ROUTER_ABI,
             functionName: 'swapExactTokensForETH',
@@ -1160,6 +1176,7 @@ function SwapContent() {
         } else {
           // Token -> Token via Eloqura: swapExactTokensForTokens
           writeContract({
+            chainId: sepolia.id,
             address: ELOQURA_CONTRACTS.sepolia.Router as `0x${string}`,
             abi: ROUTER_ABI,
             functionName: 'swapExactTokensForTokens',
@@ -1190,6 +1207,7 @@ function SwapContent() {
         if (fromToken.symbol === 'ETH') {
           // ETH -> Token: send ETH value with the swap
           writeContract({
+            chainId: sepolia.id,
             address: UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`,
             abi: UNISWAP_ROUTER_ABI,
             functionName: 'exactInputSingle',
@@ -1207,6 +1225,7 @@ function SwapContent() {
         } else {
           // Token -> Token or Token -> ETH
           writeContract({
+            chainId: sepolia.id,
             address: UNISWAP_CONTRACTS.sepolia.SwapRouter02 as `0x${string}`,
             abi: UNISWAP_ROUTER_ABI,
             functionName: 'exactInputSingle',

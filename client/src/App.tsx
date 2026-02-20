@@ -2,6 +2,8 @@ import { Route, Switch, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { useAccount, useSwitchChain } from "wagmi";
+import { sepolia } from "wagmi/chains";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -39,7 +41,21 @@ function Router() {
   );
 }
 
+// Auto-switch wallet to Sepolia when connected on wrong chain
+function useEnforceSepolia() {
+  const { chainId, isConnected } = useAccount();
+  const { switchChain } = useSwitchChain();
+
+  useEffect(() => {
+    if (isConnected && chainId && chainId !== sepolia.id) {
+      switchChain({ chainId: sepolia.id });
+    }
+  }, [isConnected, chainId, switchChain]);
+}
+
 function App() {
+  useEnforceSepolia();
+
   useEffect(() => {
     // Initialize Live Coin Watch sync for production environment
     liveCoinWatchSyncService.initializeProductionSync().catch(error => {
