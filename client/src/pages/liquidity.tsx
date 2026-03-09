@@ -123,7 +123,7 @@ function LiquidityContent() {
     totalSupply: bigint;
   }>>([]);
 
-  // Fetch Eloqura pairs from Factory
+  // Fetch Eloqura pairs from Factory (parallel)
   const fetchEloquraPairs = async () => {
     if (!publicClient) return;
 
@@ -134,42 +134,48 @@ function LiquidityContent() {
         functionName: 'allPairsLength',
       }) as bigint;
 
-      const pairs = [];
-      for (let i = 0; i < Number(pairCount); i++) {
-        const pairAddress = await publicClient.readContract({
-          address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-          abi: FACTORY_ABI,
-          functionName: 'allPairs',
-          args: [BigInt(i)],
-        }) as `0x${string}`;
+      // Fetch all pair addresses in parallel
+      const pairAddresses = await Promise.all(
+        Array.from({ length: Number(pairCount) }, (_, i) =>
+          publicClient.readContract({
+            address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
+            abi: FACTORY_ABI,
+            functionName: 'allPairs',
+            args: [BigInt(i)],
+          }) as Promise<`0x${string}`>
+        )
+      );
 
-        const [token0, token1, reserves, totalSupply] = await Promise.all([
-          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token0' }),
-          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token1' }),
-          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'getReserves' }),
-          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'totalSupply' }),
-        ]) as [string, string, [bigint, bigint, number], bigint];
+      // Fetch all pair data in parallel
+      const pairs = await Promise.all(
+        pairAddresses.map(async (pairAddress) => {
+          const calls: Promise<any>[] = [
+            publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token0' }),
+            publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token1' }),
+            publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'getReserves' }),
+            publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'totalSupply' }),
+          ];
+          if (address) {
+            calls.push(
+              publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'balanceOf', args: [address] })
+            );
+          }
 
-        let lpBalance = 0n;
-        if (address) {
-          lpBalance = await publicClient.readContract({
+          const results = await Promise.all(calls);
+          const [token0, token1, reserves, totalSupply] = results as [string, string, [bigint, bigint, number], bigint];
+          const lpBalance = address ? (results[4] as bigint) : 0n;
+
+          return {
             address: pairAddress,
-            abi: PAIR_ABI,
-            functionName: 'balanceOf',
-            args: [address],
-          }) as bigint;
-        }
-
-        pairs.push({
-          address: pairAddress,
-          token0: token0 as string,
-          token1: token1 as string,
-          reserve0: reserves[0],
-          reserve1: reserves[1],
-          lpBalance,
-          totalSupply,
-        });
-      }
+            token0: token0 as string,
+            token1: token1 as string,
+            reserve0: reserves[0],
+            reserve1: reserves[1],
+            lpBalance,
+            totalSupply,
+          };
+        })
+      );
 
       setEloquraPairs(pairs);
     } catch (error) {
@@ -177,10 +183,15 @@ function LiquidityContent() {
     }
   };
 
-  // Fetch pairs on mount and when address changes
+  // Fetch pairs on mount and when address/connection changes
   useEffect(() => {
     fetchEloquraPairs();
-  }, [publicClient, address]);
+    // Retry after a short delay to catch late wallet connections
+    if (isConnected && address) {
+      const retry = setTimeout(fetchEloquraPairs, 2000);
+      return () => clearTimeout(retry);
+    }
+  }, [publicClient, address, isConnected]);
 
   // Token approval state
   const [needsApprovalToken0, setNeedsApprovalToken0] = useState(false);
@@ -1154,6 +1165,14 @@ function LiquidityContent() {
       address: "0x41B07704b9d671615A3E9f83c06D85CB38bbf4D9",
       decimals: 18,
       logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/ALUD.png",
+      price: 0,
+    },
+    {
+      symbol: "ELOQ",
+      name: "Eloqura",
+      address: "0x4feb15d0644e5c7bb64dcd85744f0f2ab5f7a253",
+      decimals: 18,
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/Eloqura.png",
       price: 0,
     },
     {
