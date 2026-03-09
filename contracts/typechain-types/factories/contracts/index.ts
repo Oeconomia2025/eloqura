@@ -3,6 +3,7 @@
 /* eslint-disable */
 export * as eloquraPairSol from "./EloquraPair.sol";
 export * as eloquraRouterSol from "./EloquraRouter.sol";
+export * as triangularArbExecutorSol from "./TriangularArbExecutor.sol";
 export * as test from "./test";
 export { EloquraFactory__factory } from "./EloquraFactory__factory";
 export { EloquraLimitOrders__factory } from "./EloquraLimitOrders__factory";

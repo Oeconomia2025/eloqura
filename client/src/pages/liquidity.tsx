@@ -1087,7 +1087,7 @@ function LiquidityContent() {
 
       // Fetch ERC20 balances
       const tokenAddresses = [
-        "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba", // OEC
+        "0x00904218319a045a96d776ec6a970f54741208e6", // OEC
         ELOQURA_CONTRACTS.sepolia.WETH,
         "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
         "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
@@ -1135,9 +1135,25 @@ function LiquidityContent() {
     {
       symbol: "OEC",
       name: "Oeconomia",
-      address: "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba",
+      address: "0x00904218319a045a96d776ec6a970f54741208e6",
       decimals: 18,
       logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
+      price: 0,
+    },
+    {
+      symbol: "ALUR",
+      name: "Alluria Reward",
+      address: "0x5cdBed8ED63554FDE6653F02ae1c4d6d5ae71aD3",
+      decimals: 18,
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/ALUR.png",
+      price: 0,
+    },
+    {
+      symbol: "ALUD",
+      name: "Alluria Dollar",
+      address: "0x41B07704b9d671615A3E9f83c06D85CB38bbf4D9",
+      decimals: 18,
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/ALUD.png",
       price: 0,
     },
     {
@@ -1268,11 +1284,31 @@ function LiquidityContent() {
   };
 
   // Helper: estimate USD value for a token amount using known stablecoin prices
+  // Chainlink ETH/USD price for fallback pricing
+  const [ethUsdPrice, setEthUsdPrice] = useState(0);
+  useEffect(() => {
+    const fetchEthPrice = async () => {
+      if (!publicClient) return;
+      try {
+        const result = await publicClient.readContract({
+          address: "0x694AA1769357215DE4FAC081bf1f309aDC325306" as `0x${string}`,
+          abi: [{ inputs: [], name: "latestRoundData", outputs: [{ name: "roundId", type: "uint80" }, { name: "answer", type: "int256" }, { name: "startedAt", type: "uint256" }, { name: "updatedAt", type: "uint256" }, { name: "answeredInRound", type: "uint80" }], stateMutability: "view", type: "function" }],
+          functionName: "latestRoundData",
+        }) as [bigint, bigint, bigint, bigint, bigint];
+        setEthUsdPrice(Number(result[1]) / 1e8);
+      } catch {}
+    };
+    fetchEthPrice();
+  }, [publicClient]);
+
+  // Pool-based pricing: uses Eloqura pool reserves to derive USD value
+  // Does NOT use Chainlink — lets mirror logic handle mismatched pools
   const estimateTokenUsd = (token: Token, amount: number, allPairs: typeof eloquraPairs): number => {
     const addr = token.address.toLowerCase();
     const stablecoins = [
       "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", // USDC
       "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6", // DAI
+      "0x41b07704b9d671615a3e9f83c06d85cb38bbf4d9", // ALUD (pegged to $1)
     ];
     // If token is a stablecoin, 1:1 with USD
     if (stablecoins.includes(addr)) return amount;
@@ -1310,6 +1346,32 @@ function LiquidityContent() {
     return 0;
   };
 
+  // Chainlink fallback: price a token via ETH/USD when pool-based pricing fails
+  const estimateTokenUsdChainlink = (token: Token, amount: number, allPairs: typeof eloquraPairs): number => {
+    if (ethUsdPrice <= 0) return 0;
+    const addr = token.address.toLowerCase();
+    const wethAddr = ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
+    // Direct WETH/ETH pricing
+    if (addr === wethAddr || addr === "0x0000000000000000000000000000000000000000") {
+      return amount * ethUsdPrice;
+    }
+    // Token → WETH via pool, then WETH → USD via Chainlink
+    for (const pair of allPairs) {
+      const t0 = pair.token0.toLowerCase();
+      const t1 = pair.token1.toLowerCase();
+      if ((t0 === addr && t1 === wethAddr) || (t1 === addr && t0 === wethAddr)) {
+        const isToken0 = t0 === addr;
+        const tokenReserve = parseFloat(formatUnits(isToken0 ? pair.reserve0 : pair.reserve1, token.decimals));
+        const wethReserve = parseFloat(formatUnits(isToken0 ? pair.reserve1 : pair.reserve0, 18));
+        if (tokenReserve > 0) {
+          const amountInWeth = amount * (wethReserve / tokenReserve);
+          return amountInWeth * ethUsdPrice;
+        }
+      }
+    }
+    return 0;
+  };
+
   // Convert Eloqura pairs to Position format for display
   const positions: Position[] = eloquraPairs
     .filter(pair => pair.lpBalance > 0n) // Only show pairs where user has LP tokens
@@ -1337,6 +1399,18 @@ function LiquidityContent() {
         usd1 = usd0; // Equal value on both sides
       } else if (usd1 > 0 && usd0 === 0) {
         usd0 = usd1; // Equal value on both sides
+      }
+
+      // If both sides are still 0, try Chainlink as last resort
+      if (usd0 === 0 && usd1 === 0) {
+        usd0 = estimateTokenUsdChainlink(token0Info, userToken0, eloquraPairs);
+        usd1 = estimateTokenUsdChainlink(token1Info, userToken1, eloquraPairs);
+        // Apply mirror again with Chainlink values
+        if (usd0 > 0 && usd1 === 0) {
+          usd1 = usd0;
+        } else if (usd1 > 0 && usd0 === 0) {
+          usd0 = usd1;
+        }
       }
       const totalValue = usd0 + usd1;
 

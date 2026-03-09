@@ -25,7 +25,7 @@ import { useLocation } from "wouter";
 
 // Known token metadata for logos and friendly names (keyed by lowercase address)
 const KNOWN_TOKEN_META: Record<string, { symbol: string; name: string; logo: string }> = {
-  "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba": {
+  "0x00904218319a045a96d776ec6a970f54741208e6": {
     symbol: "OEC", name: "Oeconomia",
     logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
   },
@@ -66,7 +66,7 @@ const ETH_META = {
 };
 
 const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-const OEC_ADDRESS = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
+const OEC_ADDRESS = "0x00904218319a045a96d776ec6a970f54741208e6";
 
 interface TokenBalance {
   symbol: string;

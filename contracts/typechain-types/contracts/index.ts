@@ -5,6 +5,8 @@ import type * as eloquraPairSol from "./EloquraPair.sol";
 export type { eloquraPairSol };
 import type * as eloquraRouterSol from "./EloquraRouter.sol";
 export type { eloquraRouterSol };
+import type * as triangularArbExecutorSol from "./TriangularArbExecutor.sol";
+export type { triangularArbExecutorSol };
 import type * as test from "./test";
 export type { test };
 export type { EloquraFactory } from "./EloquraFactory";

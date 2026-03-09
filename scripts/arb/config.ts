@@ -17,7 +17,7 @@ export const UNISWAP = {
 };
 
 export const KNOWN_TOKENS: Record<string, { address: Address; decimals: number }> = {
-  OEC:  { address: "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba" as Address, decimals: 18 },
+  OEC:  { address: "0x00904218319a045a96d776ec6a970f54741208e6" as Address, decimals: 18 },
   USDC: { address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" as Address, decimals: 6 },
   LINK: { address: "0x779877A7B0D9E8603169DdbD7836e478b4624789" as Address, decimals: 18 },
 };
