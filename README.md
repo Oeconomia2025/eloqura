@@ -5,6 +5,7 @@ Decentralized exchange and automated market maker for the Oeconomia ecosystem. S
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)
+![Solidity](https://img.shields.io/badge/Solidity-363636?logo=solidity&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white)
 
