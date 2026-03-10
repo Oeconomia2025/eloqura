@@ -9,39 +9,39 @@ Decentralized exchange and automated market maker for the Oeconomia ecosystem. S
 ![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?logo=postgresql&logoColor=white)
 
-## 🚀 Features
+## Features
 
-### 📊 Real-Time Analytics
+### Real-Time Analytics
 - **Live Price Tracking** - Real-time OEC token price updates from multiple sources
 - **Market Metrics** - Volume, liquidity, market cap, and trading analytics
 - **Historical Charts** - Interactive price history with multiple timeframes
 - **BSC Integration** - Direct Binance Smart Chain transaction monitoring
 
-### 💰 DeFi Management
+### DeFi Management
 - **Portfolio Tracking** - Comprehensive view of all DeFi positions
 - **Staking Pools** - Multiple pool options (flexible, 30-day, 90-day, 180-day)
 - **ROI Calculator** - Real-time staking rewards calculation
 - **Achievement System** - Gamified badges for staking milestones
 
-### 🏛️ Governance Platform
+### Governance Platform
 - **Proposal Creation** - Submit governance proposals with detailed specifications
 - **Voting System** - Democratic voting on protocol decisions
 - **Delegation** - Delegate voting power to trusted representatives
 - **Discussion Forums** - Community discussion for each proposal
 
-### 🎓 Gamified Learning
+### Gamified Learning
 - **Progress Tracking** - XP system with levels and achievements
 - **Educational Resources** - Curated learning materials about DeFi and blockchain
 - **Achievement Badges** - Unlock rewards for completing educational content
 - **Progress Visualization** - Interactive dashboards showing learning progress
 
-### 🔗 Wallet Integration
+### Wallet Integration
 - **Multi-Wallet Support** - Connect with popular crypto wallets
 - **BSC Network** - Native Binance Smart Chain integration
 - **Transaction History** - View and filter transaction history
 - **Security Features** - Secure wallet connection protocols
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend
 - **React 18** with TypeScript for type-safe development
@@ -67,7 +67,7 @@ Decentralized exchange and automated market maker for the Oeconomia ecosystem. S
 - **BSCScan API** - Blockchain transactions and network data
 - **PancakeSwap API** - DEX trading data and liquidity
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+ installed
@@ -108,7 +108,7 @@ Decentralized exchange and automated market maker for the Oeconomia ecosystem. S
 6. **Open your browser**
    Navigate to `http://localhost:5000`
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 oeconomia-dashboard/
@@ -129,7 +129,7 @@ oeconomia-dashboard/
 └── vite.config.ts
 ```
 
-## 🔧 Available Scripts
+## Available Scripts
 
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
@@ -137,15 +137,15 @@ oeconomia-dashboard/
 - `npm run db:push` - Push database schema changes
 - `npm run db:generate` - Generate database migrations
 
-## 🌟 Key Highlights
+## Key Highlights
 
 ### Recent Features (2025)
-- ✅ **Gamified Learning System** - XP tracking, achievements, and progress visualization
-- ✅ **Enhanced Navigation** - Streamlined sidebar with social media integration
-- ✅ **Staking DApp** - Multi-pool staking interface with colorful gradients
-- ✅ **ROI Calculator** - Interactive calculations with collapsible interface
-- ✅ **Achievement Badges** - Gamified system with 6+ badge types
-- ✅ **Portfolio Analytics** - Volume & liquidity analytics with historical charts
+- **Gamified Learning System** - XP tracking, achievements, and progress visualization
+- **Enhanced Navigation** - Streamlined sidebar with social media integration
+- **Staking DApp** - Multi-pool staking interface with colorful gradients
+- **ROI Calculator** - Interactive calculations with collapsible interface
+- **Achievement Badges** - Gamified system with 6+ badge types
+- **Portfolio Analytics** - Volume & liquidity analytics with historical charts
 
 ### User Experience
 - **Mobile-First Design** - Responsive across all device sizes
@@ -153,14 +153,14 @@ oeconomia-dashboard/
 - **Real-Time Updates** - Live data with 15-60 second refresh intervals
 - **Accessibility** - Built with Radix UI for screen reader compatibility
 
-## 🔐 Security & Privacy
+## Security & Privacy
 
 - **Secure Wallet Connections** - Industry-standard wallet integration
 - **Environment Variables** - Sensitive data stored securely
 - **Session Management** - PostgreSQL-based session storage
 - **API Rate Limiting** - Responsible external API usage
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -168,21 +168,21 @@ oeconomia-dashboard/
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
+## Links
 
 - **Website**: [https://oeconomia.tech](https://oeconomia.tech)
 - **Twitter**: [@Oeconomia2025](https://x.com/Oeconomia2025)
 - **Discord**: [Join Community](https://discord.com/invite/XSgZgeVD)
 - **Medium**: [@oeconomia2025](https://medium.com/@oeconomia2025)
 
-## 📞 Support
+## Support
 
 For support, email admin@oeconomia.io or join our Discord community.
 
 ---
 
-**Built with ❤️ for the Oeconomia ecosystem**
+**Built for the Oeconomia ecosystem**
