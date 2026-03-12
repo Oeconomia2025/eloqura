@@ -19,8 +19,8 @@ import {
   X,
 } from "lucide-react";
 import { useAccount, usePublicClient } from "wagmi";
-import { formatUnits, formatEther, parseUnits } from "viem";
-import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, FACTORY_ABI, PAIR_ABI } from "@/lib/contracts";
+import { formatUnits, formatEther } from "viem";
+import { ELOQURA_CONTRACTS, ERC20_ABI, FACTORY_ABI, PAIR_ABI } from "@/lib/contracts";
 import { useLocation } from "wouter";
 
 // Known token metadata for logos and friendly names (keyed by lowercase address)
@@ -158,204 +158,22 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [address]);
 
-  // Step 2: Fetch prices for discovered tokens + ETH
-  // Uses same parallel + timeout + skip-quoter strategy as DAO Hub portfolio
+  // Step 2: Fetch token prices from serverless function (cached server-side, single fetch)
   useEffect(() => {
-    // Tokens not on Uniswap V3 — skip quoter to avoid slow timeout RPC calls
-    const SKIP_QUOTER = new Set([
-      "0x00904218319a045a96d776ec6a970f54741208e6", // OEC
-      "0x5cdbed8ed63554fde6653f02ae1c4d6d5ae71ad3", // ALUR
-      "0x41b07704b9d671615a3e9f83c06d85cb38bbf4d9", // ALUD
-      "0x4feb15d0644e5c7bb64dcd85744f0f2ab5f7a253", // ELOQ
-    ]);
-    const FEE_TIERS = [3000, 500, 10000] as const;
-
     const fetchPrices = async () => {
-      if (!publicClient) return;
-      const usdcAddress = USDC_ADDRESS as `0x${string}`;
-      const prices: Record<string, number> = {};
-
-      // Helper: race an RPC call against a 4s timeout
-      const withTimeout = async (call: Promise<any>, ms = 4000) => {
-        const timeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), ms)
-        );
-        return Promise.race([call, timeout]);
-      };
-
-      // Build deduplicated list of tokens to price
-      const seen = new Set<string>();
-      const toPriceList: { address: string; symbol: string; decimals: number }[] = [
-        { address: "eth", symbol: "ETH", decimals: 18 },
-      ];
-      seen.add("eth");
-      for (const dt of discoveredTokens) {
-        const addr = dt.address.toLowerCase();
-        if (lpPairAddresses.has(addr)) continue;
-        if (dt.symbol.includes("LP") || dt.symbol.includes("ELQ-")) continue;
-        if (!seen.has(addr)) {
-          const meta = KNOWN_TOKEN_META[addr];
-          toPriceList.push({ address: addr, symbol: meta?.symbol || dt.symbol, decimals: dt.decimals });
-          seen.add(addr);
-        }
+      try {
+        const res = await fetch("/.netlify/functions/token-prices");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.prices) setTokenPrices(data.prices);
+      } catch (err) {
+        console.error("Price fetch failed:", err);
       }
-
-      // Helper: fetch price for a single token (all tiers parallel)
-      const fetchSinglePrice = async (token: typeof toPriceList[0]): Promise<{ symbol: string; addr: string; price: number }> => {
-        const addr = token.address.toLowerCase();
-
-        // Stablecoins
-        if (addr === USDC_ADDRESS.toLowerCase()) return { symbol: token.symbol, addr, price: 1 };
-        if (token.symbol === "DAI") return { symbol: token.symbol, addr, price: 1 };
-        if (token.symbol === "ALUD") return { symbol: token.symbol, addr, price: 1 };
-
-        // Skip Uniswap quoter for Oeconomia-native tokens (they're only on Eloqura DEX)
-        if (SKIP_QUOTER.has(addr)) return { symbol: token.symbol, addr, price: 0 };
-
-        const isEthLike = token.symbol === "ETH" || token.symbol === "WETH" ||
-          addr === UNISWAP_CONTRACTS.sepolia.WETH.toLowerCase() ||
-          addr === ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase();
-        const quoterAddr = isEthLike
-          ? UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`
-          : token.address as `0x${string}`;
-
-        // Tier 1: Direct token → USDC via Uniswap V3 (all fee tiers in parallel)
-        const directResults = await Promise.allSettled(
-          FEE_TIERS.map(fee =>
-            withTimeout(publicClient.simulateContract({
-              address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
-              abi: UNISWAP_QUOTER_ABI,
-              functionName: "quoteExactInputSingle",
-              args: [{ tokenIn: quoterAddr, tokenOut: usdcAddress, amountIn: parseUnits("1", token.decimals), fee, sqrtPriceLimitX96: 0n }],
-            }))
-          )
-        );
-        for (const r of directResults) {
-          if (r.status === "fulfilled") {
-            const usdPrice = parseFloat(formatUnits(r.value.result[0], 6));
-            if (usdPrice > 0) return { symbol: token.symbol, addr, price: usdPrice };
-          }
-        }
-
-        // Tier 2: token → WETH → USDC (parallel fee tiers)
-        if (!isEthLike && addr !== "eth") {
-          const hopResults = await Promise.allSettled(
-            FEE_TIERS.map(fee =>
-              withTimeout(publicClient.simulateContract({
-                address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
-                abi: UNISWAP_QUOTER_ABI,
-                functionName: "quoteExactInputSingle",
-                args: [{ tokenIn: quoterAddr, tokenOut: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`, amountIn: parseUnits("1", token.decimals), fee, sqrtPriceLimitX96: 0n }],
-              }))
-            )
-          );
-          for (const r of hopResults) {
-            if (r.status === "fulfilled") {
-              const wethAmount = parseFloat(formatUnits(r.value.result[0], 18));
-              if (wethAmount > 0) {
-                const wethResults = await Promise.allSettled(
-                  FEE_TIERS.map(wethFee =>
-                    withTimeout(publicClient.simulateContract({
-                      address: UNISWAP_CONTRACTS.sepolia.QuoterV2 as `0x${string}`,
-                      abi: UNISWAP_QUOTER_ABI,
-                      functionName: "quoteExactInputSingle",
-                      args: [{ tokenIn: UNISWAP_CONTRACTS.sepolia.WETH as `0x${string}`, tokenOut: usdcAddress, amountIn: parseUnits("1", 18), fee: wethFee, sqrtPriceLimitX96: 0n }],
-                    }))
-                  )
-                );
-                for (const wr of wethResults) {
-                  if (wr.status === "fulfilled") {
-                    const wethUsd = parseFloat(formatUnits(wr.value.result[0], 6));
-                    if (wethUsd > 0) return { symbol: token.symbol, addr, price: wethAmount * wethUsd };
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        return { symbol: token.symbol, addr, price: 0 };
-      };
-
-      // Fetch all Uniswap prices in parallel (all tokens at once)
-      const results = await Promise.all(toPriceList.map(fetchSinglePrice));
-      for (const { symbol, addr, price } of results) {
-        if (price > 0) { prices[symbol] = price; prices[addr] = price; }
-      }
-
-      // Sync ETH <-> WETH
-      if (prices["ETH"] && !prices["WETH"]) prices["WETH"] = prices["ETH"];
-      if (prices["WETH"] && !prices["ETH"]) prices["ETH"] = prices["WETH"];
-      const ethP = prices["ETH"] || 0;
-      prices["eth"] = ethP;
-      prices[ELOQURA_CONTRACTS.sepolia.WETH.toLowerCase()] = ethP;
-      prices[UNISWAP_CONTRACTS.sepolia.WETH.toLowerCase()] = ethP;
-
-      // Tier 3: Eloqura DEX pool reserves for unpriced tokens (parallel)
-      const unpricedTokens = toPriceList.filter(t =>
-        !prices[t.address.toLowerCase()] && t.address !== "eth"
-      );
-      if (unpricedTokens.length > 0) {
-        const eloquraResults = await Promise.allSettled(
-          unpricedTokens.map(async (token) => {
-            const addr = token.address.toLowerCase();
-            // Try USDC pair first
-            let pairAddress = await publicClient.readContract({
-              address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-              abi: FACTORY_ABI,
-              functionName: "getPair",
-              args: [token.address as `0x${string}`, usdcAddress],
-            }) as `0x${string}`;
-            if (pairAddress && pairAddress !== "0x0000000000000000000000000000000000000000") {
-              const [reserves, token0] = await Promise.all([
-                publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "getReserves" }) as Promise<[bigint, bigint, number]>,
-                publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
-              ]);
-              const isToken0 = token0.toLowerCase() === addr;
-              const tokenReserve = parseFloat(formatUnits(isToken0 ? reserves[0] : reserves[1], token.decimals));
-              const usdcReserve = parseFloat(formatUnits(isToken0 ? reserves[1] : reserves[0], 6));
-              if (tokenReserve > 0 && usdcReserve > 0) {
-                return { symbol: token.symbol, addr, price: usdcReserve / tokenReserve };
-              }
-            }
-            // Try WETH pair as fallback
-            if (ethP > 0) {
-              pairAddress = await publicClient.readContract({
-                address: ELOQURA_CONTRACTS.sepolia.Factory as `0x${string}`,
-                abi: FACTORY_ABI,
-                functionName: "getPair",
-                args: [token.address as `0x${string}`, ELOQURA_CONTRACTS.sepolia.WETH as `0x${string}`],
-              }) as `0x${string}`;
-              if (pairAddress && pairAddress !== "0x0000000000000000000000000000000000000000") {
-                const [reserves, token0] = await Promise.all([
-                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "getReserves" }) as Promise<[bigint, bigint, number]>,
-                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
-                ]);
-                const isToken0 = token0.toLowerCase() === addr;
-                const tokenReserve = parseFloat(formatUnits(isToken0 ? reserves[0] : reserves[1], token.decimals));
-                const wethReserve = parseFloat(formatUnits(isToken0 ? reserves[1] : reserves[0], 18));
-                if (tokenReserve > 0 && wethReserve > 0) {
-                  return { symbol: token.symbol, addr, price: (wethReserve / tokenReserve) * ethP };
-                }
-              }
-            }
-            return null;
-          })
-        );
-        for (const r of eloquraResults) {
-          if (r.status === "fulfilled" && r.value) {
-            prices[r.value.symbol] = r.value.price;
-            prices[r.value.addr] = r.value.price;
-          }
-        }
-      }
-
-      setTokenPrices(prices);
     };
     fetchPrices();
     const interval = setInterval(fetchPrices, 60000);
     return () => clearInterval(interval);
-  }, [publicClient, discoveredTokens, lpPairAddresses]);
+  }, []);
 
   // Step 3: Build final token balances from discovered tokens + ETH
   useEffect(() => {
