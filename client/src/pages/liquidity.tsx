@@ -1082,65 +1082,6 @@ function LiquidityContent() {
 
 
 
-  // Token balances state
-  const [tokenBalances, setTokenBalances] = useState<Record<string, bigint>>({});
-
-  // Fetch token balances
-  const fetchTokenBalances = async () => {
-    if (!publicClient || !address) return;
-
-    try {
-      const balances: Record<string, bigint> = {};
-
-      // Fetch ETH balance
-      const ethBal = await publicClient.getBalance({ address });
-      balances["0x0000000000000000000000000000000000000000"] = ethBal;
-
-      // Fetch ERC20 balances
-      const tokenAddresses = [
-        "0x00904218319a045a96d776ec6a970f54741208e6", // OEC
-        ELOQURA_CONTRACTS.sepolia.WETH,
-        "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
-        "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // USDC
-        "0x5bB220Afc6E2e008CB2302a83536A019ED245AA2", // AAVE
-        "0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6", // DAI
-      ];
-
-      for (const tokenAddr of tokenAddresses) {
-        try {
-          const bal = await publicClient.readContract({
-            address: tokenAddr as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: 'balanceOf',
-            args: [address],
-          }) as bigint;
-          balances[tokenAddr] = bal;
-        } catch (err) {
-          balances[tokenAddr] = 0n;
-        }
-      }
-
-      setTokenBalances(balances);
-    } catch (error) {
-      console.error('Error fetching token balances:', error);
-    }
-  };
-
-  // Fetch balances on mount and when address changes
-  useEffect(() => {
-    fetchTokenBalances();
-  }, [publicClient, address]);
-
-  // Refetch balances after successful transaction
-  useEffect(() => {
-    if (isConfirmed) {
-      setTimeout(() => {
-        fetchTokenBalances();
-        fetchEloquraPairs();
-      }, 1000);
-    }
-  }, [isConfirmed]);
-
   // Sepolia testnet tokens for liquidity
   const sepoliaTokens: Token[] = [
     {
@@ -1156,7 +1097,7 @@ function LiquidityContent() {
       name: "Alluria Reward",
       address: "0x5cdBed8ED63554FDE6653F02ae1c4d6d5ae71aD3",
       decimals: 18,
-      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/ALUR.png",
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/With%20Border/ALUR%20no%20Border.png",
       price: 0,
     },
     {
@@ -1224,6 +1165,57 @@ function LiquidityContent() {
       price: 0,
     },
   ];
+
+  // Token balances state
+  const [tokenBalances, setTokenBalances] = useState<Record<string, bigint>>({});
+
+  // Fetch token balances (parallel, all tokens in sepoliaTokens)
+  const fetchTokenBalances = async () => {
+    if (!publicClient || !address) return;
+
+    try {
+      const balances: Record<string, bigint> = {};
+
+      // Collect all ERC-20 addresses from sepoliaTokens (skip native ETH)
+      const erc20Tokens = sepoliaTokens.filter(t => t.address !== "0x0000000000000000000000000000000000000000");
+
+      const [ethBal, ...erc20Results] = await Promise.all([
+        publicClient.getBalance({ address }),
+        ...erc20Tokens.map(t =>
+          publicClient.readContract({
+            address: t.address as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [address],
+          }).catch(() => 0n) as Promise<bigint>
+        ),
+      ]);
+
+      balances["0x0000000000000000000000000000000000000000"] = ethBal;
+      erc20Tokens.forEach((t, i) => {
+        balances[t.address] = erc20Results[i];
+      });
+
+      setTokenBalances(balances);
+    } catch (error) {
+      console.error('Error fetching token balances:', error);
+    }
+  };
+
+  // Fetch balances on mount and when address changes
+  useEffect(() => {
+    fetchTokenBalances();
+  }, [publicClient, address]);
+
+  // Refetch balances after successful transaction
+  useEffect(() => {
+    if (isConfirmed) {
+      setTimeout(() => {
+        fetchTokenBalances();
+        fetchEloquraPairs();
+      }, 1000);
+    }
+  }, [isConfirmed]);
 
   // Custom token resolved from pasted address
   const [customToken, setCustomToken] = useState<Token | null>(null);

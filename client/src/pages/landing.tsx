@@ -194,7 +194,7 @@ export default function Landing() {
                 <Button 
                   size="lg"
                   variant="outline"
-                  onClick={() => window.open('https://oeconomia.tech/', '_blank')}
+                  onClick={() => window.open('https://oeconomia.io/', '_blank')}
                   className="border-cyan-500/50 hover:bg-cyan-500/10 px-8 py-3"
                 >
                   Learn More

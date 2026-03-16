@@ -303,7 +303,7 @@ export function Layout({
                 style={!sidebarCollapsed ? { width: 'var(--radix-dropdown-menu-trigger-width)' } : undefined}
               >
                 <DropdownMenuItem 
-                  onClick={() => window.open('https://oeconomia.tech/', '_blank')}
+                  onClick={() => window.open('https://oeconomia.io/', '_blank')}
                   className="cursor-pointer hover:bg-gradient-to-r hover:from-sky-500/20 hover:to-blue-600/20 transition-all duration-200"
                 >
                   <Globe className="w-4 h-4 mr-2" />

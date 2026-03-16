@@ -32,7 +32,7 @@ const ecosystemItems = [
   },
   {
     name: "Alluria",
-    image: "/ecosystem/alur.png",
+    image: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/With%20Border/ALUR%20With%20Border.png",
     url: "https://alluria.oeconomia.io/",
     description: "A decentralized lending and borrowing protocol. Deposit collateral to mint ALUD stablecoins, earn yield in the Stability Pool, and stake ALUR for fee revenue.",
   },

@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { useAccount, usePublicClient } from "wagmi";
-import { formatUnits, formatEther } from "viem";
+import { formatUnits, formatEther, parseUnits } from "viem";
 import { ELOQURA_CONTRACTS, ERC20_ABI, FACTORY_ABI, PAIR_ABI } from "@/lib/contracts";
 import { useLocation } from "wouter";
 
@@ -65,8 +65,64 @@ const ETH_META = {
   logo: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
 };
 
-const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-const OEC_ADDRESS = "0x00904218319a045a96d776ec6a970f54741208e6";
+const OEC_ADDRESS = '0x00904218319a045a96d776ec6a970f54741208e6'
+
+// ── Pricing constants (copied from DAO Hub portfolio.tsx) ──
+const ELOQURA_FACTORY = '0x1a4C7849Dd8f62AefA082360b3A8D857952B3b8e' as `0x${string}`
+const ELOQURA_WETH = '0x34b11f6b8f78fa010bbca71bc7fe79daa811b89f' as `0x${string}`
+const USDC_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238' as `0x${string}`
+const UNISWAP_QUOTER_V2 = '0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3' as `0x${string}`
+const UNISWAP_WETH = '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14' as `0x${string}`
+const FEE_TIERS = [3000, 500, 10000] as const
+
+// Uniswap V3 QuoterV2 ABI (local definition with as const, same as DAO Hub)
+const QUOTER_ABI = [
+  {
+    name: 'quoteExactInputSingle', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'params', type: 'tuple', components: [
+      { name: 'tokenIn', type: 'address' }, { name: 'tokenOut', type: 'address' },
+      { name: 'amountIn', type: 'uint256' }, { name: 'fee', type: 'uint24' },
+      { name: 'sqrtPriceLimitX96', type: 'uint160' },
+    ]}],
+    outputs: [
+      { name: 'amountOut', type: 'uint256' }, { name: 'sqrtPriceX96After', type: 'uint160' },
+      { name: 'initializedTicksCrossed', type: 'uint32' }, { name: 'gasEstimate', type: 'uint256' },
+    ],
+  },
+] as const
+
+// Tokens not on Uniswap V3 — skip quoter to avoid slow timeout RPC calls
+const SKIP_QUOTER = new Set([
+  '0x00904218319a045a96d776ec6a970f54741208e6', // OEC
+  '0x5cdbed8ed63554fde6653f02ae1c4d6d5ae71ad3', // ALUR
+  '0x41b07704b9d671615a3e9f83c06d85cb38bbf4d9', // ALUD
+  '0x4feb15d0644e5c7bb64dcd85744f0f2ab5f7a253', // ELOQ
+])
+
+// Tokens to always price (for staking/LP calculations even if not in wallet)
+const PRICING_TOKENS = [
+  { address: '0x00904218319a045a96d776ec6a970f54741208e6', symbol: 'OEC', decimals: 18 },
+  { address: '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238', symbol: 'USDC', decimals: 6 },
+  { address: '0x779877a7b0d9e8603169ddbd7836e478b4624789', symbol: 'LINK', decimals: 18 },
+  { address: '0xfff9976782d46cc05630d1f6ebab18b2324d6b14', symbol: 'WETH', decimals: 18 },
+  { address: '0x34b11f6b8f78fa010bbca71bc7fe79daa811b89f', symbol: 'WETH', decimals: 18 },
+  { address: '0x5cdbed8ed63554fde6653f02ae1c4d6d5ae71ad3', symbol: 'ALUR', decimals: 18 },
+  { address: '0x41b07704b9d671615a3e9f83c06d85cb38bbf4d9', symbol: 'ALUD', decimals: 18 },
+  { address: '0x4feb15d0644e5c7bb64dcd85744f0f2ab5f7a253', symbol: 'ELOQ', decimals: 18 },
+]
+
+// Known token address → symbol/name map for resolution
+const TOKEN_MAP: Record<string, { symbol: string; name: string; decimals: number }> = {
+  '0x00904218319a045a96d776ec6a970f54741208e6': { symbol: 'OEC', name: 'Oeconomia', decimals: 18 },
+  '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+  '0x779877a7b0d9e8603169ddbd7836e478b4624789': { symbol: 'LINK', name: 'Chainlink', decimals: 18 },
+  '0xfff9976782d46cc05630d1f6ebab18b2324d6b14': { symbol: 'WETH', name: 'Wrapped Ether (Uniswap)', decimals: 18 },
+  '0x34b11f6b8f78fa010bbca71bc7fe79daa811b89f': { symbol: 'WETH', name: 'Wrapped Ether (Eloqura)', decimals: 18 },
+  '0x5cdbed8ed63554fde6653f02ae1c4d6d5ae71ad3': { symbol: 'ALUR', name: 'Alluria Reward', decimals: 18 },
+  '0x41b07704b9d671615a3e9f83c06d85cb38bbf4d9': { symbol: 'ALUD', name: 'Alluria Dollar', decimals: 18 },
+  '0x4feb15d0644e5c7bb64dcd85744f0f2ab5f7a253': { symbol: 'ELOQ', name: 'Eloqura', decimals: 18 },
+  '0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6': { symbol: 'DAI', name: 'Dai Stablecoin', decimals: 18 },
+}
 
 interface TokenBalance {
   symbol: string;
@@ -158,22 +214,195 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [address]);
 
-  // Step 2: Fetch token prices from serverless function (cached server-side, single fetch)
+  // Step 2: Fetch token prices via Uniswap V3 QuoterV2 + Eloqura DEX fallback (parallel)
+  // This is the EXACT same approach as the DAO Hub portfolio page
   useEffect(() => {
     const fetchPrices = async () => {
-      try {
-        const res = await fetch("/.netlify/functions/token-prices");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.prices) setTokenPrices(data.prices);
-      } catch (err) {
-        console.error("Price fetch failed:", err);
+      if (!publicClient) return
+      const prices: Record<string, number> = {}
+
+      // Helper: race a simulateContract call against a 4s timeout
+      const quoterCallWithTimeout = async (args: any, timeoutMs = 4000) => {
+        const call = publicClient.simulateContract(args)
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), timeoutMs)
+        )
+        return Promise.race([call, timeout])
       }
-    };
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 60000);
-    return () => clearInterval(interval);
-  }, []);
+
+      // Merge discovered tokens + baseline pricing tokens (deduplicated)
+      const seen = new Set<string>()
+      const pricingTokens: Array<{ symbol: string; address: string; decimals: number }> = [
+        { symbol: 'ETH', address: '0x0000000000000000000000000000000000000000', decimals: 18 },
+      ]
+      seen.add('0x0000000000000000000000000000000000000000')
+      for (const t of discoveredTokens) {
+        const addr = t.address.toLowerCase()
+        // Skip LP tokens — they're pair contracts, not tradeable tokens
+        if (t.symbol.includes('LP') || t.symbol.includes('ELQ-')) continue
+        if (!seen.has(addr)) { pricingTokens.push({ symbol: t.symbol, address: addr, decimals: t.decimals }); seen.add(addr) }
+      }
+      for (const t of PRICING_TOKENS) {
+        const addr = t.address.toLowerCase()
+        if (!seen.has(addr)) { pricingTokens.push({ symbol: t.symbol, address: addr, decimals: t.decimals }); seen.add(addr) }
+      }
+      // Add TOKEN_MAP entries not yet seen
+      for (const [addr, meta] of Object.entries(TOKEN_MAP)) {
+        if (!seen.has(addr)) { pricingTokens.push({ symbol: meta.symbol, address: addr, decimals: meta.decimals }); seen.add(addr) }
+      }
+
+      // Helper: fetch price for a single token
+      const fetchSinglePrice = async (token: typeof pricingTokens[0]): Promise<{ symbol: string; addr: string; price: number }> => {
+        const addr = token.address.toLowerCase()
+        if (token.symbol === 'USDC') return { symbol: 'USDC', addr, price: 1 }
+        if (token.symbol === 'ALUD') return { symbol: 'ALUD', addr, price: 1 } // stablecoin pegged to $1
+        if (token.symbol === 'DAI') return { symbol: 'DAI', addr, price: 1 }
+
+        // Skip Uniswap quoter for Oeconomia-native tokens
+        if (SKIP_QUOTER.has(addr)) return { symbol: token.symbol, addr, price: 0 }
+
+        const quoterAddress = (token.symbol === 'ETH' || token.symbol === 'WETH')
+          ? UNISWAP_WETH : token.address as `0x${string}`
+
+        // Tier 1: Direct token → USDC via Uniswap V3 (all fee tiers parallel)
+        const directResults = await Promise.allSettled(
+          FEE_TIERS.map(fee =>
+            quoterCallWithTimeout({
+              address: UNISWAP_QUOTER_V2,
+              abi: QUOTER_ABI,
+              functionName: 'quoteExactInputSingle',
+              args: [{ tokenIn: quoterAddress, tokenOut: USDC_ADDRESS, amountIn: parseUnits('1', token.decimals), fee, sqrtPriceLimitX96: 0n }],
+            })
+          )
+        )
+        for (const r of directResults) {
+          if (r.status === 'fulfilled') {
+            const usdPrice = parseFloat(formatUnits(r.value.result[0], 6))
+            if (usdPrice > 0) return { symbol: token.symbol, addr, price: usdPrice }
+          }
+        }
+
+        // Tier 2: token → WETH → USDC (parallel fee tiers)
+        if (token.symbol !== 'WETH' && token.symbol !== 'ETH') {
+          const hopResults = await Promise.allSettled(
+            FEE_TIERS.map(fee =>
+              quoterCallWithTimeout({
+                address: UNISWAP_QUOTER_V2,
+                abi: QUOTER_ABI,
+                functionName: 'quoteExactInputSingle',
+                args: [{ tokenIn: quoterAddress, tokenOut: UNISWAP_WETH, amountIn: parseUnits('1', token.decimals), fee, sqrtPriceLimitX96: 0n }],
+              })
+            )
+          )
+          for (const r of hopResults) {
+            if (r.status === 'fulfilled') {
+              const wethAmount = parseFloat(formatUnits(r.value.result[0], 18))
+              if (wethAmount > 0) {
+                const wethResults = await Promise.allSettled(
+                  FEE_TIERS.map(wethFee =>
+                    quoterCallWithTimeout({
+                      address: UNISWAP_QUOTER_V2,
+                      abi: QUOTER_ABI,
+                      functionName: 'quoteExactInputSingle',
+                      args: [{ tokenIn: UNISWAP_WETH, tokenOut: USDC_ADDRESS, amountIn: parseUnits('1', 18), fee: wethFee, sqrtPriceLimitX96: 0n }],
+                    })
+                  )
+                )
+                for (const wr of wethResults) {
+                  if (wr.status === 'fulfilled') {
+                    const wethUsd = parseFloat(formatUnits(wr.value.result[0], 6))
+                    if (wethUsd > 0) return { symbol: token.symbol, addr, price: wethAmount * wethUsd }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        return { symbol: token.symbol, addr, price: 0 }
+      }
+
+      // Fetch all Uniswap prices in parallel
+      const results = await Promise.all(pricingTokens.map(fetchSinglePrice))
+      for (const { symbol, addr, price } of results) {
+        if (price > 0) { prices[symbol] = price; prices[addr] = price }
+      }
+
+      // Sync ETH <-> WETH
+      if (prices['ETH'] && !prices['WETH']) prices['WETH'] = prices['ETH']
+      if (prices['WETH'] && !prices['ETH']) prices['ETH'] = prices['WETH']
+      const ethPriceVal = prices['ETH'] || 0
+      prices['eth'] = ethPriceVal
+      prices['WETH_ELOQURA'] = ethPriceVal
+      prices['0xfff9976782d46cc05630d1f6ebab18b2324d6b14'] = ethPriceVal
+      prices['0x34b11f6b8f78fa010bbca71bc7fe79daa811b89f'] = ethPriceVal
+
+      // Tier 3: Eloqura DEX pool reserves for unpriced tokens (parallel)
+      const unpricedTokens = pricingTokens.filter(t => !prices[t.address.toLowerCase()] && t.symbol !== 'ETH')
+      if (unpricedTokens.length > 0) {
+        const eloquraResults = await Promise.allSettled(
+          unpricedTokens.map(async (token) => {
+            // Try USDC pair first
+            let pairAddress = await publicClient.readContract({
+              address: ELOQURA_FACTORY,
+              abi: FACTORY_ABI,
+              functionName: 'getPair',
+              args: [token.address as `0x${string}`, USDC_ADDRESS],
+            }) as `0x${string}`
+
+            if (pairAddress && pairAddress !== '0x0000000000000000000000000000000000000000') {
+              const [reserves, token0] = await Promise.all([
+                publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'getReserves' }) as Promise<[bigint, bigint, number]>,
+                publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token0' }) as Promise<`0x${string}`>,
+              ])
+              const isToken0 = token0.toLowerCase() === token.address.toLowerCase()
+              const tokenReserve = parseFloat(formatUnits(isToken0 ? reserves[0] : reserves[1], token.decimals))
+              const usdcReserve = parseFloat(formatUnits(isToken0 ? reserves[1] : reserves[0], 6))
+              if (tokenReserve > 0 && usdcReserve > 0) {
+                return { symbol: token.symbol, addr: token.address.toLowerCase(), price: usdcReserve / tokenReserve }
+              }
+            }
+
+            // Try WETH pair as fallback
+            if (ethPriceVal > 0) {
+              pairAddress = await publicClient.readContract({
+                address: ELOQURA_FACTORY,
+                abi: FACTORY_ABI,
+                functionName: 'getPair',
+                args: [token.address as `0x${string}`, ELOQURA_WETH],
+              }) as `0x${string}`
+
+              if (pairAddress && pairAddress !== '0x0000000000000000000000000000000000000000') {
+                const [reserves, token0] = await Promise.all([
+                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'getReserves' }) as Promise<[bigint, bigint, number]>,
+                  publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: 'token0' }) as Promise<`0x${string}`>,
+                ])
+                const isToken0 = token0.toLowerCase() === token.address.toLowerCase()
+                const tokenReserve = parseFloat(formatUnits(isToken0 ? reserves[0] : reserves[1], token.decimals))
+                const wethReserve = parseFloat(formatUnits(isToken0 ? reserves[1] : reserves[0], 18))
+                if (tokenReserve > 0 && wethReserve > 0) {
+                  return { symbol: token.symbol, addr: token.address.toLowerCase(), price: (wethReserve / tokenReserve) * ethPriceVal }
+                }
+              }
+            }
+
+            return null
+          })
+        )
+        for (const r of eloquraResults) {
+          if (r.status === 'fulfilled' && r.value) {
+            prices[r.value.symbol] = r.value.price
+            prices[r.value.addr] = r.value.price
+          }
+        }
+      }
+
+      setTokenPrices(prices)
+    }
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 60000)
+    return () => clearInterval(interval)
+  }, [publicClient, discoveredTokens])
 
   // Step 3: Build final token balances from discovered tokens + ETH
   useEffect(() => {

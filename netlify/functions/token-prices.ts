@@ -34,6 +34,7 @@ const BASE_TOKENS = [
 // ── Cache ────────────────────────────────────────────────────
 let cachedPrices: Record<string, number> | null = null;
 let cacheTimestamp = 0;
+let cachedExtraKey = ''; // tracks which extra tokens were in the cached response
 const CACHE_TTL = 60_000; // 60 seconds
 
 // ── ABI encoders (manual — no ethers/viem dependency needed) ─
@@ -122,7 +123,10 @@ async function rpcCall(alchemyUrl: string, to: string, data: string): Promise<st
 }
 
 // ── Pricing logic ────────────────────────────────────────────
-async function fetchAllPrices(alchemyUrl: string): Promise<Record<string, number>> {
+async function fetchAllPrices(
+  alchemyUrl: string,
+  extraTokens: { address: string; decimals: number }[] = []
+): Promise<Record<string, number>> {
   const prices: Record<string, number> = {};
 
   // Stablecoins
@@ -133,8 +137,19 @@ async function fetchAllPrices(alchemyUrl: string): Promise<Record<string, number
   prices['ALUD'] = 1;
   prices['0x41b07704b9d671615a3e9f83c06d85cb38bbf4d9'] = 1;
 
+  // Merge base tokens with extra discovered tokens (deduplicated)
+  const seen = new Set(BASE_TOKENS.map(t => t.address.toLowerCase()));
+  const allTokens = [...BASE_TOKENS];
+  for (const et of extraTokens) {
+    const addr = et.address.toLowerCase();
+    if (!seen.has(addr)) {
+      allTokens.push({ address: addr, symbol: addr.slice(0, 8), decimals: et.decimals });
+      seen.add(addr);
+    }
+  }
+
   // ── Tier 1 & 2: Uniswap V3 Quoter (parallel for all non-skip tokens) ──
-  const quoterTokens = BASE_TOKENS.filter(t =>
+  const quoterTokens = allTokens.filter(t =>
     !SKIP_QUOTER.has(t.address) && t.symbol !== 'USDC' && t.symbol !== 'DAI' && t.symbol !== 'ALUD'
   );
 
@@ -171,7 +186,7 @@ async function fetchAllPrices(alchemyUrl: string): Promise<Record<string, number
   }
 
   // ── Tier 3: Eloqura DEX pool reserves (parallel for unpriced tokens) ──
-  const unpricedTokens = BASE_TOKENS.filter(t => {
+  const unpricedTokens = allTokens.filter(t => {
     const addr = t.address.toLowerCase();
     return !prices[addr] && t.symbol !== 'USDC' && t.symbol !== 'DAI' && t.symbol !== 'ALUD' &&
            t.symbol !== 'WETH' && t.symbol !== 'WETH_ELOQURA';
@@ -280,8 +295,21 @@ export const handler: Handler = async (event) => {
     return { statusCode: 200, headers, body: '' };
   }
 
-  // Return cached prices if fresh
-  if (cachedPrices && Date.now() - cacheTimestamp < CACHE_TTL) {
+  // Parse extra tokens from query: ?tokens=0xaddr1:18,0xaddr2:6
+  const extraTokens: { address: string; decimals: number }[] = [];
+  const tokensParam = event.queryStringParameters?.tokens;
+  if (tokensParam) {
+    for (const entry of tokensParam.split(',')) {
+      const [addr, dec] = entry.split(':');
+      if (addr && /^0x[a-fA-F0-9]{40}$/.test(addr)) {
+        extraTokens.push({ address: addr.toLowerCase(), decimals: parseInt(dec, 10) || 18 });
+      }
+    }
+  }
+  const extraKey = extraTokens.map(t => t.address).sort().join(',');
+
+  // Return cached prices if fresh and same token set
+  if (cachedPrices && Date.now() - cacheTimestamp < CACHE_TTL && extraKey === cachedExtraKey) {
     return { statusCode: 200, headers, body: JSON.stringify({ prices: cachedPrices, cached: true }) };
   }
 
@@ -292,10 +320,11 @@ export const handler: Handler = async (event) => {
 
   try {
     const alchemyUrl = `https://eth-sepolia.g.alchemy.com/v2/${apiKey}`;
-    const prices = await fetchAllPrices(alchemyUrl);
+    const prices = await fetchAllPrices(alchemyUrl, extraTokens);
 
     cachedPrices = prices;
     cacheTimestamp = Date.now();
+    cachedExtraKey = extraKey;
 
     return { statusCode: 200, headers, body: JSON.stringify({ prices, cached: false }) };
   } catch (error) {

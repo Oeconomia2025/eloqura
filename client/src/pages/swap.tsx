@@ -310,7 +310,7 @@ function SwapContent() {
       name: "Alluria Reward",
       address: "0x5cdBed8ED63554FDE6653F02ae1c4d6d5ae71aD3",
       decimals: 18,
-      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/ALUR.png",
+      logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/With%20Border/ALUR%20no%20Border.png",
       price: 0,
     },
     {
