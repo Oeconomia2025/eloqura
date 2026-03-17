@@ -609,6 +609,13 @@ export const LIMIT_ORDERS_ABI = [
     ],
     stateMutability: "view",
   },
+  {
+    name: "claimExpired",
+    type: "function",
+    inputs: [{ name: "orderId", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
 ] as const;
 
 // Helper to get contracts for current network

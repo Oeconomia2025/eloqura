@@ -1475,131 +1475,45 @@ function LiquidityContent() {
   }) || [];
 
   // Mock pool data for pools view
-  const mockPools = [
-    {
-      id: 1,
-      tokenA: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
-      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
-      fee: "0.05%",
-      volume24h: "$2.4M",
-      volume7d: "$18.2M",
-      tvl: "$8.9M",
-      apr: "12.4%",
-      priceChange24h: 2.1,
-      network: "BSC"
-    },
-    {
-      id: 2,
-      tokenA: { symbol: "OEC", name: "Oeconomia", logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png" },
-      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
-      fee: "0.30%",
-      volume24h: "$567K",
-      volume7d: "$4.2M",
-      tvl: "$2.1M",
-      apr: "24.8%",
-      priceChange24h: -1.3,
-      network: "BSC"
-    },
-    {
-      id: 3,
-      tokenA: { symbol: "WBNB", name: "Wrapped BNB", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
-      tokenB: { symbol: "BUSD", name: "Binance USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/4687.png" },
-      fee: "0.25%",
-      volume24h: "$1.8M",
-      volume7d: "$12.6M",
-      tvl: "$5.4M",
-      apr: "18.7%",
-      priceChange24h: 0.8,
-      network: "BSC"
-    },
-    {
-      id: 4,
-      tokenA: { symbol: "CAKE", name: "PancakeSwap", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/7186.png" },
-      tokenB: { symbol: "WBNB", name: "Wrapped BNB", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
-      fee: "0.25%",
-      volume24h: "$890K",
-      volume7d: "$6.8M",
-      tvl: "$3.2M",
-      apr: "31.2%",
-      priceChange24h: 5.6,
-      network: "BSC"
-    },
-    {
-      id: 5,
-      tokenA: { symbol: "ETH", name: "Ethereum", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" },
-      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
-      fee: "0.05%",
-      volume24h: "$3.1M",
-      volume7d: "$21.4M",
-      tvl: "$12.8M",
-      apr: "8.9%",
-      priceChange24h: 1.4,
-      network: "BSC"
-    },
-    {
-      id: 6,
-      tokenA: { symbol: "BTCB", name: "Bitcoin BEP20", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png" },
-      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
-      fee: "0.25%",
-      volume24h: "$1.2M",
-      volume7d: "$8.7M",
-      tvl: "$6.3M",
-      apr: "15.2%",
-      priceChange24h: 3.4,
-      network: "BSC"
-    },
-    {
-      id: 7,
-      tokenA: { symbol: "ADA", name: "Cardano", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png" },
-      tokenB: { symbol: "USDC", name: "USD Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png" },
-      fee: "0.30%",
-      volume24h: "$445K",
-      volume7d: "$3.1M",
-      tvl: "$1.8M",
-      apr: "28.5%",
-      priceChange24h: -2.1,
-      network: "BSC"
-    },
-    {
-      id: 8,
-      tokenA: { symbol: "DOT", name: "Polkadot", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/6636.png" },
-      tokenB: { symbol: "BNB", name: "Binance Coin", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png" },
-      fee: "0.25%",
-      volume24h: "$678K",
-      volume7d: "$4.9M",
-      tvl: "$2.7M",
-      apr: "22.1%",
-      priceChange24h: 1.8,
-      network: "BSC"
-    },
-    {
-      id: 9,
-      tokenA: { symbol: "LINK", name: "Chainlink", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1975.png" },
-      tokenB: { symbol: "ETH", name: "Ethereum", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" },
-      fee: "0.30%",
-      volume24h: "$523K",
-      volume7d: "$3.8M",
-      tvl: "$2.2M",
-      apr: "26.7%",
-      priceChange24h: 4.2,
-      network: "BSC"
-    },
-    {
-      id: 10,
-      tokenA: { symbol: "UNI", name: "Uniswap", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/7083.png" },
-      tokenB: { symbol: "USDT", name: "Tether USD", logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" },
-      fee: "0.25%",
-      volume24h: "$389K",
-      volume7d: "$2.6M",
-      tvl: "$1.9M",
-      apr: "19.8%",
-      priceChange24h: -0.7,
-      network: "BSC"
-    }
-  ];
+  // Build real pool data from Eloqura pairs (skip dust-level reserves)
+  const realPools = eloquraPairs
+    .filter(pair => {
+      const r0 = parseFloat(formatUnits(pair.reserve0, getTokenInfo(pair.token0).decimals));
+      const r1 = parseFloat(formatUnits(pair.reserve1, getTokenInfo(pair.token1).decimals));
+      return r0 > 0.0001 && r1 > 0.0001;
+    })
+    .map((pair, index) => {
+      const token0Info = getTokenInfo(pair.token0);
+      const token1Info = getTokenInfo(pair.token1);
+      const reserve0 = parseFloat(formatUnits(pair.reserve0, token0Info.decimals));
+      const reserve1 = parseFloat(formatUnits(pair.reserve1, token1Info.decimals));
+      const tvlToken0 = estimateTokenUsd(token0Info, reserve0, eloquraPairs) || estimateTokenUsdChainlink(token0Info, reserve0, eloquraPairs);
+      const tvlToken1 = estimateTokenUsd(token1Info, reserve1, eloquraPairs) || estimateTokenUsdChainlink(token1Info, reserve1, eloquraPairs);
+      const tvl = tvlToken0 + tvlToken1;
 
-  // Sort pools data  
-  const sortedPools = [...mockPools].sort((a, b) => {
+      const formatUsd = (val: number) => {
+        if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+        if (val >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
+        if (val >= 1) return `$${val.toFixed(2)}`;
+        return `$${val.toFixed(4)}`;
+      };
+
+      return {
+        id: index + 1,
+        tokenA: { symbol: token0Info.symbol, name: token0Info.name, logo: token0Info.logo },
+        tokenB: { symbol: token1Info.symbol, name: token1Info.name, logo: token1Info.logo },
+        fee: "0.30%",
+        volume24h: "-",
+        volume7d: "-",
+        tvl: formatUsd(tvl),
+        apr: "-",
+        priceChange24h: 0,
+        network: "Sepolia"
+      };
+    });
+
+  // Sort pools data
+  const sortedPools = [...realPools].sort((a, b) => {
     if (!poolsSortField) return 0;
 
     let aValue: any = a;

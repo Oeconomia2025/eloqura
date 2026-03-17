@@ -11,7 +11,7 @@ import { useTokenData } from "@/hooks/use-token-data";
 import { useAccount, usePublicClient, useWalletClient, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { formatUnits, parseUnits, parseEther } from "viem";
-import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI, ROUTER_ABI } from "@/lib/contracts";
+import { ELOQURA_CONTRACTS, UNISWAP_CONTRACTS, UNISWAP_ROUTER_ABI, UNISWAP_QUOTER_ABI, UNISWAP_FEE_TIERS, ERC20_ABI, PAIR_ABI, FACTORY_ABI, ROUTER_ABI, LIMIT_ORDERS_ABI } from "@/lib/contracts";
 import { trackTransaction } from "@/lib/explorer";
 
 // WETH ABI for deposit/withdraw
@@ -186,6 +186,10 @@ function SwapContent() {
       setChartKey(prev => prev + 1);
       setChartVisible(true);
     }, 50);
+
+    // Reset limit order trigger price when tokens change
+    setLimitOrder(prev => ({ ...prev, triggerPrice: '', priceAdjustment: 0 }));
+    setToAmount('');
 
     if (tokenSelectionFor === 'from') {
       setFromToken(token);
@@ -877,6 +881,18 @@ function SwapContent() {
     setTimeout(() => fetchBalances(), 500);
   };
 
+  // Smart decimal formatting for input values: no trailing zeros, more decimals only when needed
+  const smartDecimals = (num: number): string => {
+    if (num === 0 || isNaN(num)) return '0';
+    if (Number.isInteger(num)) return num.toString();
+    if (num >= 1) return parseFloat(num.toFixed(2)).toString();
+    // For small numbers < 1, show enough decimals to see the first significant digits
+    const str = num.toFixed(18);
+    const match = str.match(/^0\.(0*)([1-9]\d{0,3})/);
+    if (match) return `0.${match[1]}${match[2]}`;
+    return parseFloat(num.toFixed(6)).toString();
+  };
+
   // Format number with commas and smart decimals
   const formatNumber = (num: number, decimals = 2): string => {
     if (num === 0) return '0';
@@ -1026,14 +1042,14 @@ function SwapContent() {
 
     if (direction === 'from') {
       minimumReceived = outputAmount * (1 - slippage / 100);
-      setToAmount(outputAmount > 0 ? outputAmount.toFixed(6) : '0');
+      setToAmount(outputAmount > 0 ? smartDecimals(outputAmount) : '0');
     } else {
       minimumReceived = outputAmount * (1 - slippage / 100);
-      setFromAmount(outputAmount > 0 ? outputAmount.toFixed(6) : '0');
+      setFromAmount(outputAmount > 0 ? smartDecimals(outputAmount) : '0');
     }
 
     const swapQuote: SwapQuote = {
-      inputAmount: direction === 'from' ? amount : (outputAmount > 0 ? outputAmount.toFixed(6) : '0'),
+      inputAmount: direction === 'from' ? amount : (outputAmount > 0 ? smartDecimals(outputAmount) : '0'),
       outputAmount: direction === 'from' ? outputAmount.toString() : amount,
       exchangeRate,
       priceImpact,
@@ -1148,6 +1164,61 @@ function SwapContent() {
     if (!fromToken || !toToken || !fromAmount || !isConnected || !address) return;
 
     try {
+      // Limit Order: place order on the LimitOrders contract
+      if (activeTab === "Limit") {
+        if (!limitOrder.triggerPrice || !toAmount) return;
+
+        const tokenIn = fromToken.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : fromToken.address;
+        const tokenOut = toToken.symbol === 'ETH' ? ELOQURA_CONTRACTS.sepolia.WETH : toToken.address;
+        const amountIn = parseUnits(parseFloat(fromAmount).toFixed(fromToken.decimals), fromToken.decimals);
+        const minAmountOut = parseUnits(parseFloat(toAmount).toFixed(toToken.decimals), toToken.decimals);
+        // triggerPrice is tokenOut per tokenIn, scaled by 1e18
+        const triggerPriceScaled = parseUnits(parseFloat(limitOrder.triggerPrice).toFixed(18), 18);
+        // Calculate expiry timestamp
+        const expiryMap: Record<string, number> = { '1 day': 86400, '1 week': 604800, '1 month': 2592000, '1 year': 31536000 };
+        const expirySeconds = expiryMap[limitOrder.expiry] || 86400;
+        const expiry = BigInt(Math.floor(Date.now() / 1000) + expirySeconds);
+
+        // First check and approve token for the LimitOrders contract
+        if (publicClient) {
+          const allowance = await publicClient.readContract({
+            address: tokenIn as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'allowance',
+            args: [address, ELOQURA_CONTRACTS.sepolia.LimitOrders as `0x${string}`],
+          }) as bigint;
+
+          if (allowance < amountIn) {
+            writeContract({
+              chainId: sepolia.id,
+              address: tokenIn as `0x${string}`,
+              abi: ERC20_ABI,
+              functionName: 'approve',
+              args: [ELOQURA_CONTRACTS.sepolia.LimitOrders as `0x${string}`, amountIn],
+            });
+            // After approval completes, the user needs to click Place Limit Order again
+            return;
+          }
+        }
+
+        // Place the limit order
+        writeContract({
+          chainId: sepolia.id,
+          address: ELOQURA_CONTRACTS.sepolia.LimitOrders as `0x${string}`,
+          abi: LIMIT_ORDERS_ABI,
+          functionName: 'placeOrder',
+          args: [
+            tokenIn as `0x${string}`,
+            tokenOut as `0x${string}`,
+            amountIn,
+            minAmountOut,
+            triggerPriceScaled,
+            expiry,
+          ],
+        });
+        return;
+      }
+
       // ETH -> WETH (Wrap)
       if (fromToken.symbol === 'ETH' && toToken.symbol === 'WETH') {
         const amount = parseEther(fromAmount);
@@ -1405,7 +1476,23 @@ function SwapContent() {
 
     const marketRate = conditionTokens.from.price / conditionTokens.to.price;
     const adjustedRate = marketRate * (1 + limitOrder.priceAdjustment / 100);
-    return adjustedRate.toFixed(6);
+    return smartDecimals(adjustedRate);
+  };
+
+  // Calculate limit order "For" amount from sell amount and trigger price
+  const calculateLimitForAmount = (sellAmount: string, price?: string) => {
+    const trigger = parseFloat(price || limitOrder.triggerPrice || calculateLimitPrice());
+    const sell = parseFloat(sellAmount);
+    if (!trigger || !sell || isNaN(trigger) || isNaN(sell)) return '';
+    return smartDecimals(sell * trigger);
+  };
+
+  // Calculate limit order "Sell" amount from for amount and trigger price
+  const calculateLimitSellAmount = (forAmount: string, price?: string) => {
+    const trigger = parseFloat(price || limitOrder.triggerPrice || calculateLimitPrice());
+    const forVal = parseFloat(forAmount);
+    if (!trigger || !forVal || isNaN(trigger) || isNaN(forVal)) return '';
+    return smartDecimals(forVal / trigger);
   };
 
   // Check if a token is a custom import (not in our built-in list)
@@ -1433,21 +1520,12 @@ function SwapContent() {
   const getCurrentMarketPrice = () => {
     const conditionTokens = getPriceConditionTokens();
     if (!conditionTokens.from || !conditionTokens.to) return "0";
-    return (conditionTokens.from.price / conditionTokens.to.price).toFixed(6);
+    return smartDecimals(conditionTokens.from.price / conditionTokens.to.price);
   };
 
   // Get the price condition tokens (what shows in "When 1 X is worth Y")
+  // Always uses the current from/to tokens so it updates when user changes selection
   const getPriceConditionTokens = () => {
-    // If no stablecoin involved, use current from/to tokens
-    if (!hasStablecoin()) {
-      return { from: fromToken, to: toToken };
-    }
-
-    // If stablecoin involved, keep the original pair or use current
-    if (priceConditionTokens.from && priceConditionTokens.to) {
-      return priceConditionTokens;
-    }
-
     return { from: fromToken, to: toToken };
   };
 
@@ -1745,8 +1823,13 @@ function SwapContent() {
                     <div className="flex items-center space-x-3">
                       <Input
                         type="number"
-                        value={limitOrder.triggerPrice || calculateLimitPrice()}
-                        onChange={(e) => setLimitOrder({...limitOrder, triggerPrice: e.target.value})}
+                        value={limitOrder.triggerPrice || ''}
+                        onChange={(e) => {
+                          setLimitOrder({...limitOrder, triggerPrice: e.target.value});
+                          if (fromAmount) {
+                            setToAmount(calculateLimitForAmount(fromAmount, e.target.value));
+                          }
+                        }}
                         placeholder="0.0"
                         className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                         style={{ 
@@ -1786,7 +1869,11 @@ function SwapContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setLimitOrder({...limitOrder, triggerPrice: getCurrentMarketPrice(), priceAdjustment: 0})}
+                        onClick={() => {
+                          const price = getCurrentMarketPrice();
+                          setLimitOrder({...limitOrder, triggerPrice: price, priceAdjustment: 0});
+                          if (fromAmount) setToAmount(calculateLimitForAmount(fromAmount, price));
+                        }}
                         className="text-xs text-gray-400 border-gray-600 hover:text-white hover:border-gray-400"
                       >
                         Market
@@ -1799,11 +1886,13 @@ function SwapContent() {
                           onClick={() => {
                             const marketPrice = parseFloat(getCurrentMarketPrice());
                             const adjustedPrice = marketPrice * (1 + percentage / 100);
+                            const priceStr = smartDecimals(adjustedPrice);
                             setLimitOrder({
-                              ...limitOrder, 
+                              ...limitOrder,
                               priceAdjustment: percentage,
-                              triggerPrice: adjustedPrice.toFixed(6)
+                              triggerPrice: priceStr
                             });
+                            if (fromAmount) setToAmount(calculateLimitForAmount(fromAmount, priceStr));
                           }}
                           className={limitOrder.priceAdjustment === percentage ? "bg-crypto-blue hover:bg-crypto-blue/80 text-xs" : "text-xs"}
                         >
@@ -1826,7 +1915,7 @@ function SwapContent() {
                           onChange={(e) => {
                             setFromAmount(e.target.value);
                             setLastEditedField('from');
-                            requestQuote(e.target.value, 'from');
+                            setToAmount(calculateLimitForAmount(e.target.value));
                           }}
                           placeholder="0.0"
                           className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
@@ -1883,7 +1972,7 @@ function SwapContent() {
                         onChange={(e) => {
                           setToAmount(e.target.value);
                           setLastEditedField('to');
-                          requestQuote(e.target.value, 'to');
+                          setFromAmount(calculateLimitSellAmount(e.target.value));
                         }}
                         placeholder="0.0"
                         className="flex-1 bg-transparent border-none font-bold text-white placeholder-gray-500 p-0 m-0 h-12 focus-visible:ring-0 focus:outline-none focus:ring-0 focus:border-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
