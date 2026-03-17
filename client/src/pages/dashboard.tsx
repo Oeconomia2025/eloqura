@@ -638,7 +638,7 @@ export default function Dashboard() {
 
           {/* Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-r from-cyan-500 to-blue-500 border border-cyan-500">
+            <Card className="bg-[#5c69c2] border border-[#5c69c2]">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -700,7 +700,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-r from-sky-600 to-blue-600 border border-sky-500">
+            <Card className="bg-[#5c69c2] border border-[#5c69c2]">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -775,7 +775,7 @@ export default function Dashboard() {
                             <div className="text-right">
                               <p className="font-semibold text-white text-sm">{formatAmount(token.balance)}</p>
                               {token.usdValue > 0 && (
-                                <p className="text-xs text-cyan-400">{formatPrice(token.usdValue)}</p>
+                                <p className="text-xs text-[#5c69c2]">{formatPrice(token.usdValue)}</p>
                               )}
                             </div>
                           </div>
@@ -818,7 +818,7 @@ export default function Dashboard() {
                               <p className="text-xs text-gray-400">{formatAmount(token.balance)}</p>
                             </div>
                           </div>
-                          <div className={`w-10 h-5 rounded-full relative transition-colors ${isVisible ? 'bg-cyan-500' : 'bg-gray-600'}`}>
+                          <div className={`w-10 h-5 rounded-full relative transition-colors ${isVisible ? 'bg-[#5c69c2]' : 'bg-gray-600'}`}>
                             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isVisible ? 'translate-x-5' : 'translate-x-0.5'}`} />
                           </div>
                         </button>
@@ -834,7 +834,7 @@ export default function Dashboard() {
                     </button>
                     <button
                       onClick={() => setShowTokenSettings(false)}
-                      className="flex-1 py-2 text-sm rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 transition-colors"
+                      className="flex-1 py-2 text-sm rounded-lg bg-[#5c69c2] text-white hover:bg-[#5c69c2]/80 transition-colors"
                     >
                       Done
                     </button>
@@ -862,8 +862,8 @@ export default function Dashboard() {
                       <div key={`${swap.txHash}-${idx}`} className="py-2 px-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-blue-500/20">
-                              <ArrowUpRight className="w-4 h-4 text-blue-400" />
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#5c69c2]/20">
+                              <ArrowUpRight className="w-4 h-4 text-[#5c69c2]" />
                             </div>
                             <div>
                               <p className="text-white font-medium text-sm">
@@ -876,7 +876,7 @@ export default function Dashboard() {
                             href={`https://oecsplorer.oeconomia.io/tx/${swap.txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300"
+                            className="text-[#5c69c2] hover:text-[#5c69c2]/80"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
@@ -921,7 +921,7 @@ export default function Dashboard() {
                           href={`https://sepolia.etherscan.io/address/${pos.pairAddress}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center justify-end gap-1"
+                          className="text-xs text-[#5c69c2] hover:text-[#5c69c2]/80 flex items-center justify-end gap-1"
                         >
                           View <ExternalLink className="w-3 h-3" />
                         </a>
@@ -939,7 +939,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Button
                 onClick={() => navigate("/swap")}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white h-16"
+                className="bg-[#5c69c2] hover:bg-[#5c69c2]/80 text-white h-16"
               >
                 <div className="text-center">
                   <ArrowUpRight className="w-5 h-5 mx-auto mb-1" />
@@ -966,7 +966,7 @@ export default function Dashboard() {
               </Button>
               <Button
                 onClick={() => window.open("https://oeconomia.io/analytics", "_blank")}
-                className="bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white h-16"
+                className="bg-[#5c69c2] hover:bg-[#5c69c2]/80 text-white h-16"
               >
                 <div className="text-center">
                   <BarChart3 className="w-5 h-5 mx-auto mb-1" />

@@ -1740,7 +1740,7 @@ function LiquidityContent() {
 
           {/* Navigation Tabs */}
           <div className="mb-6">
-            <div className="grid w-auto grid-cols-3 bg-gray-800 border border-gray-700 rounded-lg p-1">
+            <div className="grid w-auto grid-cols-3 bg-[#1a1b23] border border-[var(--crypto-border)] rounded-lg p-1">
               <Button
                 variant={activeView === 'pools' ? "default" : "ghost"}
                 size="sm"
@@ -1792,8 +1792,8 @@ function LiquidityContent() {
                         <p className="text-gray-400 text-sm mb-1">Total Liquidity</p>
                         <p className="text-2xl font-bold text-white">{formatPrice(calculateTotalValue())}</p>
                       </div>
-                      <div className="w-12 h-12 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-                        <Droplets className="w-6 h-6 text-cyan-400" />
+                      <div className="w-12 h-12 bg-[#5c69c2]/20 rounded-lg flex items-center justify-center">
+                        <Droplets className="w-6 h-6 text-[#5c69c2]" />
                       </div>
                     </div>
                   </CardContent>
@@ -1821,8 +1821,8 @@ function LiquidityContent() {
                         <p className="text-gray-400 text-sm mb-1">Active Positions</p>
                         <p className="text-2xl font-bold text-white">{positions.length}</p>
                       </div>
-                      <div className="w-12 h-12 bg-gradient-to-r from-sky-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-                        <Star className="w-6 h-6 text-sky-400" />
+                      <div className="w-12 h-12 bg-[#5c69c2]/20 rounded-lg flex items-center justify-center">
+                        <Star className="w-6 h-6 text-[#5c69c2]" />
                       </div>
                     </div>
                   </CardContent>
@@ -1939,7 +1939,7 @@ function LiquidityContent() {
 
                               {/* Fee Tier */}
                               <div className="text-center">
-                                <p className="text-cyan-400 font-semibold">
+                                <p className="text-[#5c69c2] font-semibold">
                                   {position.fee}%
                                 </p>
                                 <p className="text-xs text-gray-400">Fee Tier</p>
@@ -1988,7 +1988,7 @@ function LiquidityContent() {
                                             : formatNumber(price, 6)}
                                         </p>
                                         <button
-                                          className="text-xs text-gray-500 hover:text-cyan-400 transition-colors cursor-pointer flex items-center gap-1"
+                                          className="text-xs text-gray-500 hover:text-[#5c69c2] transition-colors cursor-pointer flex items-center gap-1"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setReversedPricePositions(prev => {
@@ -2160,7 +2160,7 @@ function LiquidityContent() {
                         </div>
 
                         {/* Full Range / Set Range Toggle */}
-                        <div className="grid grid-cols-2 gap-2 bg-gray-800 border border-gray-700 rounded-lg p-1">
+                        <div className="grid grid-cols-2 gap-2 bg-[#1a1b23] border border-[var(--crypto-border)] rounded-lg p-1">
                           <Button
                             variant={isFullRange ? "default" : "ghost"}
                             size="sm"
@@ -2476,9 +2476,9 @@ function LiquidityContent() {
                 <Card className="crypto-card p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Active Pools</span>
-                    <div className="w-4 h-4 bg-sky-400 rounded-full" />
+                    <div className="w-4 h-4 bg-[#5c69c2] rounded-full" />
                   </div>
-                  <div className="text-2xl font-bold text-sky-400">1,247</div>
+                  <div className="text-2xl font-bold text-[#5c69c2]">1,247</div>
                   <div className="text-gray-400 text-sm">pools</div>
                 </Card>
 
@@ -2495,7 +2495,7 @@ function LiquidityContent() {
 
               {/* Navigation and Search */}
               <div className="flex justify-between items-center">
-                <div className="grid w-auto grid-cols-2 bg-gray-800 border border-gray-700 rounded-lg p-1">
+                <div className="grid w-auto grid-cols-2 bg-[#1a1b23] border border-[var(--crypto-border)] rounded-lg p-1">
                   <Button 
                     variant={activeTab === 'pools' ? "default" : "ghost"} 
                     size="sm" 
@@ -2529,12 +2529,12 @@ function LiquidityContent() {
               {activeTab === 'pools' ? (
                 <div>
                 <p className="text-xs text-gray-500 mb-2 italic">Click a row to view pool details</p>
-                <div className="border rounded-lg overflow-hidden relative max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide">
+                <div className="border rounded-lg overflow-hidden relative max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide bg-[#1a1b23]">
                   <table className="w-full">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
                       <tr>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">#</th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">#</th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handlePoolsSort('tokenA.symbol')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2543,7 +2543,7 @@ function LiquidityContent() {
                             {getSortIcon('tokenA.symbol', poolsSortField, poolsSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handlePoolsSort('fee')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2552,7 +2552,7 @@ function LiquidityContent() {
                             {getSortIcon('fee', poolsSortField, poolsSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handlePoolsSort('volume24h')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2561,7 +2561,7 @@ function LiquidityContent() {
                             {getSortIcon('volume24h', poolsSortField, poolsSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handlePoolsSort('volume7d')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2570,7 +2570,7 @@ function LiquidityContent() {
                             {getSortIcon('volume7d', poolsSortField, poolsSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handlePoolsSort('tvl')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2579,7 +2579,7 @@ function LiquidityContent() {
                             {getSortIcon('tvl', poolsSortField, poolsSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handlePoolsSort('apr')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2588,7 +2588,7 @@ function LiquidityContent() {
                             {getSortIcon('apr', poolsSortField, poolsSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handlePoolsSort('priceChange24h')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2603,7 +2603,7 @@ function LiquidityContent() {
                     {filteredPools.map((pool, index) => (
                         <tr 
                           key={pool.id} 
-                          className="border-b border-crypto-border hover:bg-gray-800/40 hover:border-crypto-blue/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                          className="border-b border-crypto-border hover:bg-[#393a4e] hover:border-crypto-blue/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
                           onClick={() => setActiveView('create')}
                         >
                           <td className="py-4 px-6">
@@ -2683,8 +2683,8 @@ function LiquidityContent() {
                   <table className="w-full">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
                       <tr>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">#</th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">#</th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button
                             onClick={() => handleTokensSort('symbol')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2693,7 +2693,7 @@ function LiquidityContent() {
                             {getSortIcon('symbol', tokensSortField, tokensSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handleTokensSort('price')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2702,7 +2702,7 @@ function LiquidityContent() {
                             {getSortIcon('price', tokensSortField, tokensSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handleTokensSort('change24h')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2711,7 +2711,7 @@ function LiquidityContent() {
                             {getSortIcon('change24h', tokensSortField, tokensSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handleTokensSort('volume24h')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2720,7 +2720,7 @@ function LiquidityContent() {
                             {getSortIcon('volume24h', tokensSortField, tokensSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handleTokensSort('marketCap')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2729,7 +2729,7 @@ function LiquidityContent() {
                             {getSortIcon('marketCap', tokensSortField, tokensSortDirection)}
                           </button>
                         </th>
-                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-[#1a1b23]">
+                        <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">
                           <button 
                             onClick={() => handleTokensSort('holders')}
                             className="flex items-center space-x-1 hover:text-white transition-colors"
@@ -2742,7 +2742,7 @@ function LiquidityContent() {
                     </thead>
                     <tbody>
                       {filteredTokens.map((token, index) => (
-                        <tr key={token.id} className="border-b border-crypto-border hover:bg-gray-800/40 hover:border-crypto-green/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                        <tr key={token.id} className="border-b border-crypto-border hover:bg-[#393a4e] hover:border-crypto-green/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
                             onClick={() => setLocation(`/coin/${token.symbol}`)}>
                           <td className="py-4 px-6">
                             <span className="text-gray-400 font-mono group-hover:text-white transition-colors duration-200">{index + 1}</span>
@@ -3162,10 +3162,10 @@ function LiquidityContent() {
               )}
 
               {/* Price Impact Warning */}
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <div className="bg-[#5c69c2]/10 border border-[#5c69c2]/30 rounded-lg p-3">
                 <div className="flex items-start space-x-2">
-                  <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-blue-400">
+                  <Info className="w-4 h-4 text-[#5c69c2] mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-[#5c69c2]">
                     <p className="font-medium mb-1">Adding to Existing Position</p>
                     <p>Your liquidity will be added to the full price range of your existing position.</p>
                   </div>

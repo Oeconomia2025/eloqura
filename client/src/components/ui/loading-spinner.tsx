@@ -38,13 +38,13 @@ export function LoadingSpinner({
             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-500/20 rounded-full animate-ping"></div>
+        <div className="absolute inset-0 bg-[#5c69c2]/20 rounded-full animate-ping"></div>
       </div>
       <p className={cn('text-gray-400 mt-4 font-medium', textSizeClasses[size])}>{text}</p>
       <div className="flex space-x-1 mt-2">
-        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        <div className="w-2 h-2 bg-[#5c69c2] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+        <div className="w-2 h-2 bg-[#5c69c2] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+        <div className="w-2 h-2 bg-[#5c69c2] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
       </div>
     </div>
   );

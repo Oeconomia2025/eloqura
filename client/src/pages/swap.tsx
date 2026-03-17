@@ -1624,7 +1624,7 @@ function SwapContent() {
             <CardHeader className="pb-0">
               {/* Tab Navigation */}
               <div className="flex items-center justify-between mb-0">
-                <div className="flex space-x-1 bg-[var(--crypto-dark)] rounded-lg p-1">
+                <div className="flex space-x-1 bg-gradient-to-b from-[#121315] to-black rounded-lg p-1">
                   {["Trade", "Limit"].map((tab) => (
                     <Button
                       key={tab}
@@ -1668,7 +1668,7 @@ function SwapContent() {
             <CardContent className="space-y-0 relative">
               {/* Settings Panel */}
               {showSettings && (
-                <Card className="bg-[var(--crypto-dark)] border-[var(--crypto-border)]">
+                <Card className="bg-gradient-to-b from-[#121315] to-black border-[var(--crypto-border)]">
                   <CardContent className="p-4 space-y-4">
                     <div>
                       <label className="text-sm text-gray-400 mb-2 block">Slippage Tolerance</label>
@@ -1736,7 +1736,7 @@ function SwapContent() {
               {activeTab === "Limit" && (
                 <>
                   {/* Price Condition Section - Behavior depends on stablecoin involvement */}
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">
                         When 1 {getPriceConditionTokens().from?.symbol || fromToken?.symbol || 'Token'} is worth
@@ -1763,7 +1763,7 @@ function SwapContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('priceCondition')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto min-w-[110px]"
                       >
                         {getPriceConditionTokens().to ? (
                           <div className="flex items-center space-x-2">
@@ -1815,7 +1815,7 @@ function SwapContent() {
 
                   {/* Sell Amount Section with relative positioning for toggle */}
                   <div className="relative">
-                    <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                    <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-400 text-sm">Sell</span>
                       </div>
@@ -1844,7 +1844,7 @@ function SwapContent() {
                         <Button
                           variant="outline"
                           onClick={() => openTokenModal('from')}
-                          className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                          className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto min-w-[110px]"
                         >
                           {fromToken ? (
                             <div className="flex items-center space-x-2">
@@ -1864,7 +1864,7 @@ function SwapContent() {
                         variant="ghost"
                         size="sm"
                         onClick={handleLimitOrderToggle}
-                        className="bg-[var(--crypto-dark)] border-2 border-[var(--crypto-border)] rounded-full w-10 h-10 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
+                        className="bg-gradient-to-b from-[#121315] to-black border-2 border-[var(--crypto-border)] rounded-full w-10 h-10 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
                       >
                         <ArrowUpDown className="w-4 h-4 text-gray-400" />
                       </Button>
@@ -1872,7 +1872,7 @@ function SwapContent() {
                   </div>
 
                   {/* For Amount Section - Shows what you'll receive */}
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-gray-400 text-sm">For</span>
                     </div>
@@ -1901,7 +1901,7 @@ function SwapContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('to')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto min-w-[110px]"
                       >
                         {toToken ? (
                           <div className="flex items-center space-x-2">
@@ -1916,7 +1916,7 @@ function SwapContent() {
                   </div>
 
                   {/* Expiry Selection */}
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                     <span className="text-gray-400 text-sm mb-2 block">Expiry</span>
                     <div className="flex space-x-2">
                       {["1 day", "1 week", "1 month", "1 year"].map((period) => (
@@ -1938,7 +1938,7 @@ function SwapContent() {
               {/* Buy Mode Interface */}
               {activeTab === "Buy" && (
                 <div className="space-y-4">
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">You're buying</span>
                     </div>
@@ -1995,7 +1995,7 @@ function SwapContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('to')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto min-w-[110px]"
                       >
                         {toToken ? (
                           <div className="flex items-center space-x-2">
@@ -2010,8 +2010,8 @@ function SwapContent() {
 
                     {/* Estimated Token Amount */}
                     {toToken && fiatAmount && (
-                      <div className="text-center mt-4 p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-400/30 rounded-lg backdrop-blur-sm">
-                        <div className="text-xl font-bold text-cyan-400">
+                      <div className="text-center mt-4 p-4 bg-[#5c69c2]/10 border border-[#5c69c2]/30 rounded-lg backdrop-blur-sm">
+                        <div className="text-xl font-bold text-[#5c69c2]">
                           ≈ {formatNumber(parseFloat(fiatAmount) / toToken.price, 6)} {toToken.symbol}
                         </div>
                       </div>
@@ -2023,7 +2023,7 @@ function SwapContent() {
               {/* Sell Mode Interface */}
               {activeTab === "Sell" && (
                 <div className="space-y-4">
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">You're selling</span>
                       {fromToken && (
@@ -2075,7 +2075,7 @@ function SwapContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('from')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto min-w-[110px]"
                       >
                         {fromToken ? (
                           <div className="flex items-center space-x-2">
@@ -2103,7 +2103,7 @@ function SwapContent() {
               {/* Standard Trade Interface (Trade tab only) */}
               {activeTab === "Trade" && (
                 <>
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">From</span>
                       {/* Percentage Buttons */}
@@ -2148,7 +2148,7 @@ function SwapContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('from')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto min-w-[110px]"
                       >
                         {fromToken ? (
                           <div className="flex items-center space-x-2">
@@ -2178,7 +2178,7 @@ function SwapContent() {
                     variant="ghost"
                     size="sm"
                     onClick={handleSwapTokens}
-                    className="bg-[var(--crypto-dark)] border-2 border-[var(--crypto-border)] rounded-full w-12 h-12 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
+                    className="bg-gradient-to-b from-[#121315] to-black border-2 border-[var(--crypto-border)] rounded-full w-12 h-12 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
                   >
                     <ArrowUpDown className="w-5 h-5 text-gray-400" />
                   </Button>
@@ -2187,7 +2187,7 @@ function SwapContent() {
 
               {/* To Token - Only for Trade tab */}
               {activeTab === "Trade" && (
-                <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-gray-400 text-sm">To</span>
                     {toToken && (
@@ -2221,7 +2221,7 @@ function SwapContent() {
                     <Button
                       variant="outline"
                       onClick={() => openTokenModal('to')}
-                      className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                      className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto min-w-[110px]"
                     >
                       {toToken ? (
                         <div className="flex items-center space-x-2">
@@ -2544,7 +2544,7 @@ function SwapContent() {
               </CardHeader>
               <CardContent className="h-80">
                 {!chartPriceHistory || chartPriceHistory.length === 0 ? (
-                  <div className="w-full h-full bg-[var(--crypto-dark)] rounded-lg border border-[var(--crypto-border)] flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-b from-[#121315] to-black rounded-lg border border-[var(--crypto-border)] flex items-center justify-center">
                     <div className="text-center">
                       <TrendingUp className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                       <p className="text-gray-400 text-lg font-medium mb-2">No Price Data</p>
@@ -2715,7 +2715,7 @@ function SwapContent() {
                   <span className="text-gray-400 text-sm">Total Liquidity</span>
                   <span className="text-white font-medium">
                     {eloquraStatsLoading
-                      ? <span className="inline-block w-3 h-3 border-2 border-gray-600 border-t-cyan-400 rounded-full animate-spin" />
+                      ? <span className="inline-block w-3 h-3 border-2 border-gray-600 border-t-[#5c69c2] rounded-full animate-spin" />
                       : eloquraStats.totalLiquidityUsd > 0
                         ? `$${formatNumber(eloquraStats.totalLiquidityUsd, 2)}`
                         : '$0.00'}
@@ -2753,7 +2753,7 @@ function SwapContent() {
                         href={`https://oecsplorer.oeconomia.io/tx/${swap.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between text-sm hover:bg-[var(--crypto-dark)] rounded-lg px-2 py-1 -mx-2 transition-colors"
+                        className="flex items-center justify-between text-sm hover:bg-gradient-to-b from-[#121315] to-black rounded-lg px-2 py-1 -mx-2 transition-colors"
                       >
                         <div className="flex items-center space-x-2">
                           <ArrowUpDown className="w-3 h-3 text-gray-400" />
@@ -2854,7 +2854,7 @@ function SwapContent() {
               placeholder="Search tokens or paste contract address..."
               value={tokenSearchQuery}
               onChange={(e) => setTokenSearchQuery(e.target.value)}
-              className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
+              className="bg-gradient-to-b from-[#121315] to-black border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
             />
           </div>
 
@@ -2867,7 +2867,7 @@ function SwapContent() {
                 <button
                   key={sym}
                   onClick={() => selectToken(t)}
-                  className="flex flex-col items-center gap-1 px-3 py-2 rounded-md bg-[var(--crypto-dark)] border border-[var(--crypto-border)] hover:border-cyan-500/50 transition-colors text-xs text-white min-w-[56px]"
+                  className="flex flex-col items-center gap-1 px-3 py-2 rounded-md bg-gradient-to-b from-[#121315] to-black border border-[var(--crypto-border)] hover:border-[#5c69c2]/50 transition-colors text-xs text-white min-w-[56px]"
                 >
                   <img src={t.logo} alt={sym} className="w-6 h-6 rounded-full" onError={(e) => { (e.target as HTMLImageElement).src = "/oec-logo.png"; }} />
                   <span className="text-gray-300 font-medium">{sym}</span>
@@ -2882,7 +2882,7 @@ function SwapContent() {
                 <Button
                   variant="ghost"
                   onClick={() => selectToken(token)}
-                  className="flex-1 justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+                  className="flex-1 justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-3">
@@ -2913,7 +2913,7 @@ function SwapContent() {
                   token.address !== "0x0000000000000000000000000000000000000000" ? (
                     <button
                       onClick={(e) => addTokenToWallet(token, e)}
-                      className="flex-shrink-0 p-2 rounded-lg hover:bg-[var(--crypto-dark)] text-gray-400 hover:text-cyan-400 transition-colors"
+                      className="flex-shrink-0 p-2 rounded-lg hover:bg-gradient-to-b from-[#121315] to-black text-gray-400 hover:text-[#5c69c2] transition-colors"
                       title={`Add ${token.symbol} to wallet`}
                     >
                       <Wallet className="w-4 h-4" />
@@ -2928,7 +2928,7 @@ function SwapContent() {
             {/* Custom token lookup result */}
             {lookupLoading && isAddress(tokenSearchQuery.trim()) && (
               <div className="flex items-center justify-center p-4 text-gray-400">
-                <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mr-2" />
+                <div className="w-4 h-4 border-2 border-[#5c69c2] border-t-transparent rounded-full animate-spin mr-2" />
                 Looking up token...
               </div>
             )}
@@ -2991,11 +2991,11 @@ function SwapContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2] rounded-full flex items-center justify-center text-xs font-bold text-white">
                     O
                   </div>
                   <div className="text-left">
@@ -3013,11 +3013,11 @@ function SwapContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2] rounded-full flex items-center justify-center text-sm font-bold text-white">
                     E
                   </div>
                   <div className="text-left">
@@ -3035,11 +3035,11 @@ function SwapContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-sky-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2]/70 rounded-full flex items-center justify-center text-sm font-bold text-white">
                     P
                   </div>
                   <div className="text-left">
@@ -3057,7 +3057,7 @@ function SwapContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
@@ -3079,11 +3079,11 @@ function SwapContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2] rounded-full flex items-center justify-center text-sm font-bold text-white">
                     A
                   </div>
                   <div className="text-left">
@@ -3101,7 +3101,7 @@ function SwapContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">

@@ -146,7 +146,7 @@ export function HistoricalPerformance({ contractAddress }: HistoricalPerformance
     <Card className="crypto-card p-6 mb-0">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2">
-          <Calendar className="w-5 h-5 text-sky-400" />
+          <Calendar className="w-5 h-5 text-[#5c69c2]" />
           <h3 className="text-lg font-semibold">Historical Performance</h3>
         </div>
         
@@ -219,10 +219,10 @@ export function HistoricalPerformance({ contractAddress }: HistoricalPerformance
                 <Line 
                   type="monotone" 
                   dataKey="price" 
-                  stroke="#3B82F6" 
+                  stroke="#5c69c2"
                   strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 4, fill: '#3B82F6' }}
+                  activeDot={{ r: 4, fill: '#5c69c2' }}
                 />
               </LineChart>
             </ResponsiveContainer>

@@ -19,16 +19,16 @@ export function WalletSetupGuide() {
       </DialogTrigger>
       <DialogContent className="bg-gradient-to-br from-[var(--crypto-card)] to-[var(--crypto-dark)] border-crypto-blue/20 shadow-xl max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-400 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold text-[#5c69c2]">
             How to Get & Connect a Crypto Wallet
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6 mt-6">
           {/* What is a Wallet */}
-          <div className="p-4 bg-gradient-to-r from-sky-500/10 to-blue-600/10 rounded-xl border border-cyan-500/20">
+          <div className="p-4 bg-[#5c69c2]/10 rounded-xl border border-[#5c69c2]/20">
             <h3 className="text-lg font-semibold text-white mb-2 flex items-center">
-              <Shield className="w-5 h-5 mr-2 text-cyan-400" />
+              <Shield className="w-5 h-5 mr-2 text-[#5c69c2]" />
               What is a Crypto Wallet?
             </h3>
             <p className="text-gray-300 text-sm leading-relaxed">
@@ -40,7 +40,7 @@ export function WalletSetupGuide() {
           {/* Step 1: Choose a Wallet */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white flex items-center">
-              <div className="w-6 h-6 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-3">1</div>
+              <div className="w-6 h-6 bg-[#5c69c2] rounded-full flex items-center justify-center text-xs font-bold mr-3">1</div>
               Choose & Download a Wallet
             </h3>
             
@@ -71,7 +71,7 @@ export function WalletSetupGuide() {
                   <Button
                     size="sm"
                     onClick={() => window.open('https://trustwallet.com/download', '_blank')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-[#5c69c2] hover:bg-[#5c69c2]/80 text-white"
                   >
                     <Smartphone className="w-4 h-4 mr-1" />
                     Get It
@@ -88,7 +88,7 @@ export function WalletSetupGuide() {
                   <Button
                     size="sm"
                     onClick={() => window.open('https://www.coinbase.com/wallet/downloads', '_blank')}
-                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                    className="bg-[#5c69c2] hover:bg-[#5c69c2]/80 text-white"
                   >
                     <Chrome className="w-4 h-4 mr-1" />
                     Get It
@@ -101,24 +101,24 @@ export function WalletSetupGuide() {
           {/* Step 2: Set Up Your Wallet */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-white flex items-center">
-              <div className="w-6 h-6 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-3">2</div>
+              <div className="w-6 h-6 bg-[#5c69c2] rounded-full flex items-center justify-center text-xs font-bold mr-3">2</div>
               Set Up Your Wallet
             </h3>
             <div className="space-y-2 ml-9">
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Install the wallet extension or app
               </div>
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Create a new wallet (follow the setup wizard)
               </div>
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Write down your recovery phrase (keep it safe!)
               </div>
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Set a strong password
               </div>
             </div>
@@ -127,24 +127,24 @@ export function WalletSetupGuide() {
           {/* Step 3: Connect */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-white flex items-center">
-              <div className="w-6 h-6 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-3">3</div>
+              <div className="w-6 h-6 bg-[#5c69c2] rounded-full flex items-center justify-center text-xs font-bold mr-3">3</div>
               Connect to Oeconomia
             </h3>
             <div className="space-y-2 ml-9">
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Click "Connect Wallet" on this page
               </div>
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Choose your wallet from the list
               </div>
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Approve the connection in your wallet
               </div>
               <div className="flex items-center text-sm text-gray-300">
-                <ArrowRight className="w-4 h-4 mr-2 text-cyan-400" />
+                <ArrowRight className="w-4 h-4 mr-2 text-[#5c69c2]" />
                 Start using the dashboard!
               </div>
             </div>
@@ -167,7 +167,7 @@ export function WalletSetupGuide() {
           <div className="flex justify-center pt-4">
             <Button 
               onClick={() => setIsOpen(false)}
-              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-medium px-8"
+              className="bg-[#5c69c2] hover:bg-[#5c69c2]/80 text-white font-medium px-8"
             >
               Got it, let's get started!
             </Button>

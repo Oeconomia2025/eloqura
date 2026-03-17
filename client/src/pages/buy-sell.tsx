@@ -691,8 +691,8 @@ function BuySellContent() {
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
         {/* Coming Soon Banner */}
-        <div className="mb-6 rounded-lg border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-blue-600/10 p-4 text-center">
-          <span className="text-lg font-semibold text-sky-400">Coming Soon</span>
+        <div className="mb-6 rounded-lg border border-[#5c69c2]/30 bg-[#5c69c2]/10 p-4 text-center">
+          <span className="text-lg font-semibold text-[#5c69c2]">Coming Soon</span>
           <p className="text-sm text-gray-400 mt-1">Fiat on-ramp and off-ramp functionality is under development and will be available in a future update.</p>
         </div>
         <div className={`grid gap-6 ${showChart ? (hideSidebar ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 xl:grid-cols-5') : 'grid-cols-1 lg:grid-cols-3'}`}>
@@ -702,7 +702,7 @@ function BuySellContent() {
             <CardHeader className="pb-0">
               {/* Tab Navigation */}
               <div className="flex items-center justify-between mb-0">
-                <div className="flex space-x-1 bg-[var(--crypto-dark)] rounded-lg p-1">
+                <div className="flex space-x-1 bg-gradient-to-b from-[#121315] to-black rounded-lg p-1">
                   {["Buy", "Sell"].map((tab) => (
                     <Button
                       key={tab}
@@ -738,7 +738,7 @@ function BuySellContent() {
             <CardContent className="space-y-0 relative">
               {/* Settings Panel */}
               {showSettings && (
-                <Card className="bg-[var(--crypto-dark)] border-[var(--crypto-border)]">
+                <Card className="bg-gradient-to-b from-[#121315] to-black border-[var(--crypto-border)]">
                   <CardContent className="p-4 space-y-4">
                     <div>
                       <label className="text-sm text-gray-400 mb-2 block">Slippage Tolerance</label>
@@ -789,7 +789,7 @@ function BuySellContent() {
               {activeTab === "Limit" && (
                 <>
                   {/* Price Condition Section - Behavior depends on stablecoin involvement */}
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">
                         When 1 {getPriceConditionTokens().from?.symbol || fromToken?.symbol || 'Token'} is worth
@@ -816,7 +816,7 @@ function BuySellContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('priceCondition')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         {getPriceConditionTokens().to ? (
                           <div className="flex items-center space-x-2">
@@ -868,7 +868,7 @@ function BuySellContent() {
 
                   {/* Sell Amount Section with relative positioning for toggle */}
                   <div className="relative">
-                    <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                    <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-400 text-sm">Sell</span>
                       </div>
@@ -896,7 +896,7 @@ function BuySellContent() {
                         <Button
                           variant="outline"
                           onClick={() => openTokenModal('from')}
-                          className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                          className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                         >
                           {fromToken ? (
                             <div className="flex items-center space-x-2">
@@ -916,7 +916,7 @@ function BuySellContent() {
                         variant="ghost"
                         size="sm"
                         onClick={handleLimitOrderToggle}
-                        className="bg-[var(--crypto-dark)] border-2 border-[var(--crypto-border)] rounded-full w-10 h-10 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
+                        className="bg-gradient-to-b from-[#121315] to-black border-2 border-[var(--crypto-border)] rounded-full w-10 h-10 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
                       >
                         <ArrowUpDown className="w-4 h-4 text-gray-400" />
                       </Button>
@@ -924,7 +924,7 @@ function BuySellContent() {
                   </div>
 
                   {/* For Amount Section - Shows what you'll receive */}
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-gray-400 text-sm">For</span>
                     </div>
@@ -952,7 +952,7 @@ function BuySellContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('to')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         {toToken ? (
                           <div className="flex items-center space-x-2">
@@ -967,7 +967,7 @@ function BuySellContent() {
                   </div>
 
                   {/* Expiry Selection */}
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[var(--crypto-border)]">
                     <span className="text-gray-400 text-sm mb-2 block">Expiry</span>
                     <div className="flex space-x-2">
                       {["1 day", "1 week", "1 month", "1 year"].map((period) => (
@@ -989,7 +989,7 @@ function BuySellContent() {
               {/* Buy Mode Interface */}
               {activeTab === "Buy" && (
                 <div className="space-y-4">
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">You're buying</span>
                     </div>
@@ -1046,7 +1046,7 @@ function BuySellContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('to')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         {toToken ? (
                           <div className="flex items-center space-x-2">
@@ -1061,8 +1061,8 @@ function BuySellContent() {
 
                     {/* Estimated Token Amount */}
                     {toToken && fiatAmount && (
-                      <div className="text-center mt-4 p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-400/30 rounded-lg backdrop-blur-sm">
-                        <div className="text-xl font-bold text-cyan-400">
+                      <div className="text-center mt-4 p-4 bg-[#5c69c2]/10 border border-[#5c69c2]/30 rounded-lg backdrop-blur-sm">
+                        <div className="text-xl font-bold text-[#5c69c2]">
                           ≈ {formatNumber(parseFloat(fiatAmount) / toToken.price, 6)} {toToken.symbol}
                         </div>
                       </div>
@@ -1074,7 +1074,7 @@ function BuySellContent() {
               {/* Sell Mode Interface */}
               {activeTab === "Sell" && (
                 <div className="space-y-4">
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">You're selling</span>
                       {fromToken && (
@@ -1125,7 +1125,7 @@ function BuySellContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('from')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         {fromToken ? (
                           <div className="flex items-center space-x-2">
@@ -1153,7 +1153,7 @@ function BuySellContent() {
               {/* Standard Trade Interface (Trade tab only) */}
               {activeTab === "Trade" && (
                 <>
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">From</span>
                       {/* Percentage Buttons */}
@@ -1197,7 +1197,7 @@ function BuySellContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('from')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         {fromToken ? (
                           <div className="flex items-center space-x-2">
@@ -1227,7 +1227,7 @@ function BuySellContent() {
                     variant="ghost"
                     size="sm"
                     onClick={handleSwapTokens}
-                    className="bg-[var(--crypto-dark)] border-2 border-[var(--crypto-border)] rounded-full w-12 h-12 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
+                    className="bg-gradient-to-b from-[#121315] to-black border-2 border-[var(--crypto-border)] rounded-full w-12 h-12 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
                   >
                     <ArrowUpDown className="w-5 h-5 text-gray-400" />
                   </Button>
@@ -1236,7 +1236,7 @@ function BuySellContent() {
 
               {/* To Token - Only for Trade tab */}
               {activeTab === "Trade" && (
-                <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-gray-400 text-sm">To</span>
                     {toToken && (
@@ -1269,7 +1269,7 @@ function BuySellContent() {
                     <Button
                       variant="outline"
                       onClick={() => openTokenModal('to')}
-                      className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                      className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                     >
                       {toToken ? (
                         <div className="flex items-center space-x-2">
@@ -1485,7 +1485,7 @@ function BuySellContent() {
               </CardHeader>
               <CardContent className="h-80">
                 {!chartPriceHistory || chartPriceHistory.length === 0 ? (
-                  <div className="w-full h-full bg-[var(--crypto-dark)] rounded-lg border border-[var(--crypto-border)] flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-b from-[#121315] to-black rounded-lg border border-[var(--crypto-border)] flex items-center justify-center">
                     <div className="text-center">
                       <TrendingUp className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                       <p className="text-gray-400 text-lg font-medium mb-2">No Price Data</p>
@@ -1743,7 +1743,7 @@ function BuySellContent() {
               placeholder="Search tokens or paste contract address..."
               value={tokenSearchQuery}
               onChange={(e) => setTokenSearchQuery(e.target.value)}
-              className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
+              className="bg-gradient-to-b from-[#121315] to-black border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
             />
           </div>
 
@@ -1753,7 +1753,7 @@ function BuySellContent() {
                 key={token.symbol}
                 variant="ghost"
                 onClick={() => selectToken(token)}
-                className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+                className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
               >
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center space-x-3">
@@ -1790,11 +1790,11 @@ function BuySellContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-sky-500 to-blue-600 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2] rounded-full flex items-center justify-center text-xs font-bold text-white">
                     O
                   </div>
                   <div className="text-left">
@@ -1812,11 +1812,11 @@ function BuySellContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2] rounded-full flex items-center justify-center text-sm font-bold text-white">
                     E
                   </div>
                   <div className="text-left">
@@ -1834,11 +1834,11 @@ function BuySellContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-sky-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2]/70 rounded-full flex items-center justify-center text-sm font-bold text-white">
                     P
                   </div>
                   <div className="text-left">
@@ -1856,7 +1856,7 @@ function BuySellContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
@@ -1878,11 +1878,11 @@ function BuySellContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                  <div className="w-8 h-8 bg-[#5c69c2] rounded-full flex items-center justify-center text-sm font-bold text-white">
                     A
                   </div>
                   <div className="text-left">
@@ -1900,7 +1900,7 @@ function BuySellContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">

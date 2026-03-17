@@ -605,8 +605,8 @@ function LiquidityContent() {
                         <p className="text-gray-400 text-sm mb-1">Total Liquidity</p>
                         <p className="text-2xl font-bold text-white">{formatPrice(calculateTotalValue())}</p>
                       </div>
-                      <div className="w-12 h-12 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-                        <Droplets className="w-6 h-6 text-cyan-400" />
+                      <div className="w-12 h-12 bg-[#5c69c2]/20 rounded-lg flex items-center justify-center">
+                        <Droplets className="w-6 h-6 text-[#5c69c2]" />
                       </div>
                     </div>
                   </CardContent>
@@ -633,8 +633,8 @@ function LiquidityContent() {
                         <p className="text-gray-400 text-sm mb-1">Active Positions</p>
                         <p className="text-2xl font-bold text-white">{positions.length}</p>
                       </div>
-                      <div className="w-12 h-12 bg-gradient-to-r from-sky-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-                        <Star className="w-6 h-6 text-sky-400" />
+                      <div className="w-12 h-12 bg-[#5c69c2]/20 rounded-lg flex items-center justify-center">
+                        <Star className="w-6 h-6 text-[#5c69c2]" />
                       </div>
                     </div>
                   </CardContent>
@@ -729,7 +729,7 @@ function LiquidityContent() {
                                   </Button>
                                 </div>
                                 <div className="text-center min-w-[80px]">
-                                  <p className="text-cyan-400 font-semibold">
+                                  <p className="text-[#5c69c2] font-semibold">
                                     {position.id === "3" ? "6.00%" : position.id === "4" ? "3.00%" : 
                                      position.id === "1" ? "40.53%" : "43.15%"}
                                   </p>
@@ -1133,9 +1133,9 @@ function LiquidityContent() {
                 <Card className="crypto-card p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Active Pools</span>
-                    <div className="w-4 h-4 bg-sky-400 rounded-full" />
+                    <div className="w-4 h-4 bg-[#5c69c2] rounded-full" />
                   </div>
-                  <div className="text-2xl font-bold text-sky-400">1,247</div>
+                  <div className="text-2xl font-bold text-[#5c69c2]">1,247</div>
                   <div className="text-gray-400 text-sm">pools</div>
                 </Card>
                 

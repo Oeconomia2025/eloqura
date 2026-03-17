@@ -19,7 +19,7 @@ export function OECLoader({ size = "md", className, text }: OECLoaderProps) {
         {/* Spinning ring */}
         <div
           className={cn(
-            "absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-500 border-r-cyan-500/50 animate-spin",
+            "absolute inset-0 rounded-full border-2 border-transparent border-t-[#5c69c2] border-r-[#5c69c2]/50 animate-spin",
             sizeClasses[size]
           )}
           style={{ animationDuration: "1s" }}
@@ -27,7 +27,7 @@ export function OECLoader({ size = "md", className, text }: OECLoaderProps) {
         {/* Outer glow ring */}
         <div
           className={cn(
-            "absolute inset-0 rounded-full border border-cyan-500/20 animate-pulse",
+            "absolute inset-0 rounded-full border border-[#5c69c2]/20 animate-pulse",
             sizeClasses[size]
           )}
         />

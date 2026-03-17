@@ -700,8 +700,8 @@ function BridgeContent() {
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
         {/* Coming Soon Banner */}
-        <div className="mb-6 rounded-lg border border-sky-500/30 bg-gradient-to-r from-sky-500/10 to-blue-600/10 p-4 text-center">
-          <span className="text-lg font-semibold text-sky-400">Coming Soon</span>
+        <div className="mb-6 rounded-lg border border-[#5c69c2]/30 bg-[#5c69c2]/10 p-4 text-center">
+          <span className="text-lg font-semibold text-[#5c69c2]">Coming Soon</span>
           <p className="text-sm text-gray-400 mt-1">Cross-chain bridging is under development and will be available in a future update.</p>
         </div>
         <div className={`grid gap-6 ${showChart ? (hideSidebar ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 xl:grid-cols-5') : 'grid-cols-1 lg:grid-cols-3'}`}>
@@ -714,7 +714,7 @@ function BridgeContent() {
               {/* Bridge Mode Interface - Always shown */}
               {(
                 <>
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">From</span>
                       <div className="flex space-x-2">
@@ -737,7 +737,7 @@ function BridgeContent() {
                       <Button
                         variant="outline"
                         onClick={() => openNetworkModal('from')}
-                        className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         <div className="flex items-center space-x-2">
                           <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-6 h-6 rounded-full" />
@@ -772,7 +772,7 @@ function BridgeContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('from')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         {fromToken ? (
                           <div className="flex items-center space-x-2">
@@ -799,7 +799,7 @@ function BridgeContent() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {}}
-                      className="bg-[var(--crypto-dark)] border-2 border-[var(--crypto-border)] rounded-full w-12 h-12 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
+                      className="bg-gradient-to-b from-[#121315] to-black border-2 border-[var(--crypto-border)] rounded-full w-12 h-12 p-0 hover:bg-[var(--crypto-card)]/80 shadow-xl"
                     >
                       <div className="transform rotate-90">
                         <ArrowUpDown className="w-5 h-5 text-gray-400" />
@@ -808,7 +808,7 @@ function BridgeContent() {
                   </div>
 
                   {/* To Network and Token */}
-                  <div className="bg-[var(--crypto-dark)] rounded-lg p-4 border border-[var(--crypto-border)]">
+                  <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-4 border border-[var(--crypto-border)]">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-gray-400 text-sm">To</span>
                       {toToken && (
@@ -823,7 +823,7 @@ function BridgeContent() {
                       <Button
                         variant="outline"
                         onClick={() => openNetworkModal('to')}
-                        className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="w-40 bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         <div className="flex items-center space-x-2">
                           <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-6 h-6 rounded-full" />
@@ -854,7 +854,7 @@ function BridgeContent() {
                       <Button
                         variant="outline"
                         onClick={() => openTokenModal('to')}
-                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-[var(--crypto-dark)] px-3 py-2 h-auto"
+                        className="bg-[var(--crypto-card)] border-[var(--crypto-border)] text-white hover:bg-gradient-to-b from-[#121315] to-black px-3 py-2 h-auto"
                       >
                         {toToken ? (
                           <div className="flex items-center space-x-2">
@@ -915,7 +915,7 @@ function BridgeContent() {
                 <Button
                   onClick={handleSwapExecution}
                   disabled={isLoading || !fromToken || !toToken || !fromAmount}
-                  className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
+                  className="w-full bg-[#5c69c2] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-6 text-lg"
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
@@ -962,7 +962,7 @@ function BridgeContent() {
               </CardHeader>
               <CardContent className="h-80">
                 {!chartPriceHistory || chartPriceHistory.length === 0 ? (
-                  <div className="w-full h-full bg-[var(--crypto-dark)] rounded-lg border border-[var(--crypto-border)] flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-b from-[#121315] to-black rounded-lg border border-[var(--crypto-border)] flex items-center justify-center">
                     <div className="text-center">
                       <TrendingUp className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                       <p className="text-gray-400 text-lg font-medium mb-2">No Price Data</p>
@@ -1114,7 +1114,7 @@ function BridgeContent() {
           <Card className="crypto-card border">
             <CardHeader>
               <CardTitle className="text-white flex items-center space-x-2">
-                <div className="w-5 h-5 bg-gradient-to-r from-sky-500 to-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-5 h-5 bg-[#5c69c2] rounded-full flex items-center justify-center">
                   <ArrowUpDown className="w-3 h-3 text-white transform rotate-90" />
                 </div>
                 <span>Bridge Status</span>
@@ -1122,7 +1122,7 @@ function BridgeContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Outgoing Bridge Transaction */}
-              <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-sky-500/30">
+              <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-[#5c69c2]/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="Ethereum" className="w-6 h-6 rounded-full" />
@@ -1147,13 +1147,13 @@ function BridgeContent() {
                   </div>
                 </div>
                 <div className="mt-2 bg-gray-700 rounded-full h-1.5">
-                  <div className="bg-gradient-to-r from-sky-500 to-blue-500 h-1.5 rounded-full w-3/4 animate-pulse"></div>
+                  <div className="bg-[#5c69c2] h-1.5 rounded-full w-3/4 animate-pulse"></div>
                 </div>
                 <div className="text-xs text-gray-400 mt-1">Estimated: 2-5 minutes</div>
               </div>
 
               {/* Incoming Bridge - Ready to Claim */}
-              <div className="bg-[var(--crypto-dark)] rounded-lg p-3 border border-green-500/30">
+              <div className="bg-gradient-to-b from-[#121315] to-black rounded-lg p-3 border border-green-500/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png" alt="Polygon" className="w-6 h-6 rounded-full" />
@@ -1310,7 +1310,7 @@ function BridgeContent() {
               placeholder="Search tokens or paste contract address..."
               value={tokenSearchQuery}
               onChange={(e) => setTokenSearchQuery(e.target.value)}
-              className="bg-[var(--crypto-dark)] border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
+              className="bg-gradient-to-b from-[#121315] to-black border-[var(--crypto-border)] text-white placeholder-gray-400 focus:border-crypto-blue"
             />
           </div>
 
@@ -1320,7 +1320,7 @@ function BridgeContent() {
                 key={token.symbol}
                 variant="ghost"
                 onClick={() => selectToken(token)}
-                className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+                className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
               >
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center space-x-3">
@@ -1357,7 +1357,7 @@ function BridgeContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
@@ -1377,7 +1377,7 @@ function BridgeContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
@@ -1397,7 +1397,7 @@ function BridgeContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
@@ -1417,7 +1417,7 @@ function BridgeContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
@@ -1437,7 +1437,7 @@ function BridgeContent() {
             <Button
               variant="ghost"
               onClick={() => setIsNetworkModalOpen(false)}
-              className="w-full justify-start p-3 hover:bg-[var(--crypto-dark)] text-white"
+              className="w-full justify-start p-3 hover:bg-gradient-to-b from-[#121315] to-black text-white"
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
