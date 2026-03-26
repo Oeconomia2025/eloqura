@@ -778,7 +778,10 @@ function SwapContent() {
               txHash,
             });
             // Keep last 50 swaps
-            localStorage.setItem("eloqura-recent-swaps", JSON.stringify(saved.slice(0, 50)));
+            const trimmed = saved.slice(0, 50);
+            localStorage.setItem("eloqura-recent-swaps", JSON.stringify(trimmed));
+            // Update UI immediately without refresh
+            setRecentSwaps(trimmed.slice(0, 5));
           } catch {}
         }
         // After swap, reset form
