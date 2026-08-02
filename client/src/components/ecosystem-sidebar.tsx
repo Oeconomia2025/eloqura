@@ -249,11 +249,12 @@ export function EcosystemSidebar() {
           }}
         >
           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[var(--crypto-border)]">
-            <img
-              src={openInNewTab ? "/ecosystem/tab-new.png" : "/ecosystem/tab-same.png"}
-              alt={openInNewTab ? "New Tab Mode" : "Same Tab Mode"}
-              className="w-12 h-12 rounded object-contain shrink-0"
-            />
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xl"
+              style={{ background: "linear-gradient(135deg, #6e7183, #393a4e)" }}
+            >
+              {openInNewTab ? "↗" : "→"}
+            </div>
             <h3 className="text-lg font-bold text-white">
               {openInNewTab ? "New Tab Mode" : "Same Tab Mode"}
             </h3>
@@ -360,16 +361,13 @@ export function EcosystemSidebar() {
           <div className="shrink-0 mt-[72px]">
             <button
               onClick={toggleNewTab}
-              className="group relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+              className="group relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 text-white font-bold"
+              style={{ background: "linear-gradient(135deg, #6e7183, #393a4e)" }}
               title={openInNewTab ? "Opening in new tab" : "Opening in same tab"}
               onMouseEnter={handleToggleEnter}
               onMouseLeave={handleToggleLeave}
             >
-              <img
-                src={openInNewTab ? "/ecosystem/tab-new.png" : "/ecosystem/tab-same.png"}
-                alt={openInNewTab ? "New tab" : "Same tab"}
-                className="w-10 h-10 rounded object-contain"
-              />
+              {openInNewTab ? "↗" : "→"}
             </button>
           </div>
         </div>
