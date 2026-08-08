@@ -1,5 +1,5 @@
 import { http, createConfig, createStorage } from 'wagmi'
-import { sepolia } from 'wagmi/chains'
+import { sepolia, bscTestnet } from 'wagmi/chains'
 import { coinbaseWallet, metaMask, walletConnect, injected } from 'wagmi/connectors'
 
 // Extend Window interface for wallet types
@@ -20,7 +20,7 @@ declare global {
 const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'f0b928a2e4e4b0e9b5e8a2f5e3e4b0e9'
 
 export const config = createConfig({
-  chains: [sepolia],
+  chains: [sepolia, bscTestnet], // bscTestnet is the bridge counterparty chain
   storage: createStorage({
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   }),
@@ -93,6 +93,7 @@ export const config = createConfig({
   ],
   transports: {
     [sepolia.id]: http("https://eth-sepolia.g.alchemy.com/v2/esuQ5PPGg8-Sr5-X-P-JT"),
+    [bscTestnet.id]: http("https://bsc-testnet-rpc.publicnode.com"),
   },
 })
 
