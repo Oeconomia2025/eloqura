@@ -205,7 +205,11 @@ function LiquidityContent() {
   const [isApproving, setIsApproving] = useState(false);
 
   // Minimum reserve threshold - ignore dust-level reserves left from fully removed liquidity
-  const MIN_RESERVE_THRESHOLD = 10000000000000n; // 0.00001 tokens (18 decimals)
+  // 0.00001 of a token, scaled to that token's decimals (USDC has 6, most tokens 18)
+  const dustThreshold = (tokenAddress: string) =>
+    10n ** BigInt(Math.max(0, getTokenInfo(tokenAddress).decimals - 5));
+  const isDustPair = (pair: { token0: string; token1: string; reserve0: bigint; reserve1: bigint }) =>
+    pair.reserve0 <= dustThreshold(pair.token0) || pair.reserve1 <= dustThreshold(pair.token1);
 
   // Get current pair for selected tokens (if exists with meaningful liquidity)
   const getCurrentPair = () => {
@@ -225,7 +229,7 @@ function LiquidityContent() {
         (pair.token0.toLowerCase() === addr1 && pair.token1.toLowerCase() === addr0);
       if (!isMatch) return false;
       // Skip pairs with dust-level reserves (leftover from fully removed liquidity)
-      return pair.reserve0 > MIN_RESERVE_THRESHOLD && pair.reserve1 > MIN_RESERVE_THRESHOLD;
+      return !isDustPair(pair);
     });
   };
 
@@ -612,7 +616,7 @@ function LiquidityContent() {
       const rawPair = getRawPair();
 
       if (!currentPair && rawPair) {
-        const isDust = rawPair.reserve0 <= MIN_RESERVE_THRESHOLD || rawPair.reserve1 <= MIN_RESERVE_THRESHOLD;
+        const isDust = isDustPair(rawPair);
 
         if (isDust) {
           if (!walletClient || !publicClient) {
