@@ -8,6 +8,10 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  MULTICALL3, SEPOLIA_BLOCKS_PER_DAY, feesBetween, parseSnapshot, snapshotCalls,
+  timestampCall, type PairSnapshot,
+} from "@/lib/pool-math";
 
 /**
  * Pool performance charts built from on-chain history.
@@ -40,34 +44,6 @@ const RANGES = {
 } as const;
 type RangeKey = keyof typeof RANGES;
 
-const SEPOLIA_BLOCKS_PER_DAY = 7200; // 12s slots
-const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11" as const;
-const Q128 = 2n ** 128n;
-
-const SNAPSHOT_ABI = [
-  { name: "getReserves", type: "function", stateMutability: "view", inputs: [],
-    outputs: [{ type: "uint112" }, { type: "uint112" }, { type: "uint32" }] },
-  { name: "totalSupply", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
-  { name: "feeGrowthGlobal0X128", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
-  { name: "feeGrowthGlobal1X128", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
-  { name: "swapFeeBps", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
-] as const;
-
-const MULTICALL_TS_ABI = [
-  { name: "getCurrentBlockTimestamp", type: "function", stateMutability: "view", inputs: [],
-    outputs: [{ type: "uint256" }] },
-] as const;
-
-interface Snapshot {
-  time: number; // unix seconds
-  reserve0: number;
-  reserve1: number;
-  supply: bigint;
-  fg0: bigint | null;
-  fg1: bigint | null;
-  feeBps: number | null;
-}
-
 interface ChartPoint {
   label: string;
   liquidityUsd: number;
@@ -77,14 +53,14 @@ interface ChartPoint {
   apr: number | null;
 }
 
-function useSnapshots(pairAddress: `0x${string}`, range: RangeKey, d0: number, d1: number) {
+function useSnapshots(pairAddress: `0x${string}`, range: RangeKey) {
   const publicClient = usePublicClient();
 
   return useQuery({
     queryKey: ["pool-history", pairAddress, range],
     enabled: !!publicClient,
     staleTime: 5 * 60_000,
-    queryFn: async (): Promise<Snapshot[]> => {
+    queryFn: async (): Promise<PairSnapshot[]> => {
       if (!publicClient) return [];
       const latest = await publicClient.getBlockNumber();
       const { days, points } = RANGES[range];
@@ -92,48 +68,28 @@ function useSnapshots(pairAddress: `0x${string}`, range: RangeKey, d0: number, d
       const blocks = Array.from({ length: points + 1 }, (_, i) => latest - step * BigInt(points - i))
         .filter((b) => b > 0n);
 
-      const contract = { address: pairAddress, abi: SNAPSHOT_ABI } as const;
+      const contracts = [...snapshotCalls(pairAddress), timestampCall];
       const results = await Promise.all(
         blocks.map((blockNumber) =>
           publicClient
-            .multicall({
-              allowFailure: true,
-              blockNumber,
-              multicallAddress: MULTICALL3,
-              contracts: [
-                { ...contract, functionName: "getReserves" },
-                { ...contract, functionName: "totalSupply" },
-                { ...contract, functionName: "feeGrowthGlobal0X128" },
-                { ...contract, functionName: "feeGrowthGlobal1X128" },
-                { ...contract, functionName: "swapFeeBps" },
-                { address: MULTICALL3, abi: MULTICALL_TS_ABI, functionName: "getCurrentBlockTimestamp" },
-              ],
-            })
+            .multicall({ allowFailure: true, blockNumber, multicallAddress: MULTICALL3, contracts })
             .catch(() => null)
         )
       );
 
-      const snaps: Snapshot[] = [];
+      const snaps: PairSnapshot[] = [];
       for (const r of results) {
         // Pair didn't exist yet at this block, or the read failed: skip the point.
-        if (!r || r[0].status !== "success" || r[1].status !== "success" || r[5].status !== "success") continue;
-        const [res0, res1] = r[0].result as readonly [bigint, bigint, number];
-        snaps.push({
-          time: Number(r[5].result as bigint),
-          reserve0: parseFloat(formatUnits(res0, d0)),
-          reserve1: parseFloat(formatUnits(res1, d1)),
-          supply: r[1].result as bigint,
-          fg0: r[2].status === "success" ? (r[2].result as bigint) : null,
-          fg1: r[3].status === "success" ? (r[3].result as bigint) : null,
-          feeBps: r[4].status === "success" ? Number(r[4].result as bigint) : null,
-        });
+        if (!r || r[5].status !== "success") continue;
+        const snap = parseSnapshot(r.slice(0, 5) as any, Number(r[5].result as bigint));
+        if (snap) snaps.push(snap);
       }
       return snaps;
     },
   });
 }
 
-function buildPoints(snaps: Snapshot[], p: PoolAnalyticsProps, range: RangeKey): ChartPoint[] {
+function buildPoints(snaps: PairSnapshot[], p: PoolAnalyticsProps, range: RangeKey): ChartPoint[] {
   const { price0Usd, price1Usd, token0, token1 } = p;
   const fmtLabel = (t: number) => {
     const d = new Date(t * 1000);
@@ -141,24 +97,27 @@ function buildPoints(snaps: Snapshot[], p: PoolAnalyticsProps, range: RangeKey):
       ? d.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric" })
       : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
+  const liq = (s: PairSnapshot) =>
+    parseFloat(formatUnits(s.reserve0, token0.decimals)) * price0Usd +
+    parseFloat(formatUnits(s.reserve1, token1.decimals)) * price1Usd;
 
   return snaps.map((s, i) => {
-    const liquidityUsd = s.reserve0 * price0Usd + s.reserve1 * price1Usd;
-    const price = s.reserve0 > 0 ? s.reserve1 / s.reserve0 : 0;
+    const r0 = parseFloat(formatUnits(s.reserve0, token0.decimals));
+    const r1 = parseFloat(formatUnits(s.reserve1, token1.decimals));
+    const liquidityUsd = liq(s);
+    const price = r0 > 0 ? r1 / r0 : 0;
     const prev = snaps[i - 1];
 
     let feesUsd: number | null = null;
     let volumeUsd: number | null = null;
     let apr: number | null = null;
-    if (prev && s.fg0 !== null && s.fg1 !== null && prev.fg0 !== null && prev.fg1 !== null && s.feeBps) {
-      // feeGrowth is fees per LP token (scaled by 2^128). Times supply = pool-wide fees.
-      const avgSupply = (s.supply + prev.supply) / 2n;
-      const fees0 = parseFloat(formatUnits(((s.fg0 - prev.fg0) * avgSupply) / Q128, token0.decimals));
-      const fees1 = parseFloat(formatUnits(((s.fg1 - prev.fg1) * avgSupply) / Q128, token1.decimals));
-      feesUsd = fees0 * price0Usd + fees1 * price1Usd;
+    const fees = feesBetween(prev, s);
+    if (fees && s.feeBps) {
+      feesUsd = parseFloat(formatUnits(fees.fees0, token0.decimals)) * price0Usd +
+                parseFloat(formatUnits(fees.fees1, token1.decimals)) * price1Usd;
       volumeUsd = feesUsd / (s.feeBps / 10_000);
       const years = (s.time - prev.time) / (365 * 86_400);
-      const avgLiquidity = (liquidityUsd + prev.reserve0 * price0Usd + prev.reserve1 * price1Usd) / 2;
+      const avgLiquidity = (liquidityUsd + liq(prev)) / 2;
       apr = avgLiquidity > 0 && years > 0 ? (feesUsd / avgLiquidity / years) * 100 : null;
     }
     return { label: fmtLabel(s.time), liquidityUsd, price, volumeUsd, feesUsd, apr };
@@ -181,9 +140,7 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
   const { token0, token1, price0Usd, price1Usd, lpBalance } = props;
   const [range, setRange] = useState<RangeKey>("30D");
   const [chart, setChart] = useState<ChartKey>("liquidity");
-  const { data: snaps, isLoading, isError } = useSnapshots(
-    props.pairAddress, range, token0.decimals, token1.decimals
-  );
+  const { data: snaps, isLoading, isError } = useSnapshots(props.pairAddress, range);
 
   const points = snaps ? buildPoints(snaps, props, range) : [];
   const last = snaps?.[snaps.length - 1];

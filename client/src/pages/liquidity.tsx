@@ -38,6 +38,8 @@ import { ELOQURA_CONTRACTS, FACTORY_ABI, ROUTER_ABI, PAIR_ABI, ERC20_ABI } from 
 import { trackTransaction } from "@/lib/explorer";
 import { useToast } from "@/hooks/use-toast";
 import { PoolAnalytics } from "@/components/pool-analytics";
+import { usePoolsSnapshots } from "@/hooks/use-pools-snapshots";
+import { feesBetween, type PairSnapshot } from "@/lib/pool-math";
 
 interface Token {
   symbol: string;
@@ -183,6 +185,9 @@ function LiquidityContent() {
       console.error('Error fetching Eloqura pairs:', error);
     }
   };
+
+  // On-chain history (now, 1d, 2d, 7d ago) for every pair: drives volume, APR and 24h change
+  const { data: poolSnaps } = usePoolsSnapshots(eloquraPairs.map(p => p.address));
 
   // Fetch pairs on mount and when address/connection changes
   useEffect(() => {
@@ -1492,10 +1497,48 @@ function LiquidityContent() {
       const tvlToken1 = estimateTokenUsd(token1Info, reserve1, eloquraPairs) || estimateTokenUsdChainlink(token1Info, reserve1, eloquraPairs);
       const tvl = tvlToken0 + tvlToken1;
 
+      // Real stats from on-chain snapshots
+      const price0 = reserve0 > 0 ? tvlToken0 / reserve0 : 0;
+      const price1 = reserve1 > 0 ? tvlToken1 / reserve1 : 0;
+      const key = pair.address.toLowerCase();
+      const snapNow = poolSnaps?.now[key] ?? null;
+      const snapD1 = poolSnaps?.d1[key] ?? null;
+      const snapD2 = poolSnaps?.d2[key] ?? null;
+      // Pools younger than 7 days fall back to their oldest available snapshot
+      const snapD7 = poolSnaps?.d7[key] ?? snapD2 ?? snapD1;
+      const usdOf = (fees: ReturnType<typeof feesBetween>) => fees === null ? null :
+        parseFloat(formatUnits(fees.fees0, token0Info.decimals)) * price0 +
+        parseFloat(formatUnits(fees.fees1, token1Info.decimals)) * price1;
+      const feeRate = (snapNow?.feeBps ?? 30) / 10_000;
+      const tvlAt = (snap: PairSnapshot | null) => snap === null ? null :
+        parseFloat(formatUnits(snap.reserve0, token0Info.decimals)) * price0 +
+        parseFloat(formatUnits(snap.reserve1, token1Info.decimals)) * price1;
+
+      const fees24h = usdOf(feesBetween(snapD1, snapNow));
+      const feesPrev24h = usdOf(feesBetween(snapD2, snapD1));
+      const fees7d = usdOf(feesBetween(snapD7, snapNow));
+      const volume24hValue = fees24h === null ? null : fees24h / feeRate;
+      const volumePrev24hValue = feesPrev24h === null ? null : feesPrev24h / feeRate;
+      const volume7dValue = fees7d === null ? null : fees7d / feeRate;
+      const tvl7dAgo = tvlAt(snapD7);
+      const years7d = snapNow && snapD7 ? (snapNow.time - snapD7.time) / (365 * 86_400) : 0;
+      const avgTvl7d = tvl7dAgo !== null ? (tvl + tvl7dAgo) / 2 : tvl;
+      const aprValue = fees7d !== null && avgTvl7d > 0 && years7d > 0
+        ? (fees7d / avgTvl7d / years7d) * 100 : null;
+      const tvl24hAgo = tvlAt(snapD1);
+      // Pool price change over 24h (token1 per token0)
+      const priceNow = snapNow && snapNow.reserve0 > 0n
+        ? parseFloat(formatUnits(snapNow.reserve1, token1Info.decimals)) / parseFloat(formatUnits(snapNow.reserve0, token0Info.decimals)) : 0;
+      const price24hAgo = snapD1 && snapD1.reserve0 > 0n
+        ? parseFloat(formatUnits(snapD1.reserve1, token1Info.decimals)) / parseFloat(formatUnits(snapD1.reserve0, token0Info.decimals)) : 0;
+      const priceChange24h = priceNow > 0 && price24hAgo > 0
+        ? Math.round(((priceNow / price24hAgo) - 1) * 10_000) / 100 : 0;
+
       const formatUsd = (val: number) => {
         if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
         if (val >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
         if (val >= 1) return `$${val.toFixed(2)}`;
+        if (val === 0) return "$0";
         return `$${val.toFixed(4)}`;
       };
 
@@ -1506,15 +1549,44 @@ function LiquidityContent() {
         token1Address: pair.token1,
         tokenA: { symbol: token0Info.symbol, name: token0Info.name, logo: token0Info.logo },
         tokenB: { symbol: token1Info.symbol, name: token1Info.name, logo: token1Info.logo },
-        fee: "0.30%",
-        volume24h: "-",
-        volume7d: "-",
+        fee: `${((snapNow?.feeBps ?? 30) / 100).toFixed(2)}%`,
+        volume24h: volume24hValue === null ? "-" : formatUsd(volume24hValue),
+        volume7d: volume7dValue === null ? "-" : formatUsd(volume7dValue),
         tvl: formatUsd(tvl),
-        apr: "-",
-        priceChange24h: 0,
-        network: "Sepolia"
+        apr: aprValue === null ? "-" : `${aprValue.toFixed(2)}%`,
+        priceChange24h,
+        network: "Sepolia",
+        // Numeric values for sorting and the summary cards
+        volume24hValue: volume24hValue ?? 0,
+        volumePrev24hValue,
+        volume7dValue: volume7dValue ?? 0,
+        tvlValue: tvl,
+        tvl24hAgo,
+        aprValue,
       };
     });
+
+  // Summary cards: totals across all active pools
+  const sumOf = (vals: (number | null)[]) => vals.reduce<number>((a, v) => a + (v ?? 0), 0);
+  const statsReady = !!poolSnaps;
+  const totalVolume24h = sumOf(realPools.map(p => p.volume24hValue));
+  const totalVolumePrev24h = sumOf(realPools.map(p => p.volumePrev24hValue));
+  const totalTvl = sumOf(realPools.map(p => p.tvlValue));
+  const totalTvl24hAgo = sumOf(realPools.map(p => p.tvl24hAgo));
+  const aprPools = realPools.filter(p => p.aprValue !== null && p.tvlValue > 0);
+  const aprTvl = sumOf(aprPools.map(p => p.tvlValue));
+  const avgApr = aprTvl > 0 ? sumOf(aprPools.map(p => (p.aprValue ?? 0) * p.tvlValue)) / aprTvl : null;
+  const pctChange = (now: number, before: number) => before > 0 ? ((now - before) / before) * 100 : null;
+  const volumeChange = pctChange(totalVolume24h, totalVolumePrev24h);
+  const tvlChange = pctChange(totalTvl, totalTvl24hAgo);
+  const compactUsd = (val: number) => {
+    if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(2)}M`;
+    if (val >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
+    return `$${val.toFixed(2)}`;
+  };
+  const changeLabel = (pct: number | null, suffix: string) =>
+    pct === null ? <span className="text-gray-400">{suffix}</span>
+      : <span className={pct >= 0 ? "text-crypto-green" : "text-red-400"}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}% {suffix}</span>;
 
   // Open Create Position with a pool's two tokens already selected
   const openPoolInCreate = (token0Address: string, token1Address: string) => {
@@ -1537,8 +1609,14 @@ function LiquidityContent() {
     let aValue: any = a;
     let bValue: any = b;
 
+    // Sort money/percent columns by their numeric values
+    const numericFields: Record<string, string> = {
+      volume24h: 'volume24hValue', volume7d: 'volume7dValue', tvl: 'tvlValue', apr: 'aprValue',
+    };
+    const sortField = numericFields[poolsSortField] ?? poolsSortField;
+
     // Handle nested properties
-    const fieldParts = poolsSortField.split('.');
+    const fieldParts = sortField.split('.');
     for (const part of fieldParts) {
       aValue = aValue?.[part];
       bValue = bValue?.[part];
@@ -1555,6 +1633,9 @@ function LiquidityContent() {
         bValue = bValue.toLowerCase();
       }
     }
+
+    if (aValue === null || aValue === undefined) aValue = -Infinity;
+    if (bValue === null || bValue === undefined) bValue = -Infinity;
 
     if (poolsSortDirection === 'asc') {
       return aValue > bValue ? 1 : -1;
@@ -2410,8 +2491,8 @@ function LiquidityContent() {
                     <span className="text-gray-400 text-sm">24H Volume</span>
                     <TrendingUp className="w-4 h-4 text-crypto-green" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-green">$8.7M</div>
-                  <div className="text-crypto-green text-sm">+16.3%</div>
+                  <div className="text-2xl font-bold text-crypto-green">{statsReady ? compactUsd(totalVolume24h) : "..."}</div>
+                  <div className="text-sm">{statsReady ? changeLabel(volumeChange, "vs prior 24h") : <span className="text-gray-400">loading</span>}</div>
                 </Card>
 
                 <Card className="crypto-card p-6">
@@ -2419,8 +2500,8 @@ function LiquidityContent() {
                     <span className="text-gray-400 text-sm">Total TVL</span>
                     <TrendingUp className="w-4 h-4 text-crypto-blue" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-blue">$32.4M</div>
-                  <div className="text-crypto-green text-sm">+2.8%</div>
+                  <div className="text-2xl font-bold text-crypto-blue">{compactUsd(totalTvl)}</div>
+                  <div className="text-sm">{statsReady ? changeLabel(tvlChange, "24h") : <span className="text-gray-400">loading</span>}</div>
                 </Card>
 
                 <Card className="crypto-card p-6">
@@ -2428,8 +2509,8 @@ function LiquidityContent() {
                     <span className="text-gray-400 text-sm">Active Pools</span>
                     <div className="w-4 h-4 bg-[#5c69c2] rounded-full" />
                   </div>
-                  <div className="text-2xl font-bold text-[#5c69c2]">1,247</div>
-                  <div className="text-gray-400 text-sm">pools</div>
+                  <div className="text-2xl font-bold text-[#5c69c2]">{realPools.length.toLocaleString()}</div>
+                  <div className="text-gray-400 text-sm">{realPools.length === 1 ? "pool" : "pools"} with liquidity</div>
                 </Card>
 
                 <Card className="crypto-card p-6">
@@ -2437,8 +2518,8 @@ function LiquidityContent() {
                     <span className="text-gray-400 text-sm">Avg APR</span>
                     <TrendingUp className="w-4 h-4 text-crypto-green" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-green">19.2%</div>
-                  <div className="text-crypto-green text-sm">+0.4%</div>
+                  <div className="text-2xl font-bold text-crypto-green">{avgApr === null ? (statsReady ? "-" : "...") : `${avgApr.toFixed(2)}%`}</div>
+                  <div className="text-gray-400 text-sm">7d fee APR, TVL-weighted</div>
                 </Card>
               </div>
 
@@ -2623,7 +2704,7 @@ function LiquidityContent() {
 
               {/* Footer Note */}
               <div className="text-center text-sm text-gray-500">
-                <p>Pool data updates every 30 seconds • APR calculations include trading fees and liquidity mining rewards</p>
+                <p>Pool data updates every 30 seconds • Volume and APR come from fees each pool earned on-chain (APR = trading fees, last 7 days)</p>
               </div>
               </div>
               ) : (
