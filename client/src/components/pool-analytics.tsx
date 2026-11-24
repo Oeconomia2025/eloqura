@@ -207,9 +207,15 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
             </span>
             {token0.symbol}/{token1.symbol} Pool Performance
           </CardTitle>
-            <ChevronDown
-              className={`w-5 h-5 text-gray-400 group-hover:text-white transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-            />
+            <span
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-black/25 border border-white/5
+                shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-colors duration-200
+                group-hover:bg-black/40 group-hover:border-white/10"
+            >
+              <ChevronDown
+                className={`w-5 h-5 text-gray-300 group-hover:text-white transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+              />
+            </span>
           </button>
           {expanded && (
           <div className="flex gap-1">
