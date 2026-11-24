@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 import {
   MULTICALL3, SEPOLIA_BLOCKS_PER_DAY, feesBetween, parseSnapshot, snapshotCalls,
   timestampCall, type PairSnapshot,
@@ -53,12 +54,12 @@ interface ChartPoint {
   apr: number | null;
 }
 
-function useSnapshots(pairAddress: `0x${string}`, range: RangeKey) {
+function useSnapshots(pairAddress: `0x${string}`, range: RangeKey, enabled: boolean) {
   const publicClient = usePublicClient();
 
   return useQuery({
     queryKey: ["pool-history", pairAddress, range],
-    enabled: !!publicClient,
+    enabled: !!publicClient && enabled,
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<PairSnapshot[]> => {
       if (!publicClient) return [];
@@ -135,12 +136,24 @@ const num = (v: number) =>
   : v >= 1 ? v.toFixed(4) : v.toPrecision(4);
 
 type ChartKey = "liquidity" | "volume" | "apr" | "price";
+const EXPANDED_KEY = "eloqura:pool-analytics-expanded";
 
 export function PoolAnalytics(props: PoolAnalyticsProps) {
   const { token0, token1, price0Usd, price1Usd, lpBalance } = props;
   const [range, setRange] = useState<RangeKey>("30D");
   const [chart, setChart] = useState<ChartKey>("liquidity");
-  const { data: snaps, isLoading, isError } = useSnapshots(props.pairAddress, range);
+  // Remember open/closed across visits; storage can be unavailable, so guard it
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    try { return localStorage.getItem(EXPANDED_KEY) !== "false"; } catch { return true; }
+  });
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
+      try { localStorage.setItem(EXPANDED_KEY, String(!prev)); } catch { /* ignore */ }
+      return !prev;
+    });
+  };
+  // Only read chain history while the card is open
+  const { data: snaps, isLoading, isError } = useSnapshots(props.pairAddress, range, expanded);
 
   const points = snaps ? buildPoints(snaps, props, range) : [];
   const last = snaps?.[snaps.length - 1];
@@ -179,8 +192,14 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
 
   return (
     <Card className="crypto-card border">
-      <CardHeader className="pb-3">
+      <CardHeader className={expanded ? "pb-3" : undefined}>
         <div className="flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={toggleExpanded}
+            aria-expanded={expanded}
+            className="flex items-center gap-3 text-left group"
+          >
           <CardTitle className="text-white flex items-center gap-3">
             <span className="flex -space-x-2">
               <img src={token0.logo} alt={token0.symbol} className="w-7 h-7 rounded-full" />
@@ -188,6 +207,11 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
             </span>
             {token0.symbol}/{token1.symbol} Pool Performance
           </CardTitle>
+            <ChevronDown
+              className={`w-5 h-5 text-gray-400 group-hover:text-white transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            />
+          </button>
+          {expanded && (
           <div className="flex gap-1">
             {(Object.keys(RANGES) as RangeKey[]).map((r) => (
               <Button key={r} size="sm" variant={r === range ? "default" : "ghost"}
@@ -197,8 +221,10 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
               </Button>
             ))}
           </div>
+          )}
         </div>
       </CardHeader>
+      {expanded && (
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {stats.map((s) => (
@@ -280,6 +306,7 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
           actually earned. USD values use current token prices. APR covers trading fees only.
         </p>
       </CardContent>
+      )}
     </Card>
   );
 }
