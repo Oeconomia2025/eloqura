@@ -37,6 +37,7 @@ import { formatUnits, parseUnits, erc20Abi } from "viem";
 import { ELOQURA_CONTRACTS, FACTORY_ABI, ROUTER_ABI, PAIR_ABI, ERC20_ABI } from "@/lib/contracts";
 import { trackTransaction } from "@/lib/explorer";
 import { useToast } from "@/hooks/use-toast";
+import { PoolAnalytics } from "@/components/pool-analytics";
 
 interface Token {
   symbol: string;
@@ -1500,6 +1501,9 @@ function LiquidityContent() {
 
       return {
         id: index + 1,
+        pairAddress: pair.address,
+        token0Address: pair.token0,
+        token1Address: pair.token1,
         tokenA: { symbol: token0Info.symbol, name: token0Info.name, logo: token0Info.logo },
         tokenB: { symbol: token1Info.symbol, name: token1Info.name, logo: token1Info.logo },
         fee: "0.30%",
@@ -1511,6 +1515,20 @@ function LiquidityContent() {
         network: "Sepolia"
       };
     });
+
+  // Open Create Position with a pool's two tokens already selected
+  const openPoolInCreate = (token0Address: string, token1Address: string) => {
+    setSelectedToken0(getTokenInfo(token0Address));
+    setSelectedToken1(getTokenInfo(token1Address));
+    setAmount0("");
+    setAmount1("");
+    setActiveView('create');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // USD price of one unit of a token (0 if unknown), for pool analytics
+  const unitUsd = (token: Token) =>
+    estimateTokenUsd(token, 1, eloquraPairs) || estimateTokenUsdChainlink(token, 1, eloquraPairs);
 
   // Sort pools data
   const sortedPools = [...realPools].sort((a, b) => {
@@ -1977,7 +1995,23 @@ function LiquidityContent() {
           )}
 
           {/* Create Position View */}
-          {activeView === 'create' && (
+          {activeView === 'create' && (() => {
+            const analyticsPair = getCurrentPair();
+            const pt0 = analyticsPair ? getTokenInfo(analyticsPair.token0) : null;
+            const pt1 = analyticsPair ? getTokenInfo(analyticsPair.token1) : null;
+            return (
+            <div className="space-y-6">
+            {analyticsPair && pt0 && pt1 && (
+              <PoolAnalytics
+                key={analyticsPair.address}
+                pairAddress={analyticsPair.address as `0x${string}`}
+                token0={pt0}
+                token1={pt1}
+                price0Usd={unitUsd(pt0)}
+                price1Usd={unitUsd(pt1)}
+                lpBalance={analyticsPair.lpBalance}
+              />
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Main Create Interface */}
               <div className="lg:col-span-2">
@@ -2362,7 +2396,9 @@ function LiquidityContent() {
                 </Card>
               </div>
             </div>
-          )}
+            </div>
+            );
+          })()}
 
           {/* Pools View */}
           {activeView === 'pools' && (
@@ -2518,7 +2554,7 @@ function LiquidityContent() {
                         <tr 
                           key={pool.id} 
                           className="border-b border-crypto-border hover:bg-[#393a4e] hover:border-crypto-blue/60 hover:shadow-lg transition-all duration-200 cursor-pointer group"
-                          onClick={() => setActiveView('create')}
+                          onClick={() => openPoolInCreate(pool.token0Address, pool.token1Address)}
                         >
                           <td className="py-4 px-6">
                             <span className="text-gray-400 font-mono group-hover:text-white transition-colors duration-200">{index + 1}</span>
