@@ -2835,7 +2835,7 @@ function LiquidityContent() {
 
                 {/* Footer Note */}
                 <div className="text-center text-sm text-gray-500">
-                  <p>Token data updates every 30 seconds • Prices from BSC network via Moralis API</p>
+                  <p>Token data refreshes every minute • Prices from Live Coin Watch</p>
                 </div>
                 </div>
               )}
