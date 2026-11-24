@@ -400,7 +400,7 @@ export function Layout({
       )}
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-0 mr-9 relative bg-gradient-to-b from-[#393a4e] to-[#121315] min-h-screen">
+      <div className="flex-1 min-w-0 lg:ml-0 mr-9 relative bg-gradient-to-b from-[#393a4e] to-[#121315] min-h-screen">
         {/* Mobile menu button for when there's no header */}
         <div className="lg:hidden fixed top-4 left-4 z-50">
           <Button
@@ -414,7 +414,7 @@ export function Layout({
         </div>
 
         {/* Page Content */}
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           {children}
 
           {/* Footer */}

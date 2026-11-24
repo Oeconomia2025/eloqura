@@ -1743,7 +1743,7 @@ function LiquidityContent() {
 
   return (
     <Layout>
-      <div className="p-8">
+      <div className="p-4 pt-16 sm:p-6 sm:pt-16 lg:p-8">
         <div className="max-w-7xl mx-auto">
 
           {/* Navigation Tabs */}
@@ -1755,8 +1755,8 @@ function LiquidityContent() {
                 onClick={() => setActiveView('pools')}
                 className={
                   activeView === 'pools'
-                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-3 rounded-md"
-                    : "text-gray-400 hover:text-white px-6 py-3 rounded-md hover:bg-gray-700/50"
+                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-2 sm:px-6 py-3 rounded-md"
+                    : "text-gray-400 hover:text-white px-2 sm:px-6 py-3 rounded-md hover:bg-gray-700/50"
                 }
               >
                 Examine
@@ -1767,8 +1767,8 @@ function LiquidityContent() {
                 onClick={() => setActiveView('positions')}
                 className={
                   activeView === 'positions'
-                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-3 rounded-md"
-                    : "text-gray-400 hover:text-white px-6 py-3 rounded-md hover:bg-gray-700/50"
+                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-2 sm:px-6 py-3 rounded-md"
+                    : "text-gray-400 hover:text-white px-2 sm:px-6 py-3 rounded-md hover:bg-gray-700/50"
                 }
               >
                 My Positions
@@ -1779,8 +1779,8 @@ function LiquidityContent() {
                 onClick={() => setActiveView('create')}
                 className={
                   activeView === 'create'
-                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-6 py-3 rounded-md"
-                    : "text-gray-400 hover:text-white px-6 py-3 rounded-md hover:bg-gray-700/50"
+                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-2 sm:px-6 py-3 rounded-md"
+                    : "text-gray-400 hover:text-white px-2 sm:px-6 py-3 rounded-md hover:bg-gray-700/50"
                 }
               >
                 Create Position
@@ -2480,47 +2480,47 @@ function LiquidityContent() {
           {activeView === 'pools' && (
             <div className="space-y-6">
               {/* Stats Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card className="crypto-card p-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                <Card className="crypto-card p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">24H Volume</span>
                     <TrendingUp className="w-4 h-4 text-crypto-green" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-green">{statsReady ? compactUsd(totalVolume24h) : "..."}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-crypto-green">{statsReady ? compactUsd(totalVolume24h) : "..."}</div>
                   <div className="text-sm">{statsReady ? changeLabel(volumeChange, "vs prior 24h") : <span className="text-gray-400">loading</span>}</div>
                 </Card>
 
-                <Card className="crypto-card p-6">
+                <Card className="crypto-card p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Total TVL</span>
                     <TrendingUp className="w-4 h-4 text-crypto-blue" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-blue">{compactUsd(totalTvl)}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-crypto-blue">{compactUsd(totalTvl)}</div>
                   <div className="text-sm">{statsReady ? changeLabel(tvlChange, "24h") : <span className="text-gray-400">loading</span>}</div>
                 </Card>
 
-                <Card className="crypto-card p-6">
+                <Card className="crypto-card p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Active Pools</span>
                     <div className="w-4 h-4 bg-[#5c69c2] rounded-full" />
                   </div>
-                  <div className="text-2xl font-bold text-[#5c69c2]">{realPools.length.toLocaleString()}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#5c69c2]">{realPools.length.toLocaleString()}</div>
                   <div className="text-gray-400 text-sm">{realPools.length === 1 ? "pool" : "pools"} with liquidity</div>
                 </Card>
 
-                <Card className="crypto-card p-6">
+                <Card className="crypto-card p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-400 text-sm">Avg APR</span>
                     <TrendingUp className="w-4 h-4 text-crypto-green" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-green">{avgApr === null ? (statsReady ? "-" : "...") : formatPct(avgApr)}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-crypto-green">{avgApr === null ? (statsReady ? "-" : "...") : formatPct(avgApr)}</div>
                   <div className="text-gray-400 text-sm">7d fee APR, TVL-weighted</div>
                 </Card>
               </div>
 
 
               {/* Navigation and Search */}
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap justify-between items-center gap-3">
                 <div className="grid w-auto grid-cols-2 bg-[#1a1b23] border border-[var(--crypto-border)] rounded-lg p-1">
                   <Button 
                     variant={activeTab === 'pools' ? "default" : "ghost"} 
@@ -2555,8 +2555,8 @@ function LiquidityContent() {
               {activeTab === 'pools' ? (
                 <div>
                 <p className="text-xs text-gray-500 mb-2 italic">Click a row to view pool details</p>
-                <div className="border rounded-lg overflow-hidden relative max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide bg-[#1a1b23]">
-                  <table className="w-full">
+                <div className="border rounded-lg relative max-h-[calc(100vh-280px)] overflow-auto scrollbar-hide bg-[#1a1b23]">
+                  <table className="w-full min-w-[760px]">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
                       <tr>
                         <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">#</th>
@@ -2705,8 +2705,8 @@ function LiquidityContent() {
               ) : (
                 <div>
                 <p className="text-xs text-gray-500 mb-2 italic">Click a row to view token details</p>
-                <div className="border rounded-lg overflow-hidden relative max-h-[700px] overflow-y-auto scrollbar-hide">
-                  <table className="w-full">
+                <div className="border rounded-lg relative max-h-[700px] overflow-auto scrollbar-hide">
+                  <table className="w-full min-w-[760px]">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
                       <tr>
                         <th className="text-left py-4 px-6 font-medium text-gray-400 bg-transparent">#</th>
