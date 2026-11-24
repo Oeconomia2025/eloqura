@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { formatUsdCompact, formatPct } from "@/lib/format-stats";
 import {
   MULTICALL3, SEPOLIA_BLOCKS_PER_DAY, feesBetween, parseSnapshot, snapshotCalls,
   timestampCall, type PairSnapshot,
@@ -125,12 +126,7 @@ function buildPoints(snaps: PairSnapshot[], p: PoolAnalyticsProps, range: RangeK
   });
 }
 
-const usd = (v: number) => {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
-  if (v >= 1) return `$${v.toFixed(2)}`;
-  return `$${v.toFixed(4)}`;
-};
+const usd = formatUsdCompact;
 const num = (v: number) =>
   v >= 1000 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 })
   : v >= 1 ? v.toFixed(4) : v.toPrecision(4);
@@ -172,7 +168,7 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
     { label: "Liquidity", value: hasPrices ? usd(liquidityNow) : "-" },
     { label: `Volume (${range})`, value: hasFeeData && hasPrices ? usd(totalVolume) : "-" },
     { label: `Fees (${range})`, value: hasFeeData && hasPrices ? usd(totalFees) : "-" },
-    { label: `Fee APR (${range})`, value: periodApr !== null && hasFeeData ? `${periodApr.toFixed(2)}%` : "-" },
+    { label: `Fee APR (${range})`, value: periodApr !== null && hasFeeData ? formatPct(periodApr) : "-" },
     { label: "Your share", value: share > 0 ? `${share < 0.01 ? "<0.01" : share.toFixed(2)}%` : "-" },
   ];
 
@@ -290,7 +286,7 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
                   <XAxis dataKey="label" {...axis} minTickGap={24} />
                   <YAxis {...axis} tickFormatter={(v: number) => `${v.toFixed(0)}%`} width={50} />
-                  <Tooltip {...tooltipStyle} formatter={(v: number) => [`${v.toFixed(2)}%`, "Fee APR"]} />
+                  <Tooltip {...tooltipStyle} formatter={(v: number) => [formatPct(v), "Fee APR"]} />
                   <Line type="monotone" dataKey="apr" stroke="#22c55e" strokeWidth={2} dot={false} />
                 </LineChart>
               ) : (

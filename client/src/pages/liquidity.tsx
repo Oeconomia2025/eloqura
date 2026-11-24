@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PoolAnalytics } from "@/components/pool-analytics";
 import { usePoolsSnapshots } from "@/hooks/use-pools-snapshots";
 import { feesBetween, type PairSnapshot } from "@/lib/pool-math";
+import { formatUsdCompact, formatPct } from "@/lib/format-stats";
 
 interface Token {
   symbol: string;
@@ -1538,13 +1539,7 @@ function LiquidityContent() {
       const priceChange24h = priceNow > 0 && price24hAgo > 0
         ? Math.round(((priceNow / price24hAgo) - 1) * 10_000) / 100 : 0;
 
-      const formatUsd = (val: number) => {
-        if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
-        if (val >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
-        if (val >= 1) return `$${val.toFixed(2)}`;
-        if (val === 0) return "$0";
-        return `$${val.toFixed(4)}`;
-      };
+      const formatUsd = formatUsdCompact;
 
       return {
         id: index + 1,
@@ -1557,7 +1552,7 @@ function LiquidityContent() {
         volume24h: volume24hValue === null ? "-" : formatUsd(volume24hValue),
         volume7d: volume7dValue === null ? "-" : formatUsd(volume7dValue),
         tvl: formatUsd(tvl),
-        apr: aprValue === null ? "-" : `${aprValue.toFixed(2)}%`,
+        apr: aprValue === null ? "-" : formatPct(aprValue),
         priceChange24h,
         network: "Sepolia",
         // Numeric values for sorting and the summary cards
@@ -1583,11 +1578,7 @@ function LiquidityContent() {
   const pctChange = (now: number, before: number) => before > 0 ? ((now - before) / before) * 100 : null;
   const volumeChange = pctChange(totalVolume24h, totalVolumePrev24h);
   const tvlChange = pctChange(totalTvl, totalTvl24hAgo);
-  const compactUsd = (val: number) => {
-    if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(2)}M`;
-    if (val >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
-    return `$${val.toFixed(2)}`;
-  };
+  const compactUsd = formatUsdCompact;
   const changeLabel = (pct: number | null, suffix: string) =>
     pct === null ? <span className="text-gray-400">{suffix}</span>
       : <span className={pct >= 0 ? "text-crypto-green" : "text-red-400"}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}% {suffix}</span>;
@@ -2522,7 +2513,7 @@ function LiquidityContent() {
                     <span className="text-gray-400 text-sm">Avg APR</span>
                     <TrendingUp className="w-4 h-4 text-crypto-green" />
                   </div>
-                  <div className="text-2xl font-bold text-crypto-green">{avgApr === null ? (statsReady ? "-" : "...") : `${avgApr.toFixed(2)}%`}</div>
+                  <div className="text-2xl font-bold text-crypto-green">{avgApr === null ? (statsReady ? "-" : "...") : formatPct(avgApr)}</div>
                   <div className="text-gray-400 text-sm">7d fee APR, TVL-weighted</div>
                 </Card>
               </div>
