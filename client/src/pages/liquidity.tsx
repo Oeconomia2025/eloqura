@@ -41,6 +41,7 @@ import { PoolAnalytics } from "@/components/pool-analytics";
 import { usePoolsSnapshots } from "@/hooks/use-pools-snapshots";
 import { feesBetween, type PairSnapshot } from "@/lib/pool-math";
 import { formatUsdCompact, formatPct } from "@/lib/format-stats";
+import { OeconomiaTokens } from "@/components/oeconomia-tokens";
 
 interface Token {
   symbol: string;
@@ -1481,7 +1482,7 @@ function LiquidityContent() {
       change24h: coin.deltaDay ? (coin.deltaDay - 1) * 100 : 0,
       marketCap: coin.cap || 0,
       volume24h: coin.volume || 0,
-      holders: Math.floor(Math.random() * 100000), // Mock holder data since not available in Live Coin Watch
+      holders: null as number | null, // Live Coin Watch has no holder counts; real holders are shown for Oeconomia tokens
     };
   }) || [];
 
@@ -2703,8 +2704,15 @@ function LiquidityContent() {
               </div>
               </div>
               ) : (
-                <div>
-                <p className="text-xs text-gray-500 mb-2 italic">Click a row to view token details</p>
+                <div className="space-y-4">
+                <OeconomiaTokens
+                  tokens={sepoliaTokens.filter(t => ["OEC", "ALUD", "ALUR", "ELOQ"].includes(t.symbol))}
+                  priceUsd={(t) => unitUsd(t as Token)}
+                />
+                <div className="flex items-baseline justify-between gap-2 pt-2">
+                  <h3 className="text-white font-semibold">Market Coins</h3>
+                  <p className="text-xs text-gray-500 italic">Click a row to view token details</p>
+                </div>
                 <div className="border rounded-lg relative max-h-[700px] overflow-auto scrollbar-hide">
                   <table className="w-full min-w-[760px]">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">
@@ -2816,7 +2824,7 @@ function LiquidityContent() {
                             ) : 'N/A'}
                           </td>
                           <td className="py-4 px-6 font-mono">
-                            {token.holders.toLocaleString()}
+                            {token.holders === null ? "-" : token.holders.toLocaleString()}
                           </td>
                         </tr>
                       ))}
