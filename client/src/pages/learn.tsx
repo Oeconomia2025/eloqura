@@ -278,6 +278,9 @@ const TOPICS: Topic[] = [
   },
 ];
 
+const COLS = "grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)] 2xl:grid-cols-[200px_minmax(0,1fr)_200px] gap-6 xl:gap-8";
+const CONTENT = "w-full min-w-0 max-w-[1100px] mx-auto";
+
 export default function Learn() {
   const [, setLocation] = useLocation();
   const [query, setQuery] = useState("");
@@ -304,24 +307,31 @@ export default function Learn() {
   return (
     <Layout>
       <div className="p-4 pt-16 sm:p-6 sm:pt-16 lg:p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-                <BookOpen className="w-7 h-7 text-[#5c69c2]" /> Learn
-              </h1>
-              <p className="text-gray-400 mt-1">How Eloqura works, from your first swap to providing liquidity.</p>
-            </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search topics..."
-                className="pl-10 bg-[#1a1b23] border-[var(--crypto-border)] text-white" />
+        {/* Topic index sits at the far left; the content column is centered in the page.
+            On very wide screens an empty right column mirrors the index so the cards stay centered. */}
+        <div className="space-y-6">
+          <div className={COLS}>
+            <div className="hidden lg:block" />
+            <div className={CONTENT}>
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+                    <BookOpen className="w-7 h-7 text-[#5c69c2]" /> Learn
+                  </h1>
+                  <p className="text-gray-400 mt-1">How Eloqura works, from your first swap to providing liquidity.</p>
+                </div>
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search topics..."
+                    className="pl-10 bg-[#1a1b23] border-[var(--crypto-border)] text-white" />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
+          <div className={COLS}>
             {/* Topic index: chips on phones, sticky list on desktop */}
-            <nav className="lg:sticky lg:top-6 lg:self-start">
+            <nav className="lg:sticky lg:top-6 lg:self-start lg:-ml-2">
               <div className="flex lg:flex-col gap-1 overflow-x-auto scrollbar-hide pb-1">
                 {topics.map((t) => (
                   <button key={t.id} type="button" onClick={() => goTo(t.id)}
@@ -332,7 +342,7 @@ export default function Learn() {
               </div>
             </nav>
 
-            <div className="space-y-4 min-w-0">
+            <div className={`space-y-4 ${CONTENT}`}>
               {topics.length === 0 && (
                 <Card className="crypto-card border p-8 text-center text-gray-400">No topics match "{query}".</Card>
               )}
