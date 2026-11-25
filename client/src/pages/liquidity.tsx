@@ -41,7 +41,7 @@ import { PoolAnalytics } from "@/components/pool-analytics";
 import { usePoolsSnapshots } from "@/hooks/use-pools-snapshots";
 import { feesBetween, type PairSnapshot } from "@/lib/pool-math";
 import { formatUsdCompact, formatPct } from "@/lib/format-stats";
-import { OeconomiaTokens } from "@/components/oeconomia-tokens";
+import { OecTokenExplorer } from "@/components/oec-token-explorer";
 
 interface Token {
   symbol: string;
@@ -70,7 +70,7 @@ interface Position {
 
 function LiquidityContent() {
   const [, setLocation] = useLocation();
-  const [activeView, setActiveView] = useState<'positions' | 'create' | 'pools'>('positions');
+  const [activeView, setActiveView] = useState<'positions' | 'create' | 'pools' | 'oec'>('positions');
   const [selectedToken0, setSelectedToken0] = useState<Token | null>(null);
   const [selectedToken1, setSelectedToken1] = useState<Token | null>(null);
   const [amount0, setAmount0] = useState("");
@@ -1749,7 +1749,7 @@ function LiquidityContent() {
 
           {/* Navigation Tabs */}
           <div className="mb-6">
-            <div className="grid w-auto grid-cols-3 bg-[#1a1b23] border border-[var(--crypto-border)] rounded-lg p-1">
+            <div className="grid w-auto grid-cols-2 sm:grid-cols-4 gap-1 bg-[#1a1b23] border border-[var(--crypto-border)] rounded-lg p-1">
               <Button
                 variant={activeView === 'pools' ? "default" : "ghost"}
                 size="sm"
@@ -1761,6 +1761,18 @@ function LiquidityContent() {
                 }
               >
                 Examine
+              </Button>
+              <Button
+                variant={activeView === 'oec' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveView('oec')}
+                className={
+                  activeView === 'oec'
+                    ? "bg-crypto-blue hover:bg-crypto-blue/80 text-white px-2 sm:px-6 py-3 rounded-md"
+                    : "text-gray-400 hover:text-white px-2 sm:px-6 py-3 rounded-md hover:bg-gray-700/50"
+                }
+              >
+                OEC Tokens
               </Button>
               <Button
                 variant={activeView === 'positions' ? "default" : "ghost"}
@@ -1790,6 +1802,17 @@ function LiquidityContent() {
           </div>
 
           {/* Positions View */}
+          {activeView === 'oec' && (
+            <OecTokenExplorer
+              tokens={sepoliaTokens.filter(t => ["OEC", "ALUD", "ALUR", "ELOQ"].includes(t.symbol))}
+              pools={realPools}
+              priceUsd={(t) => unitUsd(t as Token)}
+              tokenInfo={(address) => getTokenInfo(address)}
+              onOpenPool={openPoolInCreate}
+              search=""
+            />
+          )}
+
           {activeView === 'positions' && (
             <div className="space-y-6">
               {/* Portfolio Summary */}
@@ -2704,15 +2727,8 @@ function LiquidityContent() {
               </div>
               </div>
               ) : (
-                <div className="space-y-4">
-                <OeconomiaTokens
-                  tokens={sepoliaTokens.filter(t => ["OEC", "ALUD", "ALUR", "ELOQ"].includes(t.symbol))}
-                  priceUsd={(t) => unitUsd(t as Token)}
-                />
-                <div className="flex items-baseline justify-between gap-2 pt-2">
-                  <h3 className="text-white font-semibold">Market Coins</h3>
-                  <p className="text-xs text-gray-500 italic">Click a row to view token details</p>
-                </div>
+                <div>
+                <p className="text-xs text-gray-500 mb-2 italic">Click a row to view token details</p>
                 <div className="border rounded-lg relative max-h-[700px] overflow-auto scrollbar-hide">
                   <table className="w-full min-w-[760px]">
                     <thead className="sticky top-0 z-20 bg-[#1a1b23] border-b border-crypto-border">

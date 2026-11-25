@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { usePublicClient } from "wagmi";
 import { formatUnits } from "viem";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -10,10 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { formatUsdCompact, formatPct } from "@/lib/format-stats";
-import {
-  MULTICALL3, SEPOLIA_BLOCKS_PER_DAY, feesBetween, parseSnapshot, snapshotCalls,
-  timestampCall, type PairSnapshot,
-} from "@/lib/pool-math";
+import { feesBetween, type PairSnapshot } from "@/lib/pool-math";
+import { RANGES, usePairHistory, type RangeKey } from "@/hooks/use-pair-history";
 
 /**
  * Pool performance charts built from on-chain history.
@@ -39,12 +35,6 @@ interface PoolAnalyticsProps {
   lpBalance: bigint; // connected wallet's LP tokens
 }
 
-const RANGES = {
-  "7D": { days: 7, points: 28 },
-  "30D": { days: 30, points: 30 },
-  "90D": { days: 90, points: 30 },
-} as const;
-type RangeKey = keyof typeof RANGES;
 
 interface ChartPoint {
   label: string;
@@ -53,42 +43,6 @@ interface ChartPoint {
   volumeUsd: number | null;
   feesUsd: number | null;
   apr: number | null;
-}
-
-function useSnapshots(pairAddress: `0x${string}`, range: RangeKey, enabled: boolean) {
-  const publicClient = usePublicClient();
-
-  return useQuery({
-    queryKey: ["pool-history", pairAddress, range],
-    enabled: !!publicClient && enabled,
-    staleTime: 5 * 60_000,
-    queryFn: async (): Promise<PairSnapshot[]> => {
-      if (!publicClient) return [];
-      const latest = await publicClient.getBlockNumber();
-      const { days, points } = RANGES[range];
-      const step = BigInt(Math.floor((days * SEPOLIA_BLOCKS_PER_DAY) / points));
-      const blocks = Array.from({ length: points + 1 }, (_, i) => latest - step * BigInt(points - i))
-        .filter((b) => b > 0n);
-
-      const contracts = [...snapshotCalls(pairAddress), timestampCall];
-      const results = await Promise.all(
-        blocks.map((blockNumber) =>
-          publicClient
-            .multicall({ allowFailure: true, blockNumber, multicallAddress: MULTICALL3, contracts })
-            .catch(() => null)
-        )
-      );
-
-      const snaps: PairSnapshot[] = [];
-      for (const r of results) {
-        // Pair didn't exist yet at this block, or the read failed: skip the point.
-        if (!r || r[5].status !== "success") continue;
-        const snap = parseSnapshot(r.slice(0, 5) as any, Number(r[5].result as bigint));
-        if (snap) snaps.push(snap);
-      }
-      return snaps;
-    },
-  });
 }
 
 function buildPoints(snaps: PairSnapshot[], p: PoolAnalyticsProps, range: RangeKey): ChartPoint[] {
@@ -149,7 +103,7 @@ export function PoolAnalytics(props: PoolAnalyticsProps) {
     });
   };
   // Only read chain history while the card is open
-  const { data: snaps, isLoading, isError } = useSnapshots(props.pairAddress, range, expanded);
+  const { data: snaps, isLoading, isError } = usePairHistory(props.pairAddress, range, expanded);
 
   const points = snaps ? buildPoints(snaps, props, range) : [];
   const last = snaps?.[snaps.length - 1];
