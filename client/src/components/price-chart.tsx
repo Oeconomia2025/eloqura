@@ -223,7 +223,7 @@ export function PriceChart({ contractAddress, tokenSymbol = "DEFAULT", tokenData
               <TrendingUp className="w-12 h-12 text-crypto-green mx-auto mb-4" />
               <p className="text-gray-400 text-lg mb-2">Current Price</p>
               <p className="text-crypto-green text-3xl font-bold">${priceHistory[0].price.toFixed(4)}</p>
-              <p className="text-gray-500 text-sm mt-2">Real-time data from Moralis API</p>
+              <p className="text-gray-500 text-sm mt-2">Prices from Live Coin Watch</p>
             </div>
           </div>
         ) : (
