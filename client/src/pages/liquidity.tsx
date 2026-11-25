@@ -1042,6 +1042,12 @@ function LiquidityContent() {
       setActiveView('pools'); // Ensure we're in the pools view which contains the tabs
     }
 
+    // Deep links from the Learn page: /liquidity?view=pools | oec | create | positions
+    const view = urlParams.get('view');
+    if (view === 'pools' || view === 'oec' || view === 'create' || view === 'positions') {
+      setActiveView(view);
+    }
+
     if (create === 'true') {
       setActiveView('create');
 
@@ -2471,21 +2477,21 @@ function LiquidityContent() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white">
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white" onClick={() => setLocation('/learn#liquidity-pools')}>
                       <ExternalLink className="w-4 h-4 mr-2" />
                       <div>
                         <p className="font-medium">About Liquidity Pools</p>
                         <p className="text-xs opacity-80">Learn how AMMs work</p>
                       </div>
                     </Button>
-                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white">
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white" onClick={() => setLocation('/learn#fee-tiers')}>
                       <ExternalLink className="w-4 h-4 mr-2" />
                       <div>
                         <p className="font-medium">Fee Tier Guide</p>
                         <p className="text-xs opacity-80">Choose the right fee</p>
                       </div>
                     </Button>
-                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white">
+                    <Button variant="ghost" className="w-full justify-start text-left text-gray-400 hover:text-white" onClick={() => setLocation('/learn#impermanent-loss')}>
                       <ExternalLink className="w-4 h-4 mr-2" />
                       <div>
                         <p className="font-medium">Impermanent Loss</p>

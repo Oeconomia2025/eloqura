@@ -18,6 +18,7 @@ const Bridge = lazy(() => import('@/pages/bridge'));
 const Liquidity = lazy(() => import('@/pages/liquidity'));
 const Dashboard = lazy(() => import('@/pages/dashboard'));
 const TokenDetailDynamic = lazy(() => import('@/pages/token-detail-dynamic'));
+const Learn = lazy(() => import('@/pages/learn'));
 const NotFound = lazy(() => import('@/pages/not-found'));
 
 function Router() {
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/liquidity" component={Liquidity} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/coin/:code" component={TokenDetailDynamic} />
+        <Route path="/learn" component={Learn} />
         <Route path="*" component={NotFound} />
       </Switch>
     </Suspense>

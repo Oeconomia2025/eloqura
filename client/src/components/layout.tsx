@@ -187,6 +187,7 @@ export function Layout({
     { icon: Droplets, label: 'Pools', path: '/liquidity', active: location === '/liquidity' },
     { icon: ArrowLeftRight, label: 'Bridge', path: '/bridge', active: location === '/bridge' },
     { icon: DollarSign, label: 'Buy/Sell', path: '/buy-sell', active: location === '/buy-sell' },
+    { icon: BookOpen, label: 'Learn', path: '/learn', active: location === '/learn' },
   ];
 
   return (
