@@ -67,7 +67,7 @@ export const BRIDGE_TOKENS: BridgeTokenInfo[] = [
     logo: "https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png",
     deployments: {
       sepolia: {
-        address: "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba",
+        address: "0x00904218319a045a96d776ec6a970f54741208e6",
         kind: "native",
       },
       bscTestnet: {
